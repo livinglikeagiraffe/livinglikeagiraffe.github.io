@@ -45,7 +45,7 @@ export function woodMaterial(){
   if(!woodTextures.has(key)){
    const t=new THREE.TextureLoader().load(`./assets/props/wood/${file}.jpg`);
    if(key==='map')t.colorSpace=THREE.SRGBColorSpace;
-   t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);t.anisotropy=mobile?2:8;woodTextures.set(key,t);
+   t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);t.anisotropy=mobile?4:8;woodTextures.set(key,t);
   }
   material[key]=woodTextures.get(key);
  }

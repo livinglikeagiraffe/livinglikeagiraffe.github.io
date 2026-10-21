@@ -4,7 +4,8 @@
   "description": "Living Like a Giraffe interactive project meadow",
   "scripts": {
     "start": "node server.cjs",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs"
   },
   "keywords": [],
   "author": "",

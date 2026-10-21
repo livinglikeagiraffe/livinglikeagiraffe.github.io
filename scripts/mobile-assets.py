@@ -26,7 +26,7 @@ for folder in ['green-grass'] + ['props/' + name for name in props]:
         dest = out / source.relative_to(assets)
         dest.parent.mkdir(parents=True, exist_ok=True)
         if source.suffix.lower() in ['.jpg', '.png']:
-            limit = 1024 if folder == 'green-grass' and 'Color' in source.name else 512
+            limit = 1024 if (folder == 'green-grass' and 'Color' in source.name) or (folder == 'props/wood' and source.stem == 'Diffuse') else 512
             dest.write_bytes(shrink(source.read_bytes(), limit, source.suffix == '.png'))
         else:
             shutil.copy2(source, dest)

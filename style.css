@@ -153,7 +153,7 @@ body[data-talking] #joystick,body:has(#detail[open]) #joystick{visibility:hidden
 body[data-loading] #joystick,body[data-loading] .talk-prompt,body[data-loading] #project-context{visibility:hidden}
 
 /* Horizontal gestures belong to the gallery; vertical page scrolling stays native. */
-.media-track,.media-open,.media-open img,.media-open video{touch-action:pan-y pinch-zoom}
+.media-track,.media-open,.media-open img,.media-open video{touch-action:pan-x pan-y pinch-zoom}
 .media-track{cursor:grab;-webkit-overflow-scrolling:touch}
 .media-track.is-dragging{scroll-snap-type:none;cursor:grabbing;scroll-behavior:auto}
 .media-open img,.media-open video{pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
@@ -165,3 +165,8 @@ body[data-loading] #joystick,body[data-loading] .talk-prompt,body[data-loading] 
 .viewer-play img{display:block;max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
 .viewer-play span{position:absolute;padding:14px 22px;border-radius:28px;background:#0009;color:#fff;font-size:16px;pointer-events:none}
 .viewer-stage>video,.viewer-stage>img{touch-action:pan-y}
+
+/* Landscape galleries reserve their natural size before lazy images arrive. */
+.landscape-media .media-slide{flex:0 0 94%;width:94%;height:auto;aspect-ratio:var(--media-ratio)}
+
+.media-preview:not([src]){visibility:hidden}

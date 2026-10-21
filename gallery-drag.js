@@ -1,16 +1,22 @@
-// Own horizontal gestures so Safari's video layers/buttons cannot steal them.
-// Native vertical scrolling remains enabled through touch-action: pan-y.
+// Touch uses native overflow scrolling, including while images are loading.
+// Mouse dragging is an enhancement; a lost release must never lock the gallery.
 export function bindGalleryDrag(track, slides, select) {
  let drag=null, suppressUntil=0;
+ const reset=()=>{
+  const previous=drag;drag=null;track.classList.remove('is-dragging');
+  if(previous&&track.hasPointerCapture(previous.id))track.releasePointerCapture(previous.id);
+ };
  const down=e=>{
-  if(drag||e.isPrimary===false||e.button!==0)return;
-  drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:track.scrollLeft,horizontal:false};
+  if(e.pointerType!=='mouse'){reset();return;}
+  if(e.isPrimary===false||e.button!==0)return;
+  reset();drag={id:e.pointerId,x:e.clientX,y:e.clientY,left:track.scrollLeft,horizontal:false};
  };
  const move=e=>{
   if(!drag||drag.id!==e.pointerId)return;
+  if(e.buttons===0){reset();return;}
   const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
   if(!drag.horizontal){
-   if(Math.abs(dy)>8&&Math.abs(dy)>Math.abs(dx)){drag=null;return;}
+   if(Math.abs(dy)>8&&Math.abs(dy)>Math.abs(dx)){reset();return;}
    if(Math.abs(dx)<8||Math.abs(dx)<Math.abs(dy)*1.2)return;
    drag.horizontal=true;track.classList.add('is-dragging');track.setPointerCapture(e.pointerId);
   }
@@ -19,9 +25,7 @@ export function bindGalleryDrag(track, slides, select) {
  };
  const end=e=>{
   if(!drag||drag.id!==e.pointerId)return;
-  const gesture=drag;drag=null;
-  track.classList.remove('is-dragging');
-  if(track.hasPointerCapture(e.pointerId))track.releasePointerCapture(e.pointerId);
+  const gesture=drag;reset();
   if(!gesture.horizontal)return;
   suppressUntil=performance.now()+400;
   const dx=e.clientX-gesture.x;
@@ -30,13 +34,8 @@ export function bindGalleryDrag(track, slides, select) {
   select(Math.max(0,Math.min(slides.length-1,index)));
  };
  const click=e=>{if(performance.now()<suppressUntil){e.preventDefault();e.stopImmediatePropagation();}};
- track.addEventListener('pointerdown',down);
- track.addEventListener('pointermove',move,{passive:false});
- track.addEventListener('pointerup',end);track.addEventListener('pointercancel',end);
+ const bindings=[[track,'pointerdown',down],[track,'pointermove',move],[window,'pointerup',end],[window,'pointercancel',end],[track,'lostpointercapture',reset],[window,'blur',reset],[document,'visibilitychange',reset]];
+ bindings.forEach(([target,type,fn])=>target.addEventListener(type,fn));
  track.addEventListener('click',click,true);
- return ()=>{
-  track.removeEventListener('pointerdown',down);track.removeEventListener('pointermove',move);
-  track.removeEventListener('pointerup',end);track.removeEventListener('pointercancel',end);
-  track.removeEventListener('click',click,true);
- };
+ return ()=>{reset();bindings.forEach(([target,type,fn])=>target.removeEventListener(type,fn));track.removeEventListener('click',click,true);};
 }

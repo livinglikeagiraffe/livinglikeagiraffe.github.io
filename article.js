@@ -9,12 +9,12 @@ function gallery(key,title){
  const post=posts[key];
  const cards=post.media.map((m,i)=>{
   const video=m.type==='video';
-  const image=`<img class="media-preview" data-preview="${m.preview}" data-display="${m.display}" alt="${title} ${video?'영상 미리보기':'사진'} ${i+1}" decoding="async" draggable="false">`;
+  const image=`<img class="media-preview" data-preview="${m.preview}" data-display="${m.display}" alt="${title} ${video?'영상 미리보기':'사진'} ${i+1}" width="${m.width}" height="${m.height}" decoding="async" draggable="false">`;
   const playback=video&&!mobileMedia?`<video aria-hidden="true" muted loop playsinline preload="none" data-src="${m.src}" aria-label="${title} 영상 ${i+1}"></video>`:'';
   const play=video?'<span class="media-play" aria-hidden="true">▶</span>':'';
   return `<figure class="media-slide"${m.width&&m.height?` style="--media-ratio:${m.width/m.height}"`:''} aria-label="${i+1} / ${post.media.length}"><button class="media-open" aria-label="${title} ${i+1} ${video?'영상 보기':'크게 보기'}">${image}${playback}${play}</button></figure>`;
  }).join('');
- return `<div class="media-gallery${post.media.every(m=>m.width&&m.height)?' natural-media':''}" data-gallery="${key}" data-title="${title}"><div class="media-track" tabindex="0" aria-label="${title} 갤러리">${cards}</div><div class="gallery-controls"><span data-count aria-live="polite">01 / ${String(post.media.length).padStart(2,'0')}</span><div><button data-prev aria-label="${title} 이전 미디어">←</button><button data-next aria-label="${title} 다음 미디어">→</button></div></div></div>`;
+ return `<div class="media-gallery${post.media.every(m=>m.width&&m.height)?' natural-media':''}${post.media.every(m=>m.width>m.height)?' landscape-media':''}" data-gallery="${key}" data-title="${title}"><div class="media-track" tabindex="0" aria-label="${title} 갤러리">${cards}</div><div class="gallery-controls"><span data-count aria-live="polite">01 / ${String(post.media.length).padStart(2,'0')}</span><div><button data-prev aria-label="${title} 이전 미디어">←</button><button data-next aria-label="${title} 다음 미디어">→</button></div></div></div>`;
 }
 function originalCopy(key){
  const body=posts[key].caption.split(/\n\n기획[ |@]/)[0];

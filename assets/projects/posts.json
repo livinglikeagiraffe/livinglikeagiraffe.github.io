@@ -8,61 +8,86 @@
         "src": "assets/projects/sauna-intro/01.mp4",
         "poster": "assets/projects/sauna-intro/01.jpg",
         "preview": "assets/projects/previews/sauna-intro/01-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/01-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/01-display.jpg",
+        "width": 720,
+        "height": 900,
+        "hasAudio": true
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-intro/02.mp4",
         "poster": "assets/projects/sauna-intro/02.jpg",
         "preview": "assets/projects/previews/sauna-intro/02-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/02-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/02-display.jpg",
+        "width": 720,
+        "height": 900,
+        "hasAudio": true
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-intro/03.mp4",
         "poster": "assets/projects/sauna-intro/03.jpg",
         "preview": "assets/projects/previews/sauna-intro/03-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/03-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/03-display.jpg",
+        "width": 720,
+        "height": 900,
+        "hasAudio": true
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-intro/04.mp4",
         "poster": "assets/projects/sauna-intro/04.jpg",
         "preview": "assets/projects/previews/sauna-intro/04-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/04-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/04-display.jpg",
+        "width": 720,
+        "height": 900,
+        "hasAudio": true
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-intro/05.mp4",
         "poster": "assets/projects/sauna-intro/05.jpg",
         "preview": "assets/projects/previews/sauna-intro/05-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/05-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/05-display.jpg",
+        "width": 720,
+        "height": 900,
+        "hasAudio": true
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-intro/06.mp4",
         "poster": "assets/projects/sauna-intro/06.jpg",
         "preview": "assets/projects/previews/sauna-intro/06-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/06-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/06-display.jpg",
+        "width": 720,
+        "height": 900,
+        "hasAudio": true
       },
       {
         "type": "image",
         "src": "assets/projects/sauna-intro/07.jpg",
         "preview": "assets/projects/previews/sauna-intro/07-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/07-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/07-display.jpg",
+        "width": 2160,
+        "height": 2700
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-intro/08.mp4",
         "poster": "assets/projects/sauna-intro/08.jpg",
         "preview": "assets/projects/previews/sauna-intro/08-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/08-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/08-display.jpg",
+        "width": 720,
+        "height": 900,
+        "hasAudio": true
       },
       {
         "type": "image",
         "src": "assets/projects/sauna-intro/09.jpg",
         "preview": "assets/projects/previews/sauna-intro/09-preview.jpg",
-        "display": "assets/projects/previews/sauna-intro/09-display.jpg"
+        "display": "assets/projects/previews/sauna-intro/09-display.jpg",
+        "width": 2160,
+        "height": 2700
       }
     ],
     "expected": 9
@@ -75,109 +100,153 @@
         "type": "image",
         "src": "assets/projects/sauna-bts/01.jpg",
         "preview": "assets/projects/previews/sauna-bts/01-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/01-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/01-display.jpg",
+        "width": 2731,
+        "height": 1820
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/02.mp4",
         "poster": "assets/projects/sauna-bts/02.jpg",
         "preview": "assets/projects/previews/sauna-bts/02-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/02-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/02-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/03.mp4",
         "poster": "assets/projects/sauna-bts/03.jpg",
         "preview": "assets/projects/previews/sauna-bts/03-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/03-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/03-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/04.mp4",
         "poster": "assets/projects/sauna-bts/04.jpg",
         "preview": "assets/projects/previews/sauna-bts/04-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/04-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/04-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/05.mp4",
         "poster": "assets/projects/sauna-bts/05.jpg",
         "preview": "assets/projects/previews/sauna-bts/05-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/05-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/05-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/06.mp4",
         "poster": "assets/projects/sauna-bts/06.jpg",
         "preview": "assets/projects/previews/sauna-bts/06-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/06-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/06-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/07.mp4",
         "poster": "assets/projects/sauna-bts/07.jpg",
         "preview": "assets/projects/previews/sauna-bts/07-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/07-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/07-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/08.mp4",
         "poster": "assets/projects/sauna-bts/08.jpg",
         "preview": "assets/projects/previews/sauna-bts/08-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/08-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/08-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/09.mp4",
         "poster": "assets/projects/sauna-bts/09.jpg",
         "preview": "assets/projects/previews/sauna-bts/09-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/09-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/09-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/10.mp4",
         "poster": "assets/projects/sauna-bts/10.jpg",
         "preview": "assets/projects/previews/sauna-bts/10-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/10-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/10-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/11.mp4",
         "poster": "assets/projects/sauna-bts/11.jpg",
         "preview": "assets/projects/previews/sauna-bts/11-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/11-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/11-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/12.mp4",
         "poster": "assets/projects/sauna-bts/12.jpg",
         "preview": "assets/projects/previews/sauna-bts/12-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/12-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/12-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "image",
         "src": "assets/projects/sauna-bts/13.jpg",
         "preview": "assets/projects/previews/sauna-bts/13-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/13-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/13-display.jpg",
+        "width": 2688,
+        "height": 1792
       },
       {
         "type": "image",
         "src": "assets/projects/sauna-bts/14.jpg",
         "preview": "assets/projects/previews/sauna-bts/14-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/14-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/14-display.jpg",
+        "width": 2268,
+        "height": 1512
       },
       {
         "type": "video",
         "src": "assets/projects/sauna-bts/15.mp4",
         "poster": "assets/projects/sauna-bts/15.jpg",
         "preview": "assets/projects/previews/sauna-bts/15-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/15-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/15-display.jpg",
+        "width": 1080,
+        "height": 720,
+        "hasAudio": false
       },
       {
         "type": "image",
         "src": "assets/projects/sauna-bts/16.jpg",
         "preview": "assets/projects/previews/sauna-bts/16-preview.jpg",
-        "display": "assets/projects/previews/sauna-bts/16-display.jpg"
+        "display": "assets/projects/previews/sauna-bts/16-display.jpg",
+        "width": 2688,
+        "height": 1792
       }
     ],
     "expected": 16
@@ -193,7 +262,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-photos/01-preview.jpg",
-        "display": "assets/projects/previews/sports-photos/01-display.jpg"
+        "display": "assets/projects/previews/sports-photos/01-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "video",
@@ -202,7 +272,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-photos/02-preview.jpg",
-        "display": "assets/projects/previews/sports-photos/02-display.jpg"
+        "display": "assets/projects/previews/sports-photos/02-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "video",
@@ -211,7 +282,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-photos/03-preview.jpg",
-        "display": "assets/projects/previews/sports-photos/03-display.jpg"
+        "display": "assets/projects/previews/sports-photos/03-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "video",
@@ -220,7 +292,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-photos/04-preview.jpg",
-        "display": "assets/projects/previews/sports-photos/04-display.jpg"
+        "display": "assets/projects/previews/sports-photos/04-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",
@@ -237,7 +310,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-photos/06-preview.jpg",
-        "display": "assets/projects/previews/sports-photos/06-display.jpg"
+        "display": "assets/projects/previews/sports-photos/06-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",
@@ -278,7 +352,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-photos/11-preview.jpg",
-        "display": "assets/projects/previews/sports-photos/11-display.jpg"
+        "display": "assets/projects/previews/sports-photos/11-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "video",
@@ -287,7 +362,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-photos/12-preview.jpg",
-        "display": "assets/projects/previews/sports-photos/12-display.jpg"
+        "display": "assets/projects/previews/sports-photos/12-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",
@@ -312,7 +388,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-photos/15-preview.jpg",
-        "display": "assets/projects/previews/sports-photos/15-display.jpg"
+        "display": "assets/projects/previews/sports-photos/15-display.jpg",
+        "hasAudio": true
       }
     ],
     "expected": 15
@@ -336,7 +413,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-intro/02-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/02-display.jpg"
+        "display": "assets/projects/previews/sports-intro/02-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "video",
@@ -345,7 +423,8 @@
         "width": 716,
         "height": 950,
         "preview": "assets/projects/previews/sports-intro/03-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/03-display.jpg"
+        "display": "assets/projects/previews/sports-intro/03-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",
@@ -362,7 +441,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-intro/05-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/05-display.jpg"
+        "display": "assets/projects/previews/sports-intro/05-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",
@@ -379,7 +459,8 @@
         "width": 716,
         "height": 950,
         "preview": "assets/projects/previews/sports-intro/07-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/07-display.jpg"
+        "display": "assets/projects/previews/sports-intro/07-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "video",
@@ -388,7 +469,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-intro/08-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/08-display.jpg"
+        "display": "assets/projects/previews/sports-intro/08-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "video",
@@ -397,7 +479,8 @@
         "width": 716,
         "height": 950,
         "preview": "assets/projects/previews/sports-intro/09-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/09-display.jpg"
+        "display": "assets/projects/previews/sports-intro/09-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",
@@ -414,7 +497,8 @@
         "width": 716,
         "height": 950,
         "preview": "assets/projects/previews/sports-intro/11-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/11-display.jpg"
+        "display": "assets/projects/previews/sports-intro/11-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",
@@ -431,7 +515,8 @@
         "width": 720,
         "height": 960,
         "preview": "assets/projects/previews/sports-intro/13-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/13-display.jpg"
+        "display": "assets/projects/previews/sports-intro/13-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",
@@ -456,7 +541,8 @@
         "width": 716,
         "height": 950,
         "preview": "assets/projects/previews/sports-intro/16-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/16-display.jpg"
+        "display": "assets/projects/previews/sports-intro/16-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "video",
@@ -465,7 +551,8 @@
         "width": 716,
         "height": 950,
         "preview": "assets/projects/previews/sports-intro/17-preview.jpg",
-        "display": "assets/projects/previews/sports-intro/17-display.jpg"
+        "display": "assets/projects/previews/sports-intro/17-display.jpg",
+        "hasAudio": true
       },
       {
         "type": "image",

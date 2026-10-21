@@ -15,7 +15,7 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.85,...extra});
  const dark=material('#27352f');
  function box(parent,w,h,d,x,y,z,m){const n=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);n.position.set(x,y,z);n.castShadow=true;n.receiveShadow=true;parent.add(n);return n;}
- function poster(parent,p,x,z,y=2.1){const t=textureLoader.load(p.image,()=>preparePoster(p.image).catch(()=>{}));t.colorSpace=THREE.SRGBColorSpace;box(parent,2.65,3.35,.14,x,y,z,dark);const n=new THREE.Mesh(new THREE.PlaneGeometry(2.5,3.125),new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}));n.position.set(x,y,z+.08);parent.add(n);posters.set(p.id,n);box(parent,.12,1,.12,x,.55,z,dark);}
+ function poster(parent,p,x,z,y=2.1){const t=textureLoader.load(p.image,()=>preparePoster(p.image).catch(()=>{}));t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;box(parent,2.65,3.35,.14,x,y,z,dark);const n=new THREE.Mesh(new THREE.PlaneGeometry(2.5,3.125),new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}));n.position.set(x,y,z+.08);parent.add(n);posters.set(p.id,n);box(parent,.12,1,.12,x,.55,z,dark);}
  projects.forEach(p=>{
   const group=new THREE.Group();group.position.set(p.position[0],0,p.position[1]);scene.add(group);
   if(p.id==='sports'){
@@ -29,7 +29,7 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  });
  const dialog=document.querySelector('#detail'),content=document.querySelector('#detail-content'),summary=document.querySelector('#detail-summary');
  const transition=createPosterTransition({camera,posters,dialog});
- let opening=false;
+ let opening=false,reading=false;
  let previousFocus=null,near=null,time=0,activeProject=null,closing=false,transitionId=0;let cleanupArticle=()=>{};
  function show(html){
   if(!dialog.open)previousFocus=document.activeElement;
@@ -38,7 +38,7 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  }
  async function close(){
   if(closing||!dialog.open)return;
-  closing=true;++transitionId;dialog.classList.add('closing');
+  reading=false;closing=true;++transitionId;dialog.classList.add('closing');
   const posterExit=activeProject?transition.move(activeProject,content.querySelector('.hero-poster'),true):Promise.resolve();
   // Keep the summary and its TOC mounted through the whole exit, even when
   // the poster is scrolled out of view and has no return flight to await.
@@ -46,7 +46,7 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
   transition.restore();dialog.close();dialog.classList.remove('closing','entered');closing=false;
  }
  dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
- dialog.addEventListener('close',()=>{cleanupArticle();cleanupArticle=()=>{};++transitionId;transition.restore();onPause(false);previousFocus?.focus({preventScroll:true});});
+ dialog.addEventListener('close',()=>{reading=false;cleanupArticle();cleanupArticle=()=>{};++transitionId;transition.restore();onPause(false);previousFocus?.focus({preventScroll:true});});
  document.querySelector('#detail-close').onclick=close;
  document.querySelector('#detail-backdrop').onclick=close;
  async function open(p){
@@ -63,14 +63,14 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
   try{await hero.decode();}catch{}
   if(id!==transitionId||!dialog.open)return;
   await transition.move(p,hero);
-  if(id===transitionId&&dialog.open&&!closing)cleanupArticle.startMedia?.();
+  if(id===transitionId&&dialog.open&&!closing){reading=true;cleanupArticle.startMedia?.();}
  }
  document.querySelector('#near-open').onclick=()=>near&&open(near);
  document.querySelector('#project-heading').onclick=()=>near&&open(near);
  window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!dialog.open&&near&&!['INPUT','SELECT'].includes(e.target.tagName)){e.preventDefault();open(near);}});
  const context=document.querySelector('#project-context'),heading=document.querySelector('#near-title'),number=document.querySelector('#near-number');
  let current=null;
- return {ready:Promise.all(furnishing),update(dt){
+ return {get reading(){return reading;},ready:Promise.all(furnishing),update(dt){
   time+=dt;
   // Proximity covers the whole installation, including its open entrance.
   const candidates=projects.map(p=>({p,d:Math.hypot(Math.max(0,Math.abs(player.position.x-p.position[0])-5),Math.max(0,Math.abs(player.position.z-p.position[1])-4))})).filter(v=>v.d<2.5).sort((a,b)=>a.d-b.d||Math.hypot(player.position.x-a.p.position[0],player.position.z-a.p.position[1])-Math.hypot(player.position.x-b.p.position[0],player.position.z-b.p.position[1]));

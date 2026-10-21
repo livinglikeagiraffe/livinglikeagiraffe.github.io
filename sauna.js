@@ -1,6 +1,7 @@
 import { mobile } from './quality.js';
 import * as THREE from 'three';
 import { woodMaterial } from './props.js';
+import { mergeStaticMeshes } from './static-meshes.js';
 
 // Cutaway sauna: the two camera-facing sides and roof remain entirely open.
 export function buildSauna(group, obstacles) {
@@ -40,6 +41,7 @@ export function buildSauna(group, obstacles) {
  }
  sconce(-3.3,-3.65);sconce(.5,-3.65);sconce(-4.6,1.6,true);
  const under=new THREE.PointLight('#ffa34c',14,7,2);under.position.set(-2,1,-1.3);group.add(under);
+ mergeStaticMeshes(group);
  // Soft, translucent steam rises from the real barrel heater, away from the poster.
  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
  const ctx=canvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,0,64,64,64);
