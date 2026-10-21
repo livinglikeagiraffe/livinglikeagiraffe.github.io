@@ -3,7 +3,7 @@ import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader
 
 export function loadBlueMeshGiraffe(parent) {
  const api={ready:false,update(){}};
- new GLTFLoader().loadAsync('./assets/giraffe/bluemesh/giraffe.glb').then(g=>{
+ api.loaded=new GLTFLoader().loadAsync('./assets/giraffe/bluemesh/giraffe.glb').then(g=>{
   const model=g.scene;
   // The supplied scene includes a presentation plinth and studio lights.
   const extras=[];
@@ -40,7 +40,7 @@ export function loadBlueMeshGiraffe(parent) {
   api.ready=true;
  }).catch(error=>{
   console.error(error);
-  const notice=document.querySelector('#error');notice.hidden=false;notice.textContent='새 기린 모델을 불러오지 못했습니다. 새로고침해 주세요.';
+  const notice=document.querySelector('#error');notice.hidden=false;notice.textContent='새 기린 모델을 불러오지 못했습니다. 새로고침해 주세요.';throw error;
  });
  return api;
 }

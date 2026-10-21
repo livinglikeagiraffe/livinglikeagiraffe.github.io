@@ -1,3 +1,4 @@
+import { mobile } from './quality.js';
 import * as THREE from 'three';
 import { woodMaterial } from './props.js';
 
@@ -44,7 +45,7 @@ export function buildSauna(group, obstacles) {
  const ctx=canvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,0,64,64,64);
  gradient.addColorStop(0,'rgba(255,249,232,.65)');gradient.addColorStop(.4,'rgba(255,249,232,.3)');gradient.addColorStop(1,'rgba(255,249,232,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
  const texture=new THREE.CanvasTexture(canvas),puffs=[];
- for(let i=0;i<24;i++){const puff=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,opacity:0,depthWrite:false,color:'#fff6e5'}));group.add(puff);puffs.push(puff);}
+ for(let i=0;i<(mobile?8:24);i++){const puff=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,opacity:0,depthWrite:false,color:'#fff6e5'}));group.add(puff);puffs.push(puff);}
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  let time=0;
  return dt=>{if(!reduced)time+=dt;for(let i=0;i<puffs.length;i++){const age=(time*.16+i/puffs.length)%1,phase=i*2.399;const puff=puffs[i];puff.position.set(-1.6+Math.sin(phase+age*2)*(.15+age*.55),1.6+age*3,1.2+Math.cos(phase+age)*(.16+age*.6));puff.scale.setScalar(.55+age*1.7);puff.material.opacity=Math.sin(age*Math.PI)*.23;}};

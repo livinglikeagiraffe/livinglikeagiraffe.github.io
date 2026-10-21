@@ -4,7 +4,7 @@ let source;
 function loadSource(){return source??=new GLTFLoader().loadAsync('./assets/giraffe/source/Reticulated_Giraffe_Rigged_Animated_v3.glb');}
 export function loadGiraffe(THREE,parent){
  const api={ready:false,update(){}};
- loadSource().then(g=>{
+ api.loaded=loadSource().then(g=>{
   const model=clone(g.scene);
   const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
   const scale=5/size.y;model.scale.setScalar(scale);
@@ -35,6 +35,6 @@ export function loadGiraffe(THREE,parent){
    actions[2].setEffectiveTimeScale(THREE.MathUtils.clamp(speed/8,.6,1.25));
    mixer.update(dt);
   };
- }).catch(e=>{console.error(e);const el=document.querySelector('#error');el.hidden=false;el.textContent='기린 모델을 불러오지 못했습니다. 새로고침해 주세요.';});
+ }).catch(e=>{console.error(e);const el=document.querySelector('#error');el.hidden=false;el.textContent='기린 모델을 불러오지 못했습니다. 새로고침해 주세요.';throw e;});
  return api;
 }

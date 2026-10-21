@@ -1,10 +1,13 @@
+import { mobile, mobileProps } from './quality.js';
 import * as THREE from 'three';
 import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 const loader=new GLTFLoader(),cache=new Map();
-function template(id){if(!cache.has(id))cache.set(id,loader.loadAsync(`./assets/props/${id}/model.gltf`).then(g=>{if(id==='football'){const unwanted=g.scene.getObjectByName('football_deflated');unwanted?.removeFromParent();}return g.scene;}));return cache.get(id);}
+let queue=Promise.resolve();
+function loadTemplate(id){const load=()=>loader.loadAsync(`./assets/props/${id}/model.gltf`);if(!mobile)return load();const result=queue.then(load);queue=result.catch(()=>{});return result;}
+function template(id){if(!cache.has(id))cache.set(id,loadTemplate(id).then(g=>{if(id==='football'){const unwanted=g.scene.getObjectByName('football_deflated');unwanted?.removeFromParent();}return g.scene;}));return cache.get(id);}
 export function furnish(parent,type,obstacles){
  const jobs=[];
- function place(id,x,z,size,{y=.15,rotation=0,axis='y',solid=true,tilt=0,lean=0}={}){jobs.push(template(id).then(source=>{
+ function place(id,x,z,size,{y=.15,rotation=0,axis='y',solid=true,tilt=0,lean=0}={}){if(mobile&&!mobileProps.has(id))return;jobs.push(template(id).then(source=>{
   const model=source.clone(true);model.rotation.x+=tilt;model.rotation.z+=lean;const bounds=new THREE.Box3().setFromObject(model),dimensions=bounds.getSize(new THREE.Vector3()),center=bounds.getCenter(new THREE.Vector3());
   const unit=new THREE.Group();model.position.sub(new THREE.Vector3(center.x,bounds.min.y,center.z));unit.add(model);unit.scale.setScalar(size/dimensions[axis]);unit.rotation.y=rotation;unit.position.set(x,y,z);parent.add(unit);unit.updateWorldMatrix(true,true);
   unit.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;}});
@@ -35,4 +38,16 @@ export function furnish(parent,type,obstacles){
  }
  return Promise.all(jobs);
 }
-export function woodMaterial(){const material=new THREE.MeshStandardMaterial({color:'#d8b795',roughness:.9});const textures=new THREE.TextureLoader();for(const [key,file] of [['map','Diffuse'],['normalMap','nor_gl'],['roughnessMap','Rough']]){textures.load(`./assets/props/wood/${file}.jpg`,t=>{if(key==='map')t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);t.anisotropy=8;material[key]=t;material.needsUpdate=true;});}material.normalScale.set(.5,.5);return material;}
+const woodTextures=new Map();
+export function woodMaterial(){
+ const material=new THREE.MeshStandardMaterial({color:'#d8b795',roughness:.9});
+ for(const [key,file] of [['map','Diffuse'],['normalMap','nor_gl'],['roughnessMap','Rough']]){
+  if(!woodTextures.has(key)){
+   const t=new THREE.TextureLoader().load(`./assets/props/wood/${file}.jpg`);
+   if(key==='map')t.colorSpace=THREE.SRGBColorSpace;
+   t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);t.anisotropy=mobile?2:8;woodTextures.set(key,t);
+  }
+  material[key]=woodTextures.get(key);
+ }
+ material.normalScale.set(.5,.5);return material;
+}

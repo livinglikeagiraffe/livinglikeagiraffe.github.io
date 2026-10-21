@@ -9,6 +9,7 @@ export const projects=[
  {id:'sauna',number:'02',title:'멘탈 사우나',tagline:'감각을 깨우고, 마음에 쌓인 것을 비우다.',date:'2026.05.11',place:'연희예술극장 · 서울 연희동',image:'assets/projects/sauna.jpg',position:[4,-6]}
 ];
 export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=>true}){
+ const furnishing=[];
  const textureLoader=new THREE.TextureLoader();let updateSports=()=>{};const posters=new Map();let updateSauna=()=>{};
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.85,...extra});
  const dark=material('#27352f');
@@ -23,7 +24,7 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
    updateSauna=buildSauna(group,obstacles);
    poster(group,p,2.7,-3.7,2.5);
   }
-  furnish(group,p.id,obstacles);
+  furnishing.push(furnish(group,p.id,obstacles));
  });
  const dialog=document.querySelector('#detail'),content=document.querySelector('#detail-content'),summary=document.querySelector('#detail-summary');
  const transition=createPosterTransition({camera,posters,dialog});
@@ -60,7 +61,7 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!dialog.open&&near&&!['INPUT','SELECT'].includes(e.target.tagName)){e.preventDefault();open(near);}});
  const context=document.querySelector('#project-context'),heading=document.querySelector('#near-title'),number=document.querySelector('#near-number');
  let current=null;
- return {update(dt){
+ return {ready:Promise.all(furnishing),update(dt){
   time+=dt;
   // Proximity covers the whole installation, including its open entrance.
   const candidates=projects.map(p=>({p,d:Math.hypot(Math.max(0,Math.abs(player.position.x-p.position[0])-5),Math.max(0,Math.abs(player.position.z-p.position[1])-4))})).filter(v=>v.d<2.5).sort((a,b)=>a.d-b.d||Math.hypot(player.position.x-a.p.position[0],player.position.z-a.p.position[1])-Math.hypot(player.position.x-b.p.position[0],player.position.z-b.p.position[1]));

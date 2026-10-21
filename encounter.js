@@ -46,6 +46,7 @@ export function setupEncounter({scene,camera,player,obstacles,onPause,isBlocked}
  prompt.onclick=enter;exit.onclick=leave;
  dialog.addEventListener('cancel',e=>{e.preventDefault();leave();});
  return {
+  ready:Promise.all(companions.map(c=>c.character.loaded)),
   get active(){return state!=='idle';},
   update(dt,normalTarget){
    companions.forEach(({character})=>character.update(dt,0));

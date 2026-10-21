@@ -1,14 +1,15 @@
+import { mobile } from './quality.js';
 import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 export function setupNature({THREE,scene,renderer,sun,ground,obstacles}) {
  renderer.toneMapping=THREE.ACESFilmicToneMapping;
  const hemi=scene.children.find(n=>n.isHemisphereLight);
  const loader=new THREE.TextureLoader();
  for(const [property,name] of [['map','Color'],['normalMap','NormalGL'],['roughnessMap','Roughness']]){
-  loader.load(`./assets/green-grass/Grass005_2K-JPG_${name}.jpg`,t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(300,300);t.anisotropy=renderer.capabilities.getMaxAnisotropy();if(property==='map')t.colorSpace=THREE.SRGBColorSpace;ground.material[property]=t;ground.material.needsUpdate=true;},undefined,()=>notice('풀밭 텍스처를 불러오지 못했습니다. 새로고침해 주세요.'));
+  loader.load(`./assets/green-grass/Grass005_2K-JPG_${name}.jpg`,t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(300,300);t.anisotropy=mobile?2:renderer.capabilities.getMaxAnisotropy();if(property==='map')t.colorSpace=THREE.SRGBColorSpace;ground.material[property]=t;ground.material.needsUpdate=true;},undefined,()=>notice('풀밭 텍스처를 불러오지 못했습니다. 새로고침해 주세요.'));
  }
  ground.material.color.set('#ffffff');ground.material.normalScale.set(.65,.65);
  let seed=51;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
- new GLTFLoader().load('./assets/tree/tree.gltf',g=>{
+ if(!mobile)new GLTFLoader().load('./assets/tree/tree.gltf',g=>{
   const box=new THREE.Box3().setFromObject(g.scene),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
   const template=new THREE.Group();g.scene.position.set(-center.x,-box.min.y,-center.z);template.add(g.scene);
   template.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true;}});

@@ -73,3 +73,5 @@ The supplied body material uses alphaMode BLEND. Rendered as alpha-tested cutout
 
 ## Web optimization (2026-10-21)
 Original source files are retained locally in .source-assets/ and excluded from publication. Grass color remains 2048px; normal/roughness are 1024px and JPEG-optimized. Main giraffe body color is reduced from 8192px to 4096px, roughness/tongue color to 1024px, and embedded images recompressed. All original geometry, skin, animation and non-image buffer bytes are unchanged. Original source/license links above apply to these modified copies.
+
+모바일 파생본(`assets/mobile/`)은 같은 라이선스를 따릅니다. 텍스처 해상도를 낮췄으며 기린의 기하·리깅·애니메이션은 변경하지 않았습니다. 공유 카드와 favicon은 팀의 공식 Instagram 프로필 이미지에서 구성했습니다.

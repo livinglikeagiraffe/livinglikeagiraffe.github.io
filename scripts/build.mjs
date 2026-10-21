@@ -37,8 +37,8 @@ async function directory(folder){
   else if(!entry.name.startsWith('.'))await copy(file);
  }
 }
-for(const file of ['index.html','style.css','main.js','credits.html','ASSETS.md','node_modules/three/LICENSE'])await copy(file);
-await directory('assets/fonts');await directory('assets/green-grass');
+for(const file of ['index.html','style.css','main.js','bootstrap.js','credits.html','ASSETS.md','node_modules/three/LICENSE'])await copy(file);
+await directory('assets/mobile');await directory('assets/branding');await directory('assets/fonts');await directory('assets/green-grass');
 await directory('assets/props/wood');await copy('assets/tree/tree.gltf');
 const propsSource=await readFile(path.join(root,'props.js'),'utf8');
 for(const id of new Set([...propsSource.matchAll(/place\('([^']+)'/g)].map(match=>match[1])))await copy(`assets/props/${id}/model.gltf`);
