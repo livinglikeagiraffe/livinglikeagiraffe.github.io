@@ -46,7 +46,7 @@ await copy('assets/giraffe/source/Reticulated_Giraffe_Rigged_Animated_v3.glb');
 await copy('assets/giraffe/bluemesh/giraffe.glb');
 for(const file of ['sports.jpg','sauna.jpg','team-profile.jpg','posts.json'])await copy(`assets/projects/${file}`);
 const posts=JSON.parse(await readFile(path.join(root,'assets/projects/posts.json'),'utf8'));
-for(const post of Object.values(posts))for(const media of post.media){await copy(media.src);if(media.poster)await copy(media.poster);}
+for(const post of Object.values(posts))for(const media of post.media){await copy(media.src);if(media.poster)await copy(media.poster);if(media.preview)await copy(media.preview);if(media.display)await copy(media.display);}
 await writeFile(path.join(out,'.nojekyll'),'');
 const sizes=await Promise.all([...copied].map(async file=>({file:destination(file),bytes:(await stat(path.join(out,destination(file)))).size})));
 sizes.sort((a,b)=>b.bytes-a.bytes);

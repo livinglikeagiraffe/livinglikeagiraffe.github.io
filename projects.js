@@ -1,3 +1,4 @@
+import { preparePoster } from './poster-image.js';
 import { buildSportsField } from './sports.js';
 import { renderArticle, mountArticle } from './article.js';
 import { createPosterTransition } from './poster-transition.js';
@@ -14,7 +15,7 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.85,...extra});
  const dark=material('#27352f');
  function box(parent,w,h,d,x,y,z,m){const n=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);n.position.set(x,y,z);n.castShadow=true;n.receiveShadow=true;parent.add(n);return n;}
- function poster(parent,p,x,z,y=2.1){const t=textureLoader.load(p.image);t.colorSpace=THREE.SRGBColorSpace;box(parent,2.65,3.35,.14,x,y,z,dark);const n=new THREE.Mesh(new THREE.PlaneGeometry(2.5,3.125),new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}));n.position.set(x,y,z+.08);parent.add(n);posters.set(p.id,n);box(parent,.12,1,.12,x,.55,z,dark);}
+ function poster(parent,p,x,z,y=2.1){const t=textureLoader.load(p.image,()=>preparePoster(p.image).catch(()=>{}));t.colorSpace=THREE.SRGBColorSpace;box(parent,2.65,3.35,.14,x,y,z,dark);const n=new THREE.Mesh(new THREE.PlaneGeometry(2.5,3.125),new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}));n.position.set(x,y,z+.08);parent.add(n);posters.set(p.id,n);box(parent,.12,1,.12,x,.55,z,dark);}
  projects.forEach(p=>{
   const group=new THREE.Group();group.position.set(p.position[0],0,p.position[1]);scene.add(group);
   if(p.id==='sports'){
@@ -28,6 +29,7 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  });
  const dialog=document.querySelector('#detail'),content=document.querySelector('#detail-content'),summary=document.querySelector('#detail-summary');
  const transition=createPosterTransition({camera,posters,dialog});
+ let opening=false;
  let previousFocus=null,near=null,time=0,activeProject=null,closing=false,transitionId=0;let cleanupArticle=()=>{};
  function show(html){
   if(!dialog.open)previousFocus=document.activeElement;
@@ -48,13 +50,20 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  document.querySelector('#detail-close').onclick=close;
  document.querySelector('#detail-backdrop').onclick=close;
  async function open(p){
-  if(!canOpen()||dialog.open||closing)return;
+  if(!canOpen()||dialog.open||closing||opening)return;
+  opening=true;
+  try{await preparePoster(p.image);}catch(error){opening=false;console.error(error);const notice=document.querySelector('#error');notice.hidden=false;notice.textContent='포스터를 불러오지 못했어요. 다시 눌러 주세요.';return;}
+  opening=false;if(!canOpen()||dialog.open||closing)return;
   activeProject=p;const id=++transitionId;
   summary.innerHTML=`<span class="summary-index">Project ${p.number}</span><h1 id="detail-title">${p.title}</h1><p class="summary-lead">${p.tagline}</p><dl><div><dt>When</dt><dd>${p.date}</dd></div><div><dt>Where</dt><dd>${p.place}</dd></div></dl><span class="summary-team">Living Like a Giraffe</span>`;
   cleanupArticle();show(renderArticle(p));cleanupArticle=mountArticle(content);
   dialog.classList.remove('entered');
   requestAnimationFrame(()=>{if(id===transitionId)dialog.classList.add('entered');});
-  await transition.move(p,content.querySelector('.hero-poster'));
+  const hero=content.querySelector('.hero-poster');
+  try{await hero.decode();}catch{}
+  if(id!==transitionId||!dialog.open)return;
+  await transition.move(p,hero);
+  if(id===transitionId&&dialog.open&&!closing)cleanupArticle.startMedia?.();
  }
  document.querySelector('#near-open').onclick=()=>near&&open(near);
  document.querySelector('#project-heading').onclick=()=>near&&open(near);
