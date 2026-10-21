@@ -1,0 +1,16 @@
+{
+  "name": "giraffe",
+  "version": "1.0.0",
+  "description": "Living Like a Giraffe interactive project meadow",
+  "scripts": {
+    "start": "node server.cjs",
+    "build": "node scripts/build.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "dependencies": {
+    "three": "^0.186.1"
+  },
+  "private": true
+}

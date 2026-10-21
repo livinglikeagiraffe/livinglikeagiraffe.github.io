@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Living Like a Giraffe. 기린과 함께 산책하며 만나는 프로젝트: ㅊㅊㅊ 운동회와 멘탈 사우나."><title>Living Like a Giraffe — 프로젝트의 초원</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<main id="world" aria-label="기린과 함께 탐색하는 프로젝트의 초원"></main>
+<button id="home-brand" class="home-brand" aria-label="Living Like a Giraffe · 출발점으로">Living like<br>a giraffe</button>
+<section id="project-context" aria-hidden="true" inert>
+ <div class="top-vignette"><button id="project-heading" aria-label="가까운 프로젝트 열기"><span id="near-number"></span><span id="near-title"></span></button></div>
+ <div class="bottom-vignette"><button id="near-open">프로젝트 보기 <kbd>E</kbd></button></div>
+</section>
+<div class="lighting" role="group" aria-label="빛과 시간"><button type="button" data-time="day" aria-pressed="true" title="맑은 낮">낮</button><button type="button" data-time="sunset" aria-pressed="false" title="황금빛 노을">노을</button><button type="button" data-time="dusk" aria-pressed="false" title="푸른 해질녘">해질녘</button></div>
+<div id="joystick" role="group" aria-label="이동 조이스틱. 중앙 가까이는 걷기, 바깥쪽은 달리기"><span class="joystick-ring" aria-hidden="true"></span><span class="joystick-thumb" aria-hidden="true"></span></div>
+<div id="error" role="alert" hidden></div>
+<dialog id="detail" aria-labelledby="detail-title"><div id="detail-backdrop" aria-hidden="true"></div><aside id="detail-summary"></aside><button class="close" id="detail-close" aria-label="프로젝트 닫기">✕</button><div id="detail-content"></div></dialog>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script><script type="module" src="main.js"></script></body></html>

@@ -1,0 +1,11 @@
+node_modules/
+.DS_Store
+dist/
+.source-assets/
+# Local visual QA captures and unused source exports stay on disk.
+/*.png
+assets/grass/
+assets/giraffe/textures/
+assets/giraffe/scene.gltf
+assets/giraffe/scene.bin
+assets/projects/*-source.json
