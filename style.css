@@ -130,26 +130,26 @@ body[data-talking] #project-context,body[data-talking] .home-brand,body[data-tal
 .encounter-exit kbd{font:inherit;opacity:.55}.encounter-exit:disabled{opacity:.4}
 @media(max-width:650px){.talk-prompt{bottom:104px}.encounter-exit{top:24px;right:24px}}
 
-/* Mobile analog control stays above the time switch, clear of the action button. */
+/* Mobile controls share the bottom row; the action stays centered above them. */
 #joystick{display:none;--stick-x:0px;--stick-y:0px}
 @media(max-width:650px),(pointer:coarse){
- #joystick{display:block;position:fixed;z-index:4;right:24px;bottom:calc(96px + env(safe-area-inset-bottom));width:112px;height:112px;border:1px solid #ffffff50;border-radius:50%;background:#ffffff09;box-shadow:inset 0 0 24px #ffffff08;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+ #joystick{display:block;position:fixed;z-index:4;right:24px;bottom:calc(24px + env(safe-area-inset-bottom));width:112px;height:112px;border:1px solid #ffffff50;border-radius:50%;background:#ffffff09;box-shadow:inset 0 0 24px #ffffff08;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
  .joystick-ring{position:absolute;inset:25%;border:1px dashed #ffffff38;border-radius:50%;pointer-events:none}
  .joystick-thumb{position:absolute;left:50%;top:50%;width:36px;height:36px;border-radius:50%;border:1px solid #ffffff80;background:#ffffff38;backdrop-filter:blur(5px);box-shadow:0 2px 12px #0002;transform:translate(calc(-50% + var(--stick-x)),calc(-50% + var(--stick-y)));pointer-events:none}
  #joystick[data-active]{cursor:grabbing;border-color:#ffffff90}
  #joystick[data-running] .joystick-thumb{background:#ffffff70;border-color:#fff}
- .lighting{right:20px;bottom:calc(22px + env(safe-area-inset-bottom))}
- .bottom-vignette{padding:0 0 calc(228px + env(safe-area-inset-bottom));justify-content:center}
+ .lighting{left:max(16px,env(safe-area-inset-left));right:auto;bottom:calc(24px + env(safe-area-inset-bottom))}
+ .bottom-vignette{padding:0 0 calc(152px + env(safe-area-inset-bottom));justify-content:center}
  #near-open,.talk-prompt{padding:14px 22px;border:0;border-radius:999px;background:#0b161099;color:white;backdrop-filter:blur(12px);font-family:var(--pear-font);font-size:15px;line-height:1.2;font-weight:500;letter-spacing:normal;white-space:nowrap}
  #near-open kbd{display:none}
- .talk-prompt{left:50%;bottom:calc(228px + env(safe-area-inset-bottom));transform:translateX(-50%)}
+ .talk-prompt{left:50%;bottom:calc(152px + env(safe-area-inset-bottom));transform:translateX(-50%)}
 }
 body[data-talking] #joystick,body:has(#detail[open]) #joystick{visibility:hidden;pointer-events:none}
 
 /* The loading screen is present before JavaScript or WebGL starts. */
-#loading{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:#182b21;color:#fff;text-align:center;padding:24px}
-#loading[hidden]{display:none}#loading h1{font:600 clamp(36px,6vw,64px)/1.04 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.055em;margin:0 0 32px}
-#loading p{font-size:15px;font-weight:400;color:rgba(255,255,255,.7)}#loading button{margin-top:20px;border:1px solid #ffffff66;border-radius:24px;background:transparent;color:#fff;padding:12px 24px;font:inherit}
+#loading{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:#fff;color:#100f0f;text-align:center;padding:24px}
+#loading[hidden]{display:none}.loading-profile{display:block;width:112px;height:112px;object-fit:cover;border-radius:50%;margin:0 auto 24px}
+#loading p{margin:0;font-size:15px;font-weight:400;color:#6f6e69}#loading button{margin-top:20px;border:1px solid #cecdc3;border-radius:24px;background:transparent;color:#100f0f;padding:12px 24px;font:inherit}
 body[data-loading] #joystick,body[data-loading] .talk-prompt,body[data-loading] #project-context{visibility:hidden}
 
 /* Horizontal gestures belong to the gallery; vertical page scrolling stays native. */
@@ -170,3 +170,27 @@ body[data-loading] #joystick,body[data-loading] .talk-prompt,body[data-loading] 
 .landscape-media .media-slide{flex:0 0 94%;width:94%;height:auto;aspect-ratio:var(--media-ratio)}
 
 .media-preview:not([src]){visibility:hidden}
+
+/* Paint into Safari's safe areas; browser toolbar translucency remains system-owned.
+   Match the root fallback to the current surface instead of leaving a green strip. */
+html{min-height:100%;background:#6f8743}
+html:has(body[data-loading]),body[data-loading]{background:#fff}
+html:has(#detail[open]),body:has(#detail[open]){background:#fffcf0}
+html:has(#detail[open][data-theme="dark"]),body:has(#detail[open][data-theme="dark"]){background:#100f0f}
+@media(max-width:650px),(pointer:coarse){
+ .home-brand{top:calc(28px + env(safe-area-inset-top));right:max(24px,env(safe-area-inset-right))}
+ .top-vignette{padding-top:calc(28px + env(safe-area-inset-top));padding-left:max(24px,env(safe-area-inset-left))}
+ #joystick{right:max(20px,env(safe-area-inset-right))}
+ .encounter-exit{top:calc(24px + env(safe-area-inset-top))}
+}
+@media(max-width:650px){
+ #detail-summary{padding-top:calc(28px + env(safe-area-inset-top))}
+ #detail .close{top:calc(17px + env(safe-area-inset-top))}
+ .article-toc{padding-top:calc(22px + env(safe-area-inset-top))}
+ #detail-content{padding-bottom:calc(50px + env(safe-area-inset-bottom))}
+ .media-viewer{padding-top:calc(64px + env(safe-area-inset-top));padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+ .viewer-close{top:calc(12px + env(safe-area-inset-top))}
+ .viewer-prev,.viewer-next{bottom:calc(12px + env(safe-area-inset-bottom))}
+ .viewer-caption{bottom:calc(34px + env(safe-area-inset-bottom))}
+}
+@media(max-width:360px){.lighting button{padding-inline:12px}}
