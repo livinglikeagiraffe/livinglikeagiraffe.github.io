@@ -1,3 +1,4 @@
+import { bindActionButton } from './action-button.js';
 import * as THREE from 'three';
 import { loadGiraffe } from './giraffe.js';
 import { loadBlueMeshGiraffe } from './companion.js';
@@ -43,7 +44,7 @@ export function setupEncounter({scene,camera,player,obstacles,onPause,isBlocked}
   startPosition.copy(camera.position);startTarget.copy(lastTarget);startZoom=camera.zoom;
   startFogNear=scene.fog.near;startFogFar=scene.fog.far;elapsed=0;state='leaving';exit.disabled=true;
  }
- prompt.onclick=enter;exit.onclick=leave;
+ bindActionButton(prompt,enter);exit.onclick=leave;
  dialog.addEventListener('cancel',e=>{e.preventDefault();leave();});
  return {
   ready:Promise.all(companions.map(c=>c.character.loaded)),

@@ -1,3 +1,4 @@
+import { bindActionButton } from './action-button.js';
 import { preparePoster } from './poster-image.js';
 import { buildSportsField } from './sports.js';
 import { renderArticle, mountArticle } from './article.js';
@@ -29,6 +30,13 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  });
  const dialog=document.querySelector('#detail'),content=document.querySelector('#detail-content'),summary=document.querySelector('#detail-summary');
  const transition=createPosterTransition({camera,posters,dialog});
+ const openButton=document.querySelector('#near-open');
+ const openLabel=document.createElement('span');openLabel.className='action-label';openLabel.textContent='프로젝트 보기';
+ openButton.firstChild.replaceWith(openLabel);
+ function setOpening(value){
+  opening=value;openButton.setAttribute('aria-busy',String(value));
+  openLabel.textContent=value?'여는 중…':'프로젝트 보기';
+ }
  let opening=false,reading=false;
  let previousFocus=null,near=null,time=0,activeProject=null,closing=false,transitionId=0;let cleanupArticle=()=>{};
  function show(html){
@@ -51,9 +59,9 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
  document.querySelector('#detail-backdrop').onclick=close;
  async function open(p){
   if(!canOpen()||dialog.open||closing||opening)return;
-  opening=true;
-  try{await preparePoster(p.image);}catch(error){opening=false;console.error(error);const notice=document.querySelector('#error');notice.hidden=false;notice.textContent='포스터를 불러오지 못했어요. 다시 눌러 주세요.';return;}
-  opening=false;if(!canOpen()||dialog.open||closing)return;
+  setOpening(true);
+  try{await preparePoster(p.image);}catch(error){setOpening(false);console.error(error);const notice=document.querySelector('#error');notice.hidden=false;notice.textContent='포스터를 불러오지 못했어요. 다시 눌러 주세요.';return;}
+  setOpening(false);if(!canOpen()||dialog.open||closing)return;
   activeProject=p;const id=++transitionId;
   summary.innerHTML=`<span class="summary-index">Project ${p.number}</span><h1 id="detail-title">${p.title}</h1><p class="summary-lead">${p.tagline}</p><dl><div><dt>When</dt><dd>${p.date}</dd></div><div><dt>Where</dt><dd>${p.place}</dd></div></dl><span class="summary-team">Living Like a Giraffe</span>`;
   cleanupArticle();show(renderArticle(p));cleanupArticle=mountArticle(content);
@@ -65,8 +73,8 @@ export function setupProjects({scene,camera,player,onPause,obstacles,canOpen=()=
   await transition.move(p,hero);
   if(id===transitionId&&dialog.open&&!closing){reading=true;cleanupArticle.startMedia?.();}
  }
- document.querySelector('#near-open').onclick=()=>near&&open(near);
- document.querySelector('#project-heading').onclick=()=>near&&open(near);
+ bindActionButton(openButton,()=>near&&open(near));
+ bindActionButton(document.querySelector('#project-heading'),()=>near&&open(near));
  window.addEventListener('keydown',e=>{if(e.code==='KeyE'&&!dialog.open&&near&&!['INPUT','SELECT'].includes(e.target.tagName)){e.preventDefault();open(near);}});
  const context=document.querySelector('#project-context'),heading=document.querySelector('#near-title'),number=document.querySelector('#near-number');
  let current=null;
