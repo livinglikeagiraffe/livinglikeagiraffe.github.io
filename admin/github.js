@@ -1,5 +1,6 @@
 // Credentials live only in this module's memory; never in localStorage, IndexedDB, or a manifest.
 import {safePath,MAX_FILE,MAX_TOTAL} from './archive.js';
+import {layoutKey,digestKey,MAX_BAKE_CELLS} from './layout-bake.js';
 let session;
 const API='https://api.github.com';
 async function request(path,options={}){
@@ -114,15 +115,16 @@ async function attachBake(version,index,ref){
   const bake={...saved,repo:session.repo,report:report.bake,webScene:report.webScene};
   return {...version,bake,bakedBlob:await bakedFile(bake,ref),previewMode:version.previewMode||'baked'};
 }
-export async function renderRemote(version,quality,scene,mode='render'){
+export async function renderRemote(version,quality,scene,mode='render',kind='module'){
   if(!session?.token)throw Error('렌더 요청에는 GitHub 쓰기 권한 연결이 필요합니다.');
   if(!version.remote||version.remote.repo!==session?.repo)throw Error('선택한 버전을 연결된 GitHub 저장소에 먼저 저장해 주세요.');
   const workflow=await request('/actions/workflows/render-module.yml',{optional:true});
   if(!workflow)throw Error('연결한 저장소에 render-module.yml 워크플로를 먼저 설치해야 합니다. 설정 안내를 확인해 주세요.');
   const id=crypto.randomUUID();
   if(!['render','bake'].includes(mode))throw Error('지원하지 않는 변환 방식입니다.');
-  await request('/actions/workflows/render-module.yml/dispatches',{method:'POST',body:JSON.stringify({ref:session.branch,inputs:{manifest:version.remote.manifest,source_ref:version.remote.commit,request_id:id,quality,scene,mode}})});
-  return {id,repo:session.repo,mode,startedAt:new Date().toISOString()};
+  if(!['module','layout'].includes(kind))throw Error('지원하지 않는 변환 대상입니다.');
+  await request('/actions/workflows/render-module.yml/dispatches',{method:'POST',body:JSON.stringify({ref:session.branch,inputs:{manifest:version.remote.manifest,source_ref:version.remote.commit,request_id:id,quality,scene,mode,kind}})});
+  return {id,repo:session.repo,mode,kind,startedAt:new Date().toISOString()};
 }
 export async function renderStatus(job){
   if(job.repo!==session?.repo)throw Error('렌더 작업을 실행한 저장소를 연결해 주세요.');
@@ -134,4 +136,47 @@ export async function renderStatus(job){
   const report=await fileJSON(`studio/renders/${job.id}/report.json`);
   const bake=report?.bake?{id:job.id,repo:session.repo,quality:report.quality,scene:report.scene,report:report.bake,webScene:report.webScene}:null;
   return {status:'complete',url:run.html_url,report,blob:await rawFile(`studio/renders/${job.id}/render.png`,session.branch),...(bake?{bake,bakedBlob:await bakedFile(bake,session.branch)}:{})};
+}
+
+export async function saveLayoutSnapshot(layout,quality='preview',{makeCurrent=true}={}){
+  if(!session?.token)throw Error('전체 베이킹에는 GitHub 쓰기 권한 연결이 필요합니다.');
+  if(!layout.cells.length||layout.cells.length>MAX_BAKE_CELLS)throw Error(`전체 베이킹은 1~${MAX_BAKE_CELLS}개 모듈을 지원합니다. 더 큰 배치는 자동 베이킹을 끄고 저장할 수 있습니다.`);
+  if(!['preview','original'].includes(quality))throw Error('잘못된 베이킹 품질입니다.');
+  const id=crypto.randomUUID(),key=layoutKey(layout),digest=await digestKey(key),manifest=`studio/layouts/${id}.json`;
+  const build={id,key,digest,quality,repo:session.repo,manifest};
+  const next={schema:1,...JSON.parse(key),build};
+  const sha=await commit([],async parent=>{
+    const catalog=await fileJSON('studio/catalog.json',parent),index=await fileJSON('studio/render-index.json',parent),sources={};
+    for(const versionId of new Set(next.cells.map(c=>c.versionId))){
+      const item=catalog?.versions.find(v=>v.id===versionId);
+      if(!item)throw Error('배치한 모듈을 연결된 GitHub 저장소에 먼저 저장해 주세요.');
+      const source=await fileJSON(item.manifest,parent);
+      if(!source?.blend||!source.assets?.some(a=>a.name===source.blend))throw Error(`${item.title}: 전체 베이킹에 필요한 .blend 원본이 없습니다.`);
+      sources[versionId]={manifest:item.manifest,scene:source.scene||index?.versions?.[versionId]?.scene||source.job?.report?.scene||source.bake?.scene||''};
+    }
+    const snapshot={schema:1,id,key,digest,quality,...JSON.parse(key),sources,createdAt:new Date().toISOString()};
+    return [{path:manifest,mode:'100644',type:'blob',content:JSON.stringify(snapshot,null,2)},...(makeCurrent?[{path:'studio/layout.json',mode:'100644',type:'blob',content:JSON.stringify(next,null,2)}]:[])];
+  },`studio: save layout snapshot ${id}`);
+  next.build.commit=sha;next.build.branch=session.branch;return next;
+}
+export async function loadLayoutSnapshot(id){
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id))throw Error('잘못된 배치 기록 주소입니다.');
+  const manifest=`studio/layouts/${id}.json`,snapshot=await fileJSON(manifest);
+  if(!snapshot||snapshot.id!==id||snapshot.key!==layoutKey(snapshot)||snapshot.digest!==await digestKey(snapshot.key))throw Error('배치 기록 검증에 실패했습니다.');
+  return {schema:1,...JSON.parse(snapshot.key),build:{id,key:snapshot.key,digest:snapshot.digest,quality:snapshot.quality,manifest,repo:session.repo}};
+}
+export async function renderLayout(build){
+  if(build.repo!==session?.repo)throw Error('배치를 저장한 GitHub 저장소에 연결해 주세요.');
+  // Persisted layout pointers intentionally have no self-referential commit SHA.
+  const sha=build.commit||(await request(`/git/ref/heads/${encodePath(session.branch)}`)).object.sha;
+  return renderRemote({remote:{repo:session.repo,manifest:build.manifest,commit:sha}},build.quality,'','bake','layout');
+}
+export async function loadLayoutResult(build){
+  if(!build||build.repo!==session?.repo)return null;
+  const index=await fileJSON('studio/render-index.json'),record=index?.layouts?.[build.id];
+  if(!record)return null;
+  const report=await fileJSON(`studio/renders/${record.id}/report.json`);
+  if(report?.layoutId!==build.id||report?.layoutDigest!==build.digest)throw Error('전체 베이킹 결과가 이 배치와 일치하지 않습니다.');
+  const bake={...record,report:report.bake,webScene:report.webScene};
+  return {status:'complete',url:record.url,report,bake,bakedBlob:await bakedFile(bake,session.branch),blob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
 }

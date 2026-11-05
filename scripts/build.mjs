@@ -45,6 +45,7 @@ await copy('node_modules/fflate/LICENSE');
 // studio versions are intentionally excluded from the Pages build.
 await copy('studio/render.py');
 await copy('studio/bake.py');
+await copy('studio/compose.py');
 await mkdir(path.join(out,'admin/setup'),{recursive:true});
 await copyFile(path.join(root,'.github/workflows/render-module.yml'),path.join(out,'admin/setup/render-module.yml'));
 await directory('assets/mobile');await directory('assets/branding');await directory('assets/fonts');await directory('assets/green-grass');

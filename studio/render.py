@@ -100,21 +100,30 @@ def main():
     parser.add_argument('--scene', default='')
     parser.add_argument('--inspect-only', action='store_true')
     parser.add_argument('--mode', choices=['render', 'bake'], default='render')
+    parser.add_argument('--kind', choices=['module','layout'], default='module')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
-    manifest, blend = validate_manifest(args.manifest.resolve())
     args.output.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
-    bpy.ops.wm.open_mainfile(filepath=str(blend), load_ui=False, use_scripts=False)
-    name = args.scene or manifest.get('scene') or bpy.context.scene.name
-    if name not in bpy.data.scenes:
-        raise ValueError('Scene not found: ' + name)
-    scene = bpy.data.scenes[name]
+    layout_report={}
+    if args.kind=='layout':
+        if args.mode!='bake':raise ValueError('Whole-space jobs require baking')
+        sys.path.insert(0,str(Path(__file__).resolve().parent))
+        from compose import compose_scene
+        scene,manifest,layout_report=compose_scene(args.manifest.resolve())
+    else:
+        manifest, blend = validate_manifest(args.manifest.resolve())
+        bpy.ops.wm.open_mainfile(filepath=str(blend), load_ui=False, use_scripts=False)
+        name = args.scene or manifest.get('scene') or bpy.context.scene.name
+        if name not in bpy.data.scenes:
+            raise ValueError('Scene not found: ' + name)
+        scene = bpy.data.scenes[name]
     bpy.context.window.scene = scene
     if not scene.camera:
         raise ValueError('The selected scene has no active camera')
     root = args.manifest.resolve().parent / 'files'
     missing = []
     for library in bpy.data.libraries:
+        if args.kind=='layout':continue  # compose_scene validated every imported library.
         path = Path(bpy.path.abspath(library.filepath)).resolve()
         if not path.is_relative_to(root) or not path.is_file():
             missing.append(library.filepath)
@@ -139,7 +148,7 @@ def main():
                           'position': list(o.location), 'color': list(o.data.color)}
                          for o in scene.objects if o.type == 'LIGHT'],
               'missingFiles': missing, 'original': original, 'quality': args.quality,
-              'webScene': web_scene(scene)}
+              'webScene': web_scene(scene), **layout_report}
     if not args.inspect_only:
         if scene.render.engine != 'CYCLES':
             raise ValueError('This worker supports Cycles scenes; no renderer substitution is performed.')
@@ -169,7 +178,7 @@ def main():
         if args.mode == 'bake':
             sys.path.insert(0, str(Path(__file__).resolve().parent))
             from bake import bake_scene
-            report['bake'] = bake_scene(scene, args.output.resolve(), args.quality)
+            report['bake'] = bake_scene(scene, args.output.resolve(), args.quality,whole_space=args.kind=='layout')
     report['mode'] = args.mode
     report['seconds'] = round(time.monotonic() - start, 2)
     (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))

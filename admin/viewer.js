@@ -57,6 +57,7 @@ export class StudioViewer {
       const view=this.bounds.clone().applyMatrix4(this.camera.matrixWorldInverse).getSize(new THREE.Vector3()),h=Math.max(view.y,view.x/aspect)*.62;
       Object.assign(this.camera,{left:-h*aspect,right:h*aspect,top:h,bottom:-h});this.controls.target.copy(center);
     }
+    this.camera.far=Math.max(500,this.camera.position.distanceTo(center)+size.length()*3);
     this.camera.updateProjectionMatrix();this.controls.update();this.draw();
   }
   async load(version){

@@ -3,11 +3,13 @@ import * as storage from './storage.js';
 import * as github from './github.js';
 import {StudioViewer} from './viewer.js';
 import {normalizeLook} from './appearance.js';
+import {LayoutBakeUI} from './layout-ui.js';
 import {DEFAULT_GRID,validateLayout,validateGrid,nextCell} from './grid.js';
 
 const $=s=>document.querySelector(s);
 let versions=[],current=null,layout={schema:1,grid:{...DEFAULT_GRID},cells:[]},view='review',imageMode='reference',selectedCell=null,viewer,gridViewer,noticeTimer,imageURL,bakeURL,renderTimer,publicConsent=false,busy=false,loadGeneration=0;
 const resolving=new Map();
+const layoutBake=new LayoutBakeUI({getLayout:()=>layout,setLayout:value=>{layout=validateLayout(value,versions);updateMap();},resolve,action});
 async function resolve(id){
   const cached=await storage.get(`version:${id}`);if(cached){
     try{const refreshed=await github.refreshRender(cached);if(refreshed!==cached)await storage.saveVersion(refreshed);return refreshed;}catch{return cached;}
@@ -119,7 +121,7 @@ $('#new-module').onclick=()=>{current=null;$('#module-title').value='이름 없�
 
 async function showGrid(){
   if(!gridViewer)gridViewer=new StudioViewer($('#grid-stage'));
-  await gridViewer.showGrid(layout,resolve);updateMap();
+  await layoutBake.show(gridViewer);updateMap();
 }
 async function switchView(next){view=next;$('#review-panel').hidden=next!=='review';$('#review-toolbar').hidden=next!=='review';$('#grid-panel').hidden=next!=='grid';document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));if(next==='grid')await showGrid();else viewer?.resize();}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>action(()=>switchView(b.dataset.view)));
@@ -133,18 +135,19 @@ function updateMap(){const map=$('#cell-map');map.replaceChildren();map.style.gr
 $('#add-module').onclick=()=>action(async()=>{
   if(!current||!versions.some(v=>v.id===current.id))throw Error('먼저 모듈을 버전으로 저장해 주세요.');
   const cell=selectedCell&&!layout.cells.some(c=>c.x===selectedCell.x&&c.z===selectedCell.z)?selectedCell:nextCell(layout);if(!cell)throw Error('격자가 가득 찼습니다. 칸 수를 늘려 주세요.');
-  layout.cells.push({...cell,versionId:current.id,rotation:0});selectedCell=cell;await showGrid();notice('전체 씬을 한 칸에 배치했습니다.');
+  layout.cells.push({...cell,versionId:current.id,rotation:0});selectedCell=cell;layoutBake.invalidate();await showGrid();notice('전체 씬을 한 칸에 배치했습니다.');
 });
-$('#rotate-cell').onclick=()=>action(async()=>{const cell=layout.cells.find(c=>c.x===selectedCell?.x&&c.z===selectedCell?.z);if(!cell)throw Error('모듈이 있는 칸을 선택해 주세요.');cell.rotation=(cell.rotation+90)%360;await showGrid();});
-$('#remove-cell').onclick=()=>action(async()=>{layout.cells=layout.cells.filter(c=>c.x!==selectedCell?.x||c.z!==selectedCell?.z);await showGrid();});
-$('#grid-settings').onsubmit=e=>{e.preventDefault();action(async()=>{const values=Object.fromEntries([...new FormData(e.target)].map(([k,v])=>[k,Number(v)]));const next={...layout,grid:validateGrid(values)};validateLayout(next,versions);layout=next;selectedCell=null;await showGrid();});};
+$('#rotate-cell').onclick=()=>action(async()=>{const cell=layout.cells.find(c=>c.x===selectedCell?.x&&c.z===selectedCell?.z);if(!cell)throw Error('모듈이 있는 칸을 선택해 주세요.');cell.rotation=(cell.rotation+90)%360;layoutBake.invalidate();await showGrid();});
+$('#remove-cell').onclick=()=>action(async()=>{layout.cells=layout.cells.filter(c=>c.x!==selectedCell?.x||c.z!==selectedCell?.z);layoutBake.invalidate();await showGrid();});
+$('#grid-settings').onsubmit=e=>{e.preventDefault();action(async()=>{const values=Object.fromEntries([...new FormData(e.target)].map(([k,v])=>[k,Number(v)]));const next={...layout,grid:validateGrid(values)};validateLayout(next,versions);layout=next;selectedCell=null;layoutBake.invalidate();await showGrid();});};
 $('#save-grid').onclick=()=>action(async()=>{
   validateLayout(layout,versions);
   if(github.connection()?.authenticated){
+    if(layoutBake.enabled){if(!github.connection().private&&!publicConsent)throw Error('GitHub 연결 화면에서 공개 저장에 동의해 주세요.');await layoutBake.save();notice('배치를 저장하고 전체 공간 베이킹을 요청했습니다.');return;}
     for(const cell of layout.cells){const version=await resolve(cell.versionId);if(version.remote?.repo!==github.connection().repo)throw Error('배치한 모든 버전을 연결한 GitHub 저장소에 먼저 저장해 주세요.');}
     await github.saveLayout(layout);
   }
-  await storage.put('layout',layout);notice(github.connection()?.authenticated?'GitHub에 격자 배치를 저장했습니다.':'이 브라우저에 격자 배치를 저장했습니다.');
+  await storage.put('layout',layout);notice(github.connection()?.authenticated?'GitHub에 격자 배치를 저장했습니다.':'이 브라우저에 배치를 저장했습니다. 전체 베이킹은 GitHub 연결 후 배치 저장으로 실행합니다.');
 });
 
 const dialog=$('#github-dialog');$('#open-github').onclick=()=>dialog.showModal();$('.dialog-close').onclick=()=>dialog.close();
@@ -157,7 +160,7 @@ $('#github-form').onsubmit=e=>{e.preventDefault();action(async()=>{
   const remote=await github.listVersions();for(const item of remote){const existing=await storage.get(`version:${item.id}`);const loaded=existing?await github.refreshRender(existing):await github.loadRemote(item);await storage.saveVersion(loaded);}
   versions=await storage.get('versions')||[];listVersions();
   const remoteLayout=await github.loadLayout();if(remoteLayout){validateLayout(remoteLayout,versions);layout=remoteLayout;await storage.put('layout',layout);if(view==='grid')await showGrid();}
-  dialog.close();notice(`GitHub 연결 완료 · ${remote.length}개 버전`);if(current?.job)pollRender();
+  dialog.close();notice(`GitHub 연결 완료 · ${remote.length}개 버전`);if(current?.job)pollRender();layoutBake.loadedId=null;if(view==='grid')await showGrid();
 });};
 $('#disconnect').onclick=()=>{github.disconnect();clearTimeout(renderTimer);$('#connection-label').textContent='이 브라우저에 저장';$('#open-github').textContent='GitHub 연결 ↗';$('#github-message').textContent='연결을 해제했습니다.';updateButtons();};
 $('#render-button').onclick=()=>action(async()=>{
@@ -194,6 +197,8 @@ async function init(){
     versions=[...versions,...remote.filter(r=>!versions.some(v=>v.id===r.id)).map(r=>({...r,remote:{repo:github.connection().repo,manifest:r.manifest}}))];
     await storage.put('versions',versions);listVersions();
     if(!saved){const remoteLayout=await github.loadLayout();if(remoteLayout)layout=validateLayout(remoteLayout,versions);updateMap();}
+    const snapshotId=new URL(location.href).searchParams.get('layout');
+    if(snapshotId){layout=validateLayout(await github.loadLayoutSnapshot(snapshotId),versions);updateMap();await switchView('grid');}
     $('#connection-label').textContent='공개 저장소 · 읽기 전용';
   }catch(e){console.info('Public catalog unavailable:',e.message);}
   if(versions.length)await selectVersion(await resolve(versions[0].id));

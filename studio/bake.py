@@ -69,14 +69,15 @@ def save_denoised(image, path, source_scene):
         bpy.data.objects.remove(camera,do_unlink=True)
 
 
-def bake_scene(scene, output, quality):
+def bake_scene(scene, output, quality, whole_space=False):
     import bpy
     from mathutils import Vector, Matrix
     from array import array
     start = time.monotonic()
     meshes = [o for o in scene.objects if o.type == 'MESH' and not o.hide_render and o.visible_get()]
-    if not meshes or len(meshes) > 600:
-        raise ValueError('Baking supports 1–600 visible mesh objects')
+    limit=1800 if whole_space else 600
+    if not meshes or len(meshes) > limit:
+        raise ValueError('Baking supports 1–'+str(limit)+' visible mesh objects')
     unsupported = [o.name for o in scene.objects if o.type in {'VOLUME', 'CURVE', 'FONT', 'META', 'SURFACE'} and not o.hide_render]
     if unsupported:
         raise ValueError('Convert these objects to meshes before baking: ' + ', '.join(unsupported[:10]))
@@ -97,12 +98,12 @@ def bake_scene(scene, output, quality):
         points = [o.matrix_world @ Vector(c) for o in objects for c in o.bound_box]
         return [Vector(tuple(min(p[k] for p in points) for k in range(3))), Vector(tuple(max(p[k] for p in points) for k in range(3)))]
     # A very large, flat studio backdrop is not part of the grid module bounds.
-    backdrop = max(meshes, key=lambda o:o.dimensions.x*o.dimensions.y)
+    backdrop = next((o for o in meshes if o.get('studioKeepBackdrop')),None) or max(meshes, key=lambda o:o.dimensions.x*o.dimensions.y)
     others = [o for o in meshes if o != backdrop]
     low, high = bounds(others or meshes)
     span = max(high.x-low.x, high.y-low.y, 1)
-    is_backdrop = len(others)>0 and backdrop.dimensions.z < span*.04 and backdrop.dimensions.x>span*3 and backdrop.dimensions.y>span*3
-    if is_backdrop:
+    is_backdrop = backdrop.get('studioKeepBackdrop') or (len(others)>0 and backdrop.dimensions.z < span*.04 and backdrop.dimensions.x>span*3 and backdrop.dimensions.y>span*3)
+    if is_backdrop and not backdrop.get('studioKeepBackdrop'):
         z = max((backdrop.matrix_world @ Vector(c)).z for c in backdrop.bound_box)
         center = (low+high)*.5
         radius = max(span*2.3, scene.camera.data.ortho_scale*1.5 if scene.camera.data.type=='ORTHO' else span*3)
@@ -112,7 +113,7 @@ def bake_scene(scene, output, quality):
         plane = bpy.data.meshes.new('Studio backdrop surface');plane.from_pydata(vertices,[],[(0,1,2,3)]);plane.update()
         if material:plane.materials.append(material)
         backdrop.data=plane;backdrop['studioBackdrop']=True
-    else:
+    elif not is_backdrop:
         backdrop=None
     def dynamic_material(mat):
         if not mat or not mat.use_nodes:return False
@@ -145,7 +146,9 @@ def bake_scene(scene, output, quality):
     scene.render.bake.view_from='ABOVE_SURFACE'
     atlases=[]
     replacements=[]
-    for name, objects, resolution in [('surfaces',opaque,size),('backdrop',[backdrop] if backdrop else [],size)]:
+    groups={}
+    for obj in opaque:groups.setdefault(obj.get('studioModule','surfaces') if whole_space else 'surfaces',[]).append(obj)
+    for name, objects, resolution in [(name,objects,size) for name,objects in sorted(groups.items())]+[('backdrop',[backdrop] if backdrop else [],size)]:
         if not objects:continue
         print('STUDIO_BAKE_STAGE unwrap',name,len(objects),flush=True)
         image=bpy.data.images.new('Studio_'+name,resolution,resolution,alpha=False,float_buffer=True)

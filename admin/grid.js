@@ -17,7 +17,7 @@ export function validateLayout(layout, versions) {
     if(![0,90,180,270].includes(cell.rotation)) throw Error('회전은 90도 단위입니다.');
     occupied.add(key);
   }
-  return {schema:1,grid,cells:layout.cells.map(c=>({...c}))};
+  return {schema:1,grid,cells:layout.cells.map(c=>({...c})),...(layout.environment?{environment:layout.environment}:{}),...(layout.build?{build:layout.build}:{})};
 }
 export function nextCell(layout) {
   for(let z=0;z<layout.grid.rows;z++) for(let x=0;x<layout.grid.columns;x++) if(!layout.cells.some(c=>c.x===x&&c.z===z))return {x,z};

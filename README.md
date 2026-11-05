@@ -100,3 +100,12 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 - 큰 촬영 배경은 별도 아틀라스에 굽고 단일 미리보기에서만 표시합니다. 격자에서는 배경을 제거하고 전체 씬을 한 모듈로 배치합니다.
 - 최대 600개 메시·150만 삼각형·48MiB GLB. 볼륨, 비메시, 절차적 인스턴스는 사전 정리가 필요하며 지원되지 않는 입력은 오류로 안내합니다.
 - [Blender 베이킹 문서](https://docs.blender.org/manual/en/4.4/render/cycles/baking.html) · [Khronos glTF-Blender-IO](https://github.com/KhronosGroup/glTF-Blender-IO) · [별도 오픈소스 애드온 The Lightmapper](https://github.com/Naxela/The_Lightmapper) (이 프로젝트에 설치하지 않음).
+
+## 전체 공간 베이킹
+
+격자의 ‘배치 저장 후 전체 공간 자동 베이킹’을 켜면 불변 배치 기록을 만들고 Actions에 `kind=layout`을 요청합니다. `studio/compose.py`가 각 .blend의 메시·재질·작은 조명을 배치하고, 개별 촬영 배경 대신 공통 바닥과 큰 조명을 구성합니다. 모든 원본 재질을 유지한 채 모듈별 UV 아틀라스를 굽기 때문에 모듈 간 그림자·간접광이 함께 계산됩니다.
+
+- 배치·회전·간격·바닥 색의 SHA-256과 원본 자산 SHA-256을 검증합니다. `studio/layouts/<id>.json`은 배치 기록, `render-index.json`의 `layouts`는 결과 연결입니다. 배치가 바뀌면 이전 결과 표시를 중단하고 재저장을 안내합니다.
+- 편집용 3D / 전체 베이킹 3D / Blender 렌더를 전환합니다. `/admin/?layout=<id>`는 특정 배치 기록을 열며 현재 저장된 배치를 덮어쓰지 않습니다. `saveLayoutSnapshot(..., {makeCurrent:false})`로 검수용 기록만 만들 수도 있습니다.
+- 최대 6개 모듈·총 1,800개 메시·150만 삼각형·48MiB GLB, 작업당 45분 제한. 각 모듈은 패킹된 Cycles 원본이 필요합니다. 1K/2K는 모듈별 해상도입니다. 유리·시점 의존 반사는 근사하며 모듈에 포함된 바닥 판과 벽은 그대로 유지합니다.
+- 검증: `npm test`, `python3 -B tests/test_compose.py`. Blender에서는 `studio/render.py -- --manifest studio/layouts/<id>.json --output <directory> --mode bake --kind layout --quality preview`를 사용합니다.

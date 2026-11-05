@@ -25,6 +25,11 @@ on:
         type: choice
         options: [render, bake]
         default: render
+      kind:
+        description: Single module or complete saved layout
+        type: choice
+        options: [module, layout]
+        default: module
       scene:
         description: Scene name, or empty for authored active scene
         type: string
@@ -54,12 +59,16 @@ jobs:
           MANIFEST: ${{ inputs.manifest }}
           SOURCE_REF: ${{ inputs.source_ref }}
           REQUEST_ID: ${{ inputs.request_id }}
+          KIND: ${{ inputs.kind }}
         run: |
           python3 - <<'PY'
           import os, re, uuid
           assert re.fullmatch(r'[0-9a-f]{40}', os.environ['SOURCE_REF'])
           uuid.UUID(os.environ['REQUEST_ID'])
-          assert re.fullmatch(r'studio/modules/[0-9a-f-]{36}/versions/[0-9a-f-]{36}/manifest\.json', os.environ['MANIFEST'])
+          kind=os.environ['KIND'] or 'module'
+          assert kind in ('module','layout')
+          pattern=r'studio/layouts/[0-9a-f-]{36}\.json' if kind=='layout' else r'studio/modules/[0-9a-f-]{36}/versions/[0-9a-f-]{36}/manifest\.json'
+          assert re.fullmatch(pattern, os.environ['MANIFEST'])
           PY
       - name: Install pinned Blender
         run: |
@@ -79,21 +88,20 @@ jobs:
           QUALITY: ${{ inputs.quality }}
           SCENE: ${{ inputs.scene }}
           MODE: ${{ inputs.mode }}
+          KIND: ${{ inputs.kind }}
         run: |
           mkdir -p "$RUNNER_TEMP/render-output" "$RUNNER_TEMP/blender-home"
           env -i PATH="$PATH" HOME="$RUNNER_TEMP/blender-home" BLENDER_THREADS=4 \
             "$RUNNER_TEMP/blender/blender" --background --factory-startup --disable-autoexec \
             --python-exit-code 1 --python worker/studio/render.py -- \
-            --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE" --mode "${MODE:-render}"
+            --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE" --mode "${MODE:-render}" --kind "${KIND:-module}"
       - uses: actions/upload-artifact@v4
         with:
           name: studio-render-${{ inputs.request_id }}
           path: |
-            ${{ runner.temp }}/render-output/render.png
+            ${{ runner.temp }}/render-output/*.png
             ${{ runner.temp }}/render-output/report.json
             ${{ runner.temp }}/render-output/baked.glb
-            ${{ runner.temp }}/render-output/surfaces.png
-            ${{ runner.temp }}/render-output/backdrop.png
           if-no-files-found: error
           retention-days: 3
   save:
@@ -117,13 +125,14 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           python3 - <<'PY'
-          import os, pathlib, shutil, uuid, json
+          import os, pathlib, shutil, uuid, json, re
           request=str(uuid.UUID(os.environ['REQUEST_ID']))
           dest=pathlib.Path('studio/renders')/request
           dest.mkdir(parents=True,exist_ok=False)
           report=json.loads(pathlib.Path('result/report.json').read_text())
-          files=['render.png','report.json']+(['baked.glb','surfaces.png'] if report.get('bake') else [])
-          if report.get('bake',{}).get('backdrop'): files.append('backdrop.png')
+          atlases=[a['name'] for a in report.get('bake',{}).get('atlases',[])]
+          assert all(re.fullmatch(r'(surfaces|backdrop|module_[0-5]_[0-5])\.png',name) for name in atlases)
+          files=['render.png','report.json']+(['baked.glb']+atlases if report.get('bake') else [])
           for name in files:
               source=pathlib.Path('result')/name
               assert source.is_file() and not source.is_symlink() and source.stat().st_size<48*1024**2
@@ -131,11 +140,16 @@ jobs:
           index_path=pathlib.Path('studio/render-index.json')
           index=json.loads(index_path.read_text()) if index_path.exists() else {'schema':1,'versions':{}}
           record={'id':request,'status':'complete','quality':report['quality'],'scene':report['scene'],'mode':report.get('mode','render'),'sourceCommit':os.environ['SOURCE_REF'],'url':os.environ['RUN_URL']}
-          index['versions'][report['versionId']]=record
+          if report.get('layoutId'):
+              uuid.UUID(report['layoutId'])
+              assert re.fullmatch(r'[0-9a-f]{64}',report['layoutDigest'])
+              record['digest']=report['layoutDigest']
+              index.setdefault('layouts',{})[report['layoutId']]=record
+          else:index['versions'][report['versionId']]=record
           if report.get('bake'):
               import hashlib
               assert hashlib.sha256((dest/'baked.glb').read_bytes()).hexdigest()==report['bake']['sha256']
-              index.setdefault('bakes',{})[report['versionId']]=record
+              if not report.get('layoutId'):index.setdefault('bakes',{})[report['versionId']]=record
           index_path.write_text(json.dumps(index,ensure_ascii=False,indent=2))
           PY
           git config user.name 'github-actions[bot]'
