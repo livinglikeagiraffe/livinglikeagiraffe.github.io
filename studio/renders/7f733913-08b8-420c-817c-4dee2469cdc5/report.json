@@ -1,0 +1,448 @@
+{
+  "schema": 1,
+  "versionId": "c12ccae4-985b-4364-9651-3c794f1f5b84",
+  "moduleId": "layout",
+  "blenderVersion": "3.6.23",
+  "scene": "Whole space",
+  "scenes": [
+    "01_Clay_Normal",
+    "Scene",
+    "Whole space"
+  ],
+  "camera": "Whole space camera",
+  "objects": 526,
+  "materials": 23,
+  "lights": [
+    {
+      "name": "module_0_0_Prayer_warm_lamp",
+      "type": "AREA",
+      "energy": 48.0,
+      "position": [
+        -37.3849983215332,
+        -10.3149995803833,
+        1.100000023841858
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "module_0_0_Prayer_warm_lamp.001",
+      "type": "AREA",
+      "energy": 48.0,
+      "position": [
+        -37.3849983215332,
+        -2.314999580383301,
+        1.100000023841858
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "module_1_0_Prayer_warm_lamp",
+      "type": "AREA",
+      "energy": 33.76057052612305,
+      "position": [
+        29.65074348449707,
+        -13.741393089294434,
+        0.9225225448608398
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "module_1_0_Prayer_warm_lamp.001",
+      "type": "AREA",
+      "energy": 33.76057052612305,
+      "position": [
+        22.94148826599121,
+        -13.741392135620117,
+        0.9225225448608398
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "Large_softbox.001",
+      "type": "AREA",
+      "energy": 46104.328125,
+      "position": [
+        -12.726451873779297,
+        -40.999996185302734,
+        38.50395965576172
+      ],
+      "color": [
+        1.0,
+        0.8999999761581421,
+        0.7699999809265137
+      ]
+    },
+    {
+      "name": "Fill.001",
+      "type": "AREA",
+      "energy": 34077.11328125,
+      "position": [
+        -30.635269165039062,
+        26.15806770324707,
+        31.788150787353516
+      ],
+      "color": [
+        0.8199999928474426,
+        0.8899999856948853,
+        1.0
+      ]
+    }
+  ],
+  "missingFiles": [],
+  "original": {
+    "engine": "CYCLES",
+    "width": 1600,
+    "height": 1200,
+    "percentage": 100,
+    "samples": 64,
+    "viewTransform": "Filmic",
+    "look": "Medium High Contrast",
+    "exposure": 0.0,
+    "gamma": 1.0
+  },
+  "quality": "preview",
+  "webScene": {
+    "schema": 1,
+    "coordinateSystem": "gltf-y-up",
+    "source": "Whole space",
+    "camera": {
+      "name": "Whole space camera",
+      "type": "ORTHO",
+      "position": [
+        110.54823303222656,
+        144.2152099609375,
+        165.8223876953125
+      ],
+      "quaternion": [
+        -0.2948892414569855,
+        0.2756863534450531,
+        0.08928524702787399,
+        0.9105303883552551
+      ],
+      "orthoScale": 104.89381408691406,
+      "aspect": 1.3333333333333333,
+      "fov": 3.0907585352071205,
+      "shift": [
+        0.0,
+        0.0
+      ]
+    },
+    "lights": [
+      {
+        "name": "module_0_0_Prayer_warm_lamp",
+        "type": "AREA",
+        "position": [
+          -37.3849983215332,
+          1.100000023841858,
+          10.3149995803833
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.5400000214576721,
+          0.20000000298023224
+        ],
+        "energy": 48.0,
+        "size": 0.699999988079071,
+        "angle": 0
+      },
+      {
+        "name": "module_0_0_Prayer_warm_lamp.001",
+        "type": "AREA",
+        "position": [
+          -37.3849983215332,
+          1.100000023841858,
+          2.314999580383301
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.5400000214576721,
+          0.20000000298023224
+        ],
+        "energy": 48.0,
+        "size": 0.699999988079071,
+        "angle": 0
+      },
+      {
+        "name": "module_1_0_Prayer_warm_lamp",
+        "type": "AREA",
+        "position": [
+          29.65074348449707,
+          0.9225225448608398,
+          13.741393089294434
+        ],
+        "direction": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.5400000214576721,
+          0.20000000298023224
+        ],
+        "energy": 33.76057052612305,
+        "size": 0.699999988079071,
+        "angle": 0
+      },
+      {
+        "name": "module_1_0_Prayer_warm_lamp.001",
+        "type": "AREA",
+        "position": [
+          22.94148826599121,
+          0.9225225448608398,
+          13.741392135620117
+        ],
+        "direction": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.5400000214576721,
+          0.20000000298023224
+        ],
+        "energy": 33.76057052612305,
+        "size": 0.699999988079071,
+        "angle": 0
+      },
+      {
+        "name": "Large_softbox.001",
+        "type": "AREA",
+        "position": [
+          -12.726451873779297,
+          38.50395965576172,
+          40.999996185302734
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.8999999761581421,
+          0.7699999809265137
+        ],
+        "energy": 46104.328125,
+        "size": 53.7264518737793,
+        "angle": 0
+      },
+      {
+        "name": "Fill.001",
+        "type": "AREA",
+        "position": [
+          -30.635269165039062,
+          31.788150787353516,
+          -26.15806770324707
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          0.8199999928474426,
+          0.8899999856948853,
+          1.0
+        ],
+        "energy": 34077.11328125,
+        "size": 44.77204513549805,
+        "angle": 0
+      }
+    ],
+    "world": {
+      "color": [
+        0.05087608844041824,
+        0.05087608844041824,
+        0.05087608844041824
+      ],
+      "strength": 1.0
+    },
+    "view": {
+      "transform": "Filmic",
+      "look": "Medium High Contrast",
+      "exposure": 0.0,
+      "gamma": 1.0
+    }
+  },
+  "layoutId": "c12ccae4-985b-4364-9651-3c794f1f5b84",
+  "layoutDigest": "fb4baa04714840104817dc7f8b26a49d63c2efc041c4eadbab9317cfd12e19f9",
+  "layout": {
+    "grid": {
+      "columns": 2,
+      "rows": 1,
+      "width": 40,
+      "depth": 32,
+      "gap": 2
+    },
+    "cells": [
+      {
+        "x": 0,
+        "z": 0,
+        "versionId": "784f34ac-6c68-418f-bd34-55a9df7f8179",
+        "rotation": 0
+      },
+      {
+        "x": 1,
+        "z": 0,
+        "versionId": "784f34ac-6c68-418f-bd34-55a9df7f8179",
+        "rotation": 90
+      }
+    ],
+    "environment": {
+      "floor": "#b6b0a4",
+      "lighting": "shared-softbox"
+    }
+  },
+  "placements": [
+    {
+      "x": 0,
+      "z": 0,
+      "versionId": "784f34ac-6c68-418f-bd34-55a9df7f8179",
+      "rotation": 0,
+      "scale": 1,
+      "position": [
+        -21.0,
+        0,
+        0.0
+      ],
+      "sourceBounds": [
+        [
+          -0.6299999952316284,
+          0.0,
+          -0.20000000298023224
+        ],
+        [
+          36.0,
+          24.6299991607666,
+          5.419999599456787
+        ]
+      ]
+    },
+    {
+      "x": 1,
+      "z": 0,
+      "versionId": "784f34ac-6c68-418f-bd34-55a9df7f8179",
+      "rotation": 90,
+      "scale": 0.8386568142019623,
+      "position": [
+        21.0,
+        0,
+        0.0
+      ],
+      "sourceBounds": [
+        [
+          -0.6299999952316284,
+          0.0,
+          -0.20000000298023224
+        ],
+        [
+          36.0,
+          24.6299991607666,
+          5.419999599456787
+        ]
+      ]
+    }
+  ],
+  "sharedFloor": "Shared floor",
+  "sharedLights": [
+    "Large_softbox.001",
+    "Fill.001"
+  ],
+  "rendered": {
+    "width": 800,
+    "height": 600,
+    "samples": 24
+  },
+  "bake": {
+    "schema": 1,
+    "file": "baked.glb",
+    "bytes": 13697740,
+    "sha256": "4202bf98b61537b820a85194b1b4d13e2d900f9a9892e6bf191ad960a5a4e9b0",
+    "displayReferred": true,
+    "viewTransform": "Filmic",
+    "look": "Medium High Contrast",
+    "opaqueObjects": 496,
+    "dynamicObjects": [
+      "module_0_0_Projector_Lens.001",
+      "module_0_0_Showcase_End_Glass.004",
+      "module_0_0_Showcase_End_Glass.005",
+      "module_0_0_Showcase_Side_Glass.004",
+      "module_0_0_Showcase_Side_Glass.005",
+      "module_0_0_Showcase_Top_Glass.002",
+      "module_0_0_Showcase_End_Glass.006",
+      "module_0_0_Showcase_End_Glass.007",
+      "module_0_0_Showcase_Side_Glass.006",
+      "module_0_0_Showcase_Side_Glass.007",
+      "module_0_0_Showcase_Top_Glass.003",
+      "module_1_0_Projector_Lens.001",
+      "module_1_0_Showcase_End_Glass.004",
+      "module_1_0_Showcase_End_Glass.005",
+      "module_1_0_Showcase_Side_Glass.004",
+      "module_1_0_Showcase_Side_Glass.005",
+      "module_1_0_Showcase_Top_Glass.002",
+      "module_1_0_Showcase_End_Glass.006",
+      "module_1_0_Showcase_End_Glass.007",
+      "module_1_0_Showcase_Side_Glass.006",
+      "module_1_0_Showcase_Side_Glass.007",
+      "module_1_0_Showcase_Top_Glass.003"
+    ],
+    "backdrop": "Shared floor",
+    "atlases": [
+      {
+        "name": "module_0_0.png",
+        "width": 1024,
+        "height": 1024
+      },
+      {
+        "name": "module_1_0.png",
+        "width": 1024,
+        "height": 1024
+      },
+      {
+        "name": "backdrop.png",
+        "width": 1024,
+        "height": 1024
+      }
+    ],
+    "samples": 24,
+    "triangles": 231554,
+    "denoise": "Blender OpenImageDenoise",
+    "seconds": 317.18,
+    "limitations": [
+      "Static lighting and current frame only",
+      "Glass and transparency remain approximate PBR",
+      "Glossy view-dependent highlights are not baked",
+      "Volumes, procedural instances and non-mesh geometry require preparation"
+    ]
+  },
+  "mode": "bake",
+  "seconds": 332.2
+}
