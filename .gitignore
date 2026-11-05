@@ -2,6 +2,7 @@ node_modules/
 .DS_Store
 dist/
 .source-assets/
+__pycache__/
 # Local visual QA captures and unused source exports stay on disk.
 /*.png
 assets/grass/

@@ -89,3 +89,14 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 모바일 갤러리는 영상 대신 미리보기 이미지를 사용합니다. 확대 후 ‘영상 재생’을 누르기 전에는 MP4를 요청하지 않으며, 다음 영상도 자동 재생하지 않습니다. 가로 드래그는 갤러리에서 처리하고 세로 스크롤은 브라우저에 맡깁니다.
 
 미리보기 재생성: `python3 scripts/gallery-previews.py` (Pillow 필요). `posts.json`의 preview/display 경로와 생성 파일을 함께 커밋합니다.
+
+## Blender 조명 베이킹
+
+관리자에서 ‘조명·그림자 베이킹 함께 생성’을 선택하면 업로드 → 원본 PNG 렌더 → 자동 UV → Cycles Combined 베이킹 → OpenImageDenoise → 원본 OCIO 색 변환 → unlit GLB 내보내기 → 저장소 보관을 실행합니다. `studio/bake.py`는 Blender 내장 Cycles와 Khronos glTF exporter를 사용합니다. 별도 변환 서버 없이 GitHub Actions가 처리합니다.
+
+- 빠른 미리보기: 1024px 아틀라스·24샘플. 원본 설정: 2048px·64샘플. 결과는 `studio/renders/<request UUID>/`의 GLB·PNG·report.json이며 `render-index.json`이 버전에 연결합니다.
+- 원본 GLB와 베이킹 GLB를 전환하고 결과를 다운로드할 수 있습니다. 결과 파일의 크기·SHA-256을 검사하고, 베이킹 참조를 새 검수 버전과 함께 보관합니다. 원본 렌더만 다시 요청해도 기존 베이킹 기록은 유지합니다.
+- 불투명 재질은 `KHR_materials_unlit`으로 표시해 빛과 톤 매핑을 중복 적용하지 않습니다. 투명·유리 재질은 PBR로 남습니다. 현재 프레임·고정 조명 전용이며, 시점 의존 반사·굴절과 모듈 간 새 그림자/간접광까지 같아지지는 않습니다. 구조나 조명 변경 시 다시 베이킹합니다.
+- 큰 촬영 배경은 별도 아틀라스에 굽고 단일 미리보기에서만 표시합니다. 격자에서는 배경을 제거하고 전체 씬을 한 모듈로 배치합니다.
+- 최대 600개 메시·150만 삼각형·48MiB GLB. 볼륨, 비메시, 절차적 인스턴스는 사전 정리가 필요하며 지원되지 않는 입력은 오류로 안내합니다.
+- [Blender 베이킹 문서](https://docs.blender.org/manual/en/4.4/render/cycles/baking.html) · [Khronos glTF-Blender-IO](https://github.com/KhronosGroup/glTF-Blender-IO) · [별도 오픈소스 애드온 The Lightmapper](https://github.com/Naxela/The_Lightmapper) (이 프로젝트에 설치하지 않음).

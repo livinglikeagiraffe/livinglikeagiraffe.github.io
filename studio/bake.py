@@ -1,0 +1,198 @@
+"""Static Cycles -> display-referred unlit GLB. Trusted worker, never runs upload code.
+
+Opaque surfaces use actual Cycles combined lighting. Transmissive/transparent
+surfaces remain PBR; their view-dependent effects are explicitly approximate.
+"""
+import hashlib
+import math
+import time
+from pathlib import Path
+
+UV_NAME = 'StudioBakeUV'
+
+
+def save_denoised(image, path, source_scene):
+    """Use Blender's bundled OpenImageDenoise, then the source OCIO transform."""
+    import bpy
+    post=bpy.data.scenes.new('Studio texture denoise')
+    post.render.engine='CYCLES';post.cycles.device='CPU';post.cycles.samples=1
+    post.render.threads_mode='FIXED';post.render.threads=source_scene.render.threads
+    post.render.resolution_x=image.size[0];post.render.resolution_y=image.size[1];post.render.resolution_percentage=100
+    post.view_settings.view_transform=source_scene.view_settings.view_transform
+    post.view_settings.look=source_scene.view_settings.look
+    post.view_settings.exposure=source_scene.view_settings.exposure
+    post.view_settings.gamma=source_scene.view_settings.gamma
+    post.render.image_settings.file_format='PNG';post.render.image_settings.color_mode='RGB';post.render.image_settings.color_depth='8'
+    post.render.filepath=str(path)
+    camera=bpy.data.objects.new('Studio denoise camera',bpy.data.cameras.new('Studio denoise camera'))
+    post.collection.objects.link(camera);post.camera=camera
+    post.use_nodes=True;nodes=post.node_tree.nodes;nodes.clear();links=post.node_tree.links
+    source=nodes.new('CompositorNodeImage');source.image=image
+    denoise=nodes.new('CompositorNodeDenoise');denoise.use_hdr=True
+    composite=nodes.new('CompositorNodeComposite')
+    links.new(source.outputs['Image'],denoise.inputs['Image']);links.new(denoise.outputs['Image'],composite.inputs['Image'])
+    try:
+        bpy.ops.render.render(scene=post.name,write_still=True)
+        import struct
+        if not path.is_file() or struct.unpack('>II',path.read_bytes()[16:24])!=tuple(image.size):
+            raise ValueError('Denoising did not produce a texture of the requested size')
+    finally:
+        bpy.context.window.scene=source_scene
+        bpy.data.scenes.remove(post)
+        bpy.data.objects.remove(camera,do_unlink=True)
+
+
+def bake_scene(scene, output, quality):
+    import bpy
+    from mathutils import Vector
+    start = time.monotonic()
+    meshes = [o for o in scene.objects if o.type == 'MESH' and not o.hide_render and o.visible_get()]
+    if not meshes or len(meshes) > 600:
+        raise ValueError('Baking supports 1–600 visible mesh objects')
+    unsupported = [o.name for o in scene.objects if o.type in {'VOLUME', 'CURVE', 'FONT', 'META', 'SURFACE'} and not o.hide_render]
+    if unsupported:
+        raise ValueError('Convert these objects to meshes before baking: ' + ', '.join(unsupported[:10]))
+    if any(o.instance_type != 'NONE' or any(m.type in {'NODES','PARTICLE_SYSTEM'} for m in o.modifiers) for o in meshes):
+        raise ValueError('Realize procedural/particle instances before baking')
+    bpy.ops.object.select_all(action='DESELECT')
+    # Freeze the evaluated current frame including bevel/subdivision geometry.
+    deps = bpy.context.evaluated_depsgraph_get()
+    evaluated = [(o, bpy.data.meshes.new_from_object(o.evaluated_get(deps), preserve_all_data_layers=True, depsgraph=deps)) for o in meshes]
+    triangles = sum(sum(len(p.vertices)-2 for p in mesh.polygons) for _, mesh in evaluated)
+    if triangles > 1_500_000:
+        raise ValueError('Baking exceeds the 1.5-million triangle limit')
+    for obj, mesh in evaluated:
+        obj.data = mesh
+        obj.modifiers.clear()
+        obj.hide_select = False
+    def bounds(objects):
+        points = [o.matrix_world @ Vector(c) for o in objects for c in o.bound_box]
+        return [Vector(tuple(min(p[k] for p in points) for k in range(3))), Vector(tuple(max(p[k] for p in points) for k in range(3)))]
+    # A very large, flat studio backdrop is not part of the grid module bounds.
+    backdrop = max(meshes, key=lambda o:o.dimensions.x*o.dimensions.y)
+    others = [o for o in meshes if o != backdrop]
+    low, high = bounds(others or meshes)
+    span = max(high.x-low.x, high.y-low.y, 1)
+    is_backdrop = len(others)>0 and backdrop.dimensions.z < span*.04 and backdrop.dimensions.x>span*3 and backdrop.dimensions.y>span*3
+    if is_backdrop:
+        z = max((backdrop.matrix_world @ Vector(c)).z for c in backdrop.bound_box)
+        center = (low+high)*.5
+        radius = max(span*2.3, scene.camera.data.ortho_scale*1.5 if scene.camera.data.type=='ORTHO' else span*3)
+        inv = backdrop.matrix_world.inverted()
+        vertices = [inv @ Vector((center.x+x*radius,center.y+y*radius,z)) for x,y in [(-1,-1),(1,-1),(1,1),(-1,1)]]
+        material = backdrop.data.materials[0] if backdrop.data.materials else None
+        plane = bpy.data.meshes.new('Studio backdrop surface');plane.from_pydata(vertices,[],[(0,1,2,3)]);plane.update()
+        if material:plane.materials.append(material)
+        backdrop.data=plane;backdrop['studioBackdrop']=True
+    else:
+        backdrop=None
+    def dynamic_material(mat):
+        if not mat or not mat.use_nodes:return False
+        for node in mat.node_tree.nodes:
+            if node.type in {'BSDF_GLASS','BSDF_TRANSPARENT','BSDF_REFRACTION'}:return True
+            if node.type=='BSDF_PRINCIPLED':
+                transmission=node.inputs.get('Transmission') or node.inputs.get('Transmission Weight')
+                alpha=node.inputs.get('Alpha')
+                if transmission and (transmission.is_linked or transmission.default_value>.01):return True
+                if alpha and (alpha.is_linked or alpha.default_value<.99):return True
+        return False
+    dynamic=[o for o in meshes if any(dynamic_material(m) for m in o.data.materials)]
+    opaque=[o for o in meshes if o not in dynamic and o != backdrop]
+    if not opaque:raise ValueError('No opaque surfaces to bake')
+    size=1024 if quality=='preview' else 2048
+    samples=24 if quality=='preview' else 64
+    scene.cycles.samples=samples
+    scene.cycles.use_denoising=False
+    scene.render.bake.use_selected_to_active=False
+    scene.render.bake.use_clear=True
+    scene.render.bake.margin=4 if quality=='preview' else 8
+    scene.render.bake.margin_type='EXTEND'
+    scene.render.bake.use_pass_direct=True
+    scene.render.bake.use_pass_indirect=True
+    scene.render.bake.use_pass_diffuse=True
+    scene.render.bake.use_pass_glossy=False
+    scene.render.bake.use_pass_transmission=False
+    scene.render.bake.use_pass_emit=True
+    scene.render.bake.use_pass_color=True
+    scene.render.bake.view_from='ABOVE_SURFACE'
+    atlases=[]
+    replacements=[]
+    for name, objects, resolution in [('surfaces',opaque,size),('backdrop',[backdrop] if backdrop else [],size)]:
+        if not objects:continue
+        print('STUDIO_BAKE_STAGE unwrap',name,len(objects),flush=True)
+        image=bpy.data.images.new('Studio_'+name,resolution,resolution,alpha=False,float_buffer=True)
+        image.generated_color=(0,0,0,1)
+        clones={}
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in objects:
+            old_uv=obj.data.uv_layers.active.name if obj.data.uv_layers.active else ''
+            layer=obj.data.uv_layers.get(UV_NAME) or obj.data.uv_layers.new(name=UV_NAME)
+            obj.data.uv_layers.active=layer
+            if old_uv:obj.data.uv_layers[old_uv].active_render=True
+            for i,mat in enumerate(list(obj.data.materials)):
+                if not mat:raise ValueError('Assign a material to '+obj.name)
+                key=(mat.name,old_uv)
+                if key not in clones:
+                    copy=mat.copy();copy.use_nodes=True
+                    nodes=copy.node_tree.nodes;links=copy.node_tree.links
+                    # Adding a bake UV must not change the source material's implicit UV.
+                    if old_uv:
+                        uv=nodes.new('ShaderNodeUVMap');uv.uv_map=old_uv
+                        for node in list(nodes):
+                            if node.type=='TEX_IMAGE' and not node.inputs['Vector'].is_linked:links.new(uv.outputs['UV'],node.inputs['Vector'])
+                            if node.type=='TEX_COORD':
+                                for link in list(node.outputs['UV'].links):links.new(uv.outputs['UV'],link.to_socket)
+                    tex=nodes.new('ShaderNodeTexImage');tex.image=image
+                    for node in nodes:node.select=False
+                    tex.select=True;nodes.active=tex
+                    clones[key]=copy
+                obj.data.materials[i]=clones[key]
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active=objects[0]
+        bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.uv.smart_project(angle_limit=math.radians(66),island_margin=0,area_weight=.1,correct_aspect=True,scale_to_bounds=True)
+        bpy.ops.uv.average_islands_scale()
+        bpy.ops.uv.pack_islands(rotate=True,margin_method='FRACTION',margin=4/resolution)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        print('STUDIO_BAKE_STAGE cycles',name,resolution,samples,flush=True)
+        bpy.ops.object.bake(type='COMBINED',uv_layer=UV_NAME)
+        path=output/(name+'.png')
+        scene.render.image_settings.file_format='PNG';scene.render.image_settings.color_mode='RGB';scene.render.image_settings.color_depth='8'
+        # Apply the SOURCE OCIO view/look/exposure exactly once to the baked pixels.
+        save_denoised(image,path,scene)
+        display=bpy.data.images.load(str(path),check_existing=False);display.colorspace_settings.name='sRGB'
+        material=bpy.data.materials.new('Studio baked '+name);material.use_nodes=True
+        nodes=material.node_tree.nodes;nodes.clear();links=material.node_tree.links
+        tex=nodes.new('ShaderNodeTexImage');tex.image=display;tex.interpolation='Linear'
+        uv=nodes.new('ShaderNodeUVMap');uv.uv_map=UV_NAME;links.new(uv.outputs['UV'],tex.inputs['Vector'])
+        # This supported glTF exporter arrangement produces KHR_materials_unlit.
+        out=nodes.new('ShaderNodeOutputMaterial');links.new(tex.outputs['Color'],out.inputs['Surface'])
+        replacements.append((objects,material))
+        display.pack();atlases.append({'name':name+'.png','width':resolution,'height':resolution})
+    # Keep every original shader in place until ALL light transport is baked.
+    for objects, material in replacements:
+        for obj in objects:
+            obj.data.materials.clear();obj.data.materials.append(material)
+            for polygon in obj.data.polygons:polygon.material_index=0
+            obj['studioBaked']=True
+            obj.data.uv_layers.active=obj.data.uv_layers[UV_NAME];obj.data.uv_layers[UV_NAME].active_render=True
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in meshes+[scene.camera]:obj.select_set(True)
+    bpy.context.view_layer.objects.active=opaque[0]
+    scene['studioBake']={'schema':1,'displayReferred':True,'viewTransform':scene.view_settings.view_transform,'look':scene.view_settings.look}
+    path=output/'baked.glb'
+    print('STUDIO_BAKE_STAGE export',flush=True)
+    bpy.ops.export_scene.gltf(filepath=str(path),export_format='GLB',use_selection=True,export_cameras=True,export_lights=False,export_extras=True,export_animations=False,export_texcoords=True,export_normals=True,export_materials='EXPORT')
+    if path.stat().st_size>48*1024**2:raise ValueError('Baked GLB exceeds 48 MiB; use preview quality')
+    # Assert portable unlit materials before reporting a successful conversion.
+    import json,struct
+    data=path.read_bytes();gltf=json.loads(data[20:20+struct.unpack_from('<I',data,12)[0]])
+    baked_materials=[m for m in gltf.get('materials',[]) if m['name'].startswith('Studio baked ')]
+    if not baked_materials or any('KHR_materials_unlit' not in m.get('extensions',{}) for m in baked_materials):
+        raise ValueError('Exporter did not produce unlit baked materials')
+    return {'schema':1,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
+            'displayReferred':True,'viewTransform':scene.view_settings.view_transform,'look':scene.view_settings.look,
+            'opaqueObjects':len(opaque),'dynamicObjects':[o.name for o in dynamic],
+            'backdrop':backdrop.name if backdrop else None,'atlases':atlases,'samples':samples,
+            'triangles':triangles,'denoise':'Blender OpenImageDenoise','seconds':round(time.monotonic()-start,2),
+            'limitations':['Static lighting and current frame only','Glass and transparency remain approximate PBR','Glossy view-dependent highlights are not baked','Volumes, procedural instances and non-mesh geometry require preparation']}

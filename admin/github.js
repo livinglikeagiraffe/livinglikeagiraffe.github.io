@@ -56,7 +56,7 @@ export async function saveRemote(version,onProgress=()=>{}){
     const digest=await crypto.subtle.digest('SHA-256',bytes),hash=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
     entries.push({path:`${root}/files/${f.name}`,mode:'100644',type:'blob',sha});assets.push({name:f.name,sha256:hash,bytes:bytes.length});
   }
-  const {files,renderBlob,remote,...metadata}=version;
+  const {files,renderBlob,bakedBlob,remote,...metadata}=version;
   const manifest={...metadata,schema:1,assets};
   entries.push({path:`${root}/manifest.json`,mode:'100644',type:'blob',content:JSON.stringify(manifest,null,2)});
   const commitSha=await commit(entries,async parent=>{
@@ -85,7 +85,7 @@ export async function loadRemote(item){
   else if(manifest.job?.status==='complete'){
     const r=await renderStatus(manifest.job);if(r.status==='complete'){renderBlob=r.blob;job={...job,report:r.report};}
   }
-  return {...manifest,files,job,renderBlob,remote:{repo:session.repo,commit:commitSha,manifest:item.manifest,branch:session.branch}};
+  return attachBake({...manifest,files,job,renderBlob,remote:{repo:session.repo,commit:commitSha,manifest:item.manifest,branch:session.branch}},renderIndex,commitSha);
 }
 export async function saveLayout(layout){
   return commit([{path:'studio/layout.json',mode:'100644',type:'blob',content:JSON.stringify(layout,null,2)}],async()=>[],'studio: update module grid');
@@ -94,18 +94,35 @@ export async function loadLayout(){return fileJSON('studio/layout.json');}
 export async function refreshRender(version){
   if(version.remote?.repo!==session?.repo)return version;
   const index=await fileJSON('studio/render-index.json'),record=index?.versions?.[version.id];
-  if(!record||record.id===version.job?.id&&version.renderBlob&&version.job?.report)return version;
-  const report=await fileJSON(`studio/renders/${record.id}/report.json`);
-  return {...version,job:{...record,repo:session.repo,report},renderBlob:record.id===version.job?.id&&version.renderBlob?version.renderBlob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
+  let updated=version;
+  if(record&&!(record.id===version.job?.id&&version.renderBlob&&version.job?.report)){
+    const report=await fileJSON(`studio/renders/${record.id}/report.json`);
+    updated={...version,job:{...record,repo:session.repo,report},renderBlob:record.id===version.job?.id&&version.renderBlob?version.renderBlob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
+  }
+  return attachBake(updated,index,session.branch);
 }
-export async function renderRemote(version,quality,scene){
+async function bakedFile(record,ref){
+  if(!record?.report||record.report.file!=='baked.glb'||record.report.bytes>MAX_FILE||!/^[0-9a-f]{64}$/.test(record.report.sha256))throw Error('지원하지 않는 베이킹 결과입니다.');
+  const content=await rawFile(`studio/renders/${record.id}/baked.glb`,ref),digest=await crypto.subtle.digest('SHA-256',await content.arrayBuffer()),hash=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
+  if(content.size!==record.report.bytes||hash!==record.report.sha256)throw Error('베이킹 GLB 파일 검증에 실패했습니다.');return content;
+}
+async function attachBake(version,index,ref){
+  const saved=index?.bakes?.[version.id]||version.bake;
+  if(!saved||saved.id===version.bake?.id&&version.bakedBlob)return version;
+  const report=await fileJSON(`studio/renders/${saved.id}/report.json`,ref);
+  if(!report?.bake)return version;
+  const bake={...saved,repo:session.repo,report:report.bake,webScene:report.webScene};
+  return {...version,bake,bakedBlob:await bakedFile(bake,ref),previewMode:version.previewMode||'baked'};
+}
+export async function renderRemote(version,quality,scene,mode='render'){
   if(!session?.token)throw Error('렌더 요청에는 GitHub 쓰기 권한 연결이 필요합니다.');
   if(!version.remote||version.remote.repo!==session?.repo)throw Error('선택한 버전을 연결된 GitHub 저장소에 먼저 저장해 주세요.');
   const workflow=await request('/actions/workflows/render-module.yml',{optional:true});
   if(!workflow)throw Error('연결한 저장소에 render-module.yml 워크플로를 먼저 설치해야 합니다. 설정 안내를 확인해 주세요.');
   const id=crypto.randomUUID();
-  await request('/actions/workflows/render-module.yml/dispatches',{method:'POST',body:JSON.stringify({ref:session.branch,inputs:{manifest:version.remote.manifest,source_ref:version.remote.commit,request_id:id,quality,scene}})});
-  return {id,repo:session.repo,startedAt:new Date().toISOString()};
+  if(!['render','bake'].includes(mode))throw Error('지원하지 않는 변환 방식입니다.');
+  await request('/actions/workflows/render-module.yml/dispatches',{method:'POST',body:JSON.stringify({ref:session.branch,inputs:{manifest:version.remote.manifest,source_ref:version.remote.commit,request_id:id,quality,scene,mode}})});
+  return {id,repo:session.repo,mode,startedAt:new Date().toISOString()};
 }
 export async function renderStatus(job){
   if(job.repo!==session?.repo)throw Error('렌더 작업을 실행한 저장소를 연결해 주세요.');
@@ -115,5 +132,6 @@ export async function renderStatus(job){
   if(run.status!=='completed')return {status:run.status,url:run.html_url};
   if(run.conclusion!=='success')return {status:'failed',url:run.html_url,message:`렌더 작업이 ${run.conclusion} 상태로 종료되었습니다.`};
   const report=await fileJSON(`studio/renders/${job.id}/report.json`);
-  return {status:'complete',url:run.html_url,report,blob:await rawFile(`studio/renders/${job.id}/render.png`,session.branch)};
+  const bake=report?.bake?{id:job.id,repo:session.repo,quality:report.quality,scene:report.scene,report:report.bake,webScene:report.webScene}:null;
+  return {status:'complete',url:run.html_url,report,blob:await rawFile(`studio/renders/${job.id}/render.png`,session.branch),...(bake?{bake,bakedBlob:await bakedFile(bake,session.branch)}:{})};
 }

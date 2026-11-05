@@ -10,6 +10,7 @@ import {OutputPass} from '../node_modules/three/examples/jsm/postprocessing/Outp
 import {ShaderPass} from '../node_modules/three/examples/jsm/postprocessing/ShaderPass.js';
 import {cellPosition,fitScale} from './grid.js';
 import {normalizeLook,sceneProfile} from './appearance.js';
+import {previewVersion,isTagged,removeBackdrops} from './baked.js';
 
 let referenceProfile;
 const correction={uniforms:{tDiffuse:{value:null},warmth:{value:0},contrast:{value:1},saturation:{value:1}},vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`uniform sampler2D tDiffuse; uniform float warmth,contrast,saturation; varying vec2 vUv;
@@ -31,7 +32,7 @@ export class StudioViewer {
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(host);
     this.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();host.dispatchEvent(new CustomEvent('viewererror',{detail:'3D 화면이 중단되었습니다. 페이지를 새로고침해 주세요.'}));});
   }
-  draw(){if(this.frame||!this.host.clientWidth||!this.host.clientHeight)return;this.frame=requestAnimationFrame(()=>{this.frame=0;this.ao.ssaoMaterial.uniforms.cameraProjectionMatrix.value.copy(this.camera.projectionMatrix);this.ao.ssaoMaterial.uniforms.cameraInverseProjectionMatrix.value.copy(this.camera.projectionMatrixInverse);this.composer.render();});}
+  draw(){if(this.frame||!this.host.clientWidth||!this.host.clientHeight)return;this.frame=requestAnimationFrame(()=>{this.frame=0;if(this.hasBaked){this.renderer.render(this.scene,this.camera);return;}this.ao.ssaoMaterial.uniforms.cameraProjectionMatrix.value.copy(this.camera.projectionMatrix);this.ao.ssaoMaterial.uniforms.cameraInverseProjectionMatrix.value.copy(this.camera.projectionMatrixInverse);this.composer.render();});}
   resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h);this.composer.setSize(w,h);if(this.bounds)this.fit();}
   configureCamera(){
     const perspective=!this.isGrid&&this.look.camera==='authored'&&this.authoredCamera?.type==='PERSP';
@@ -65,14 +66,18 @@ export class StudioViewer {
     const json=JSON.parse(new TextDecoder().decode(bytes.slice(20,20+view.getUint32(12,true))));
     if([...(json.images||[]),...(json.buffers||[])].some(x=>x.uri&&!x.uri.startsWith('data:')))throw Error('텍스처가 내장된 GLB로 내보내 주세요. 외부 주소를 참조하는 GLB는 지원하지 않습니다.');
     const gltf=await new GLTFLoader().parseAsync(bytes,'');gltf.scene.updateMatrixWorld(true);
-    gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.transmission>0);o.receiveShadow=true;}});
-    const bounds=new THREE.Box3().setFromObject(gltf.scene);if(bounds.isEmpty()||!Number.isFinite(bounds.max.length()))throw Error('모델의 크기를 읽을 수 없습니다.');
+    let baked=false,backdrop=false;const bounds=new THREE.Box3();
+    gltf.scene.traverse(o=>{if(o.isMesh){const frozen=isTagged(o,'studioBaked');baked||=frozen;backdrop||=isTagged(o,'studioBackdrop');o.castShadow=!frozen&&!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.transmission>0);o.receiveShadow=!frozen;
+      if(frozen)for(const material of Array.isArray(o.material)?o.material:[o.material])material.toneMapped=false;
+      if(!isTagged(o,'studioBackdrop')){o.geometry.computeBoundingBox();bounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}
+    }});
+    if(bounds.isEmpty()||!Number.isFinite(bounds.max.length()))throw Error('모델의 크기를 읽을 수 없습니다.');
     const camera=gltf.cameras[0];let authoredCamera;
     if(camera)authoredCamera={position:camera.getWorldPosition(new THREE.Vector3()).toArray(),quaternion:camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),orthoScale:camera.isOrthographicCamera?Math.max(camera.right-camera.left,camera.top-camera.bottom):1,aspect:camera.isOrthographicCamera?(camera.right-camera.left)/(camera.top-camera.bottom):camera.aspect,fov:THREE.MathUtils.degToRad(camera.fov||45),type:camera.isOrthographicCamera?'ORTHO':'PERSP'};
     const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');
     if(!referenceProfile)referenceProfile=fetch(new URL('../v2/assets/scene-profile.json',import.meta.url)).then(r=>r.ok?r.json():null).catch(()=>null);
     const bundled=await referenceProfile,profile=bundled?.modelHashes?.includes(hash)?sceneProfile(bundled):null;
-    const asset={scene:gltf.scene,bounds,size:bounds.getSize(new THREE.Vector3()),authoredCamera,profile,triangles:(json.meshes||[]).reduce((sum,m)=>sum+m.primitives.reduce((n,p)=>n+((json.accessors[p.indices??p.attributes.POSITION]?.count||0)/3),0),0)};
+    const asset={scene:gltf.scene,baked,backdrop,bounds,size:bounds.getSize(new THREE.Vector3()),authoredCamera,profile,triangles:(json.meshes||[]).reduce((sum,m)=>sum+m.primitives.reduce((n,p)=>n+((json.accessors[p.indices??p.attributes.POSITION]?.count||0)/3),0),0)};
     this.cache.set(key,asset);return asset;
   }
   clear(){
@@ -80,7 +85,8 @@ export class StudioViewer {
   }
   instance(asset,look){
     const instance=asset.scene.clone(true),materials=new Map();
-    instance.traverse(o=>{if(o.isLight)o.visible=false;if(!o.isMesh)return;
+    if(this.isGrid)removeBackdrops(instance);
+    instance.traverse(o=>{if(o.isLight||this.isGrid&&isTagged(o,'studioBackdrop'))o.visible=false;if(!o.isMesh)return;
       const copy=m=>{if(!materials.has(m)){const n=m.clone();n.userData.original={roughness:m.roughness,normal:m.normalScale?.clone()};materials.set(m,n);this.materials.add(n);}return materials.get(m);};
       o.material=Array.isArray(o.material)?o.material.map(copy):copy(o.material);
     });
@@ -132,17 +138,18 @@ export class StudioViewer {
   }
   applySource(profile){this.profile=sceneProfile(profile);this.authoredCamera=this.profile?.camera||this.asset.authoredCamera;this.buildRig();this.setLook(this.look,{fit:true});}
   async showVersion(version){
+    version=previewVersion(version);
     const ticket=this.ticket=Symbol(),a=await this.load(version);if(this.ticket!==ticket)return;
-    this.clear();this.isGrid=false;this.asset=a;this.profile=sceneProfile(version.job?.report?.webScene)||a.profile;this.authoredCamera=this.profile?.camera||a.authoredCamera;
+    this.clear();this.isGrid=false;this.asset=a;this.hasBaked=a.baked;this.profile=sceneProfile(version.job?.report?.webScene)||a.profile;this.authoredCamera=this.profile?.camera||a.authoredCamera;
     const center=a.bounds.getCenter(new THREE.Vector3());this.offset.set(-center.x,-a.bounds.min.y,-center.z);const instance=this.instance(a,normalizeLook(version.webLook));instance.position.copy(this.offset);this.root.add(instance);
     this.bounds=a.bounds.clone().translate(this.offset);
     // A continuous matte floor receives shadows without adding a false plinth.
-    this.ground=new THREE.Mesh(new THREE.PlaneGeometry(2000,2000),new THREE.MeshStandardMaterial({roughness:.9}));this.ground.rotation.x=-Math.PI/2;this.ground.position.y=-.035;this.ground.receiveShadow=true;this.ground.userData.decoration=true;this.root.add(this.ground);
+    this.ground=null;if(!a.backdrop){this.ground=new THREE.Mesh(new THREE.PlaneGeometry(2000,2000),new THREE.MeshStandardMaterial({roughness:.9}));this.ground.rotation.x=-Math.PI/2;this.ground.position.y=-.035;this.ground.receiveShadow=true;this.ground.userData.decoration=true;this.root.add(this.ground);}
     this.buildRig();this.setLook(version.webLook);this.resize();return a;
   }
   async showGrid(layout,resolve){
-    const ticket=this.ticket=Symbol(),loaded=[];for(const cell of layout.cells){const version=await resolve(cell.versionId);if(!version)throw Error('배치에 사용한 버전을 먼저 불러와 주세요.');loaded.push({cell,version,asset:await this.load(version)});}if(this.ticket!==ticket)return;
-    this.clear();this.isGrid=true;this.ground=null;this.profile=null;const grid=layout.grid;
+    const ticket=this.ticket=Symbol(),loaded=[];for(const cell of layout.cells){const version=await resolve(cell.versionId);if(!version)throw Error('배치에 사용한 버전을 먼저 불러와 주세요.');loaded.push({cell,version,asset:await this.load(previewVersion(version))});}if(this.ticket!==ticket)return;
+    this.clear();this.isGrid=true;this.hasBaked=loaded.some(v=>v.asset.baked);this.ground=null;this.profile=null;const grid=layout.grid;
     for(let z=0;z<grid.rows;z++)for(let x=0;x<grid.columns;x++){const p=cellPosition(grid,x,z);this.platform(grid.width,grid.depth,p.x,p.z);}
     for(const {cell,asset:a,version} of loaded){const instance=this.instance(a,normalizeLook(version.webLook)),center=a.bounds.getCenter(new THREE.Vector3());instance.position.set(-center.x,-a.bounds.min.y,-center.z);const module=new THREE.Group();module.add(instance);module.scale.setScalar(fitScale(a.size,grid,cell.rotation));module.rotation.y=cell.rotation*Math.PI/180;const p=cellPosition(grid,cell.x,cell.z);module.position.set(p.x,0,p.z);this.root.add(module);}
     this.bounds=new THREE.Box3().setFromObject(this.root);this.buildRig();this.setLook({...normalizeLook(),camera:'fit'});this.resize();

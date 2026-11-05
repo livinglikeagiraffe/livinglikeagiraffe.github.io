@@ -11,4 +11,4 @@ export async function saveVersion(version){
   const d=await db();
   return new Promise((resolve,reject)=>{const tx=d.transaction('records','readwrite'),s=tx.objectStore('records'),r=s.get('versions');r.onsuccess=()=>{const list=r.result||[];s.put(version,`version:${version.id}`);s.put([summary(version),...list.filter(v=>v.id!==version.id)],'versions');};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});
 }
-export function summary(v){const {files,renderBlob,...metadata}=v;return metadata;}
+export function summary(v){const {files,renderBlob,bakedBlob,...metadata}=v;return metadata;}

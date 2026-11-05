@@ -99,6 +99,7 @@ def main():
     parser.add_argument('--quality', choices=['preview', 'original'], default='preview')
     parser.add_argument('--scene', default='')
     parser.add_argument('--inspect-only', action='store_true')
+    parser.add_argument('--mode', choices=['render', 'bake'], default='render')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     manifest, blend = validate_manifest(args.manifest.resolve())
     args.output.mkdir(parents=True, exist_ok=True)
@@ -165,6 +166,11 @@ def main():
         report['rendered'] = {'width': int(scene.render.resolution_x * scene.render.resolution_percentage / 100),
                               'height': int(scene.render.resolution_y * scene.render.resolution_percentage / 100),
                               'samples': scene.cycles.samples}
+        if args.mode == 'bake':
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            from bake import bake_scene
+            report['bake'] = bake_scene(scene, args.output.resolve(), args.quality)
+    report['mode'] = args.mode
     report['seconds'] = round(time.monotonic() - start, 2)
     (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
     print('STUDIO_RENDER_COMPLETE ' + str(args.output))

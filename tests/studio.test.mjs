@@ -32,6 +32,24 @@ test('ZIP expansion is bounded even when compressed input is small',async()=>{
 import {LOOK_DEFAULTS,normalizeLook,sceneProfile} from '../admin/appearance.js';
 import {summary} from '../admin/storage.js';
 import {readFile} from 'node:fs/promises';
+import {previewVersion,removeBackdrops} from '../admin/baked.js';
+import {Group,Mesh,BoxGeometry,MeshBasicMaterial,Box3,Vector3} from 'three';
+test('baked preview is reversible and keeps original version assets and source camera',()=>{
+  const files=[{name:'original.glb',blob:new Blob(['original'])}],camera={type:'ORTHO'};
+  const version={id:'v',model:'original.glb',files,bakedBlob:new Blob(['baked']),bake:{id:'b',webScene:{camera}},webLook:{exposure:1}};
+  const preview=previewVersion(version);
+  assert.equal(preview.files[0].blob,version.bakedBlob);assert.equal(preview.job.report.webScene.camera,camera);
+  assert.deepEqual(version.files,files);assert.equal(version.model,'original.glb');assert.equal(version.webLook.exposure,1);
+  version.previewMode='live';assert.equal(previewVersion(version),version);
+  assert.equal(summary(version).bakedBlob,undefined);assert.equal(summary(version).bake.id,'b');
+});
+test('baked backdrop removal keeps grid bounds and original asset intact',()=>{
+  const original=new Group(),module=new Mesh(new BoxGeometry(36,10,24),new MeshBasicMaterial()),backdrop=new Group();
+  backdrop.userData.studioBackdrop=true;backdrop.add(new Mesh(new BoxGeometry(400,.2,400),new MeshBasicMaterial()));original.add(module,backdrop);
+  const instance=original.clone(true);removeBackdrops(instance);
+  assert.deepEqual(new Box3().setFromObject(instance).getSize(new Vector3()).toArray(),[36,10,24]);
+  assert.equal(original.children.length,2);
+});
 test('appearance versions retain independent adjustments and reject malformed values',()=>{
   const edited=normalizeLook({exposure:-.6,key:1.4,tone:'agx',texture:.55,background:'#b2a99f'});
   const version={id:'a',webLook:edited,files:[{name:'source.blend',blob:new Blob(['x'])}],renderBlob:new Blob(['png'])};
