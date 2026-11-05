@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir, copyFile, readdir, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const out=path.join(root,'dist');
@@ -40,6 +41,15 @@ async function directory(folder){
 for(const file of ['index.html','style.css','main.js','bootstrap.js','credits.html','ASSETS.md','node_modules/three/LICENSE'])await copy(file);
 await directory('v2');
 await directory('admin');
+// Keep the admin module graph on one release when Pages/CDN caches old scripts.
+const adminFiles=[...copied].filter(file=>file.startsWith('admin/')&&/\.(js|css|html)$/.test(file)).sort();
+const adminHash=createHash('sha256');
+for(const file of adminFiles)adminHash.update(file).update(await readFile(path.join(out,file)));
+const adminRevision=adminHash.digest('hex').slice(0,12);
+for(const file of adminFiles.filter(file=>/\.(js|html)$/.test(file))){
+ const target=path.join(out,file),source=await readFile(target,'utf8');
+ await writeFile(target,source.replace(/(["'])(\.\/[^"'?]+\.(?:js|css))\1/g,(_,quote,url)=>`${quote}${url}?v=${adminRevision}${quote}`));
+}
 await copy('node_modules/fflate/LICENSE');
 // Only the trusted worker source is public. Uploaded Blender sources and saved
 // studio versions are intentionally excluded from the Pages build.
