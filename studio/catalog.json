@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "versions": [
+    {
+      "schema": 1,
+      "id": "d8efe52d-9851-4928-ac43-058bca875578",
+      "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
+      "title": "리라지 · 작은 공간",
+      "createdAt": "2026-11-05T01:36:08.433Z",
+      "model": "riraji_web_v04/riraji_normal.glb",
+      "reference": "riraji_web_v04/clay_normal_v04.png",
+      "blend": "riraji_clay_v04.blend",
+      "scene": "01_Clay_Normal",
+      "manifest": "studio/modules/62720f3a-2122-4261-a115-eb5b9a03ba77/versions/d8efe52d-9851-4928-ac43-058bca875578/manifest.json"
+    }
+  ]
+}
