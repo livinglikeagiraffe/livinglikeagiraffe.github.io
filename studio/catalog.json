@@ -3,6 +3,553 @@
   "versions": [
     {
       "schema": 1,
+      "id": "784f34ac-6c68-418f-bd34-55a9df7f8179",
+      "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
+      "title": "리라지 · 조명 베이킹",
+      "createdAt": "2026-11-05T10:45:53.949Z",
+      "model": "riraji_web_v04/riraji_normal.glb",
+      "reference": "riraji_web_v04/clay_normal_v04.png",
+      "blend": "riraji_clay_v04.blend",
+      "scene": "01_Clay_Normal",
+      "webLook": {
+        "schema": 1,
+        "exposure": -0.15,
+        "key": 1,
+        "fill": 0.85,
+        "ambient": 0.18,
+        "softness": 18,
+        "contact": 1,
+        "roughness": 1,
+        "texture": 0.4,
+        "warmth": 0.1,
+        "contrast": 1.12,
+        "saturation": 1.1,
+        "background": "#aaa79f",
+        "tone": "aces",
+        "camera": "authored"
+      },
+      "assets": [
+        {
+          "name": "riraji_web_v04/README_KO.md",
+          "sha256": "ff00122c2a0653405aeaf069cd440a1937443f032a628366be9340f35d821e58",
+          "bytes": 2433
+        },
+        {
+          "name": "riraji_web_v04/clay_displacement_v04.png",
+          "sha256": "ae8dbd414331bbaacce10fce8d27ca2945a032e9e547e71340150f857cfbadd1",
+          "bytes": 1990194
+        },
+        {
+          "name": "riraji_web_v04/clay_normal_atlas.png",
+          "sha256": "5ec4b25f23e3c5bb9deb23e2cedd08265b8c45a05aeb1ba490c7a61bd6983120",
+          "bytes": 1124318
+        },
+        {
+          "name": "riraji_web_v04/clay_normal_v04.png",
+          "sha256": "c16971942e1977f44484f459730600c0f1dbc87fe93dbb580aaa8d1351dbb6f9",
+          "bytes": 2000176
+        },
+        {
+          "name": "riraji_web_v04/export_report.json",
+          "sha256": "889211627c1aabc302693436fbc59df44b450f93f7f028a3e59d7b9dcf7c0c77",
+          "bytes": 282
+        },
+        {
+          "name": "riraji_web_v04/riraji_displacement.glb",
+          "sha256": "d8e5ad75973a25695c06fd83abf9f44a352bde77d92f486c5582ad6b751900b6",
+          "bytes": 17399120
+        },
+        {
+          "name": "riraji_web_v04/riraji_normal.glb",
+          "sha256": "d0bd5ba7f22b97244660530c58fe20ff233f53153c384536fec2fa62cd10b24d",
+          "bytes": 4201896
+        },
+        {
+          "name": "riraji_web_v04/web_validation.json",
+          "sha256": "2de289c6cf9340d5deb44488f7054987a32afc5fe08742a8fe0a15c8a9b0f0eb",
+          "bytes": 656
+        },
+        {
+          "name": "riraji_clay_v04.blend",
+          "sha256": "e42fa419f9d53bd1bf5566cfb5cd1ac958aaec3fc5c6563509258b22c1705b52",
+          "bytes": 14267996
+        }
+      ],
+      "job": {
+        "id": "e3258766-6064-4ce1-a8f8-f13b530b81ec",
+        "status": "complete",
+        "quality": "preview",
+        "scene": "01_Clay_Normal",
+        "mode": "bake",
+        "sourceCommit": "8e036d3f7694cef1c41d8302101241246754b77b",
+        "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/42012716854",
+        "repo": "livinglikeagiraffe/livinglikeagiraffe.github.io",
+        "report": {
+          "schema": 1,
+          "versionId": "d048e626-6da6-465a-b81b-3cfef13cffbf",
+          "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
+          "blenderVersion": "3.6.23",
+          "scene": "01_Clay_Normal",
+          "scenes": [
+            "01_Clay_Normal",
+            "02_Clay_Displacement"
+          ],
+          "camera": "Quarter_Camera",
+          "objects": 266,
+          "materials": 37,
+          "lights": [
+            {
+              "name": "Prayer_warm_lamp",
+              "type": "AREA",
+              "energy": 48,
+              "position": [
+                1.2999999523162842,
+                2,
+                0.8999999761581421
+              ],
+              "color": [
+                1,
+                0.5400000214576721,
+                0.20000000298023224
+              ]
+            },
+            {
+              "name": "Prayer_warm_lamp.001",
+              "type": "AREA",
+              "energy": 48,
+              "position": [
+                1.2999999523162842,
+                10,
+                0.8999999761581421
+              ],
+              "color": [
+                1,
+                0.5400000214576721,
+                0.20000000298023224
+              ]
+            },
+            {
+              "name": "Large_softbox",
+              "type": "AREA",
+              "energy": 9200,
+              "position": [
+                12,
+                -6,
+                17
+              ],
+              "color": [
+                1,
+                0.8999999761581421,
+                0.7699999809265137
+              ]
+            },
+            {
+              "name": "Fill",
+              "type": "AREA",
+              "energy": 6800,
+              "position": [
+                4,
+                24,
+                14
+              ],
+              "color": [
+                0.8199999928474426,
+                0.8899999856948853,
+                1
+              ]
+            }
+          ],
+          "missingFiles": [],
+          "original": {
+            "engine": "CYCLES",
+            "width": 1500,
+            "height": 1200,
+            "percentage": 100,
+            "samples": 40,
+            "viewTransform": "Filmic",
+            "look": "Medium High Contrast",
+            "exposure": 0,
+            "gamma": 1
+          },
+          "quality": "preview",
+          "webScene": {
+            "schema": 1,
+            "coordinateSystem": "gltf-y-up",
+            "source": "01_Clay_Normal",
+            "camera": {
+              "name": "Quarter_Camera",
+              "type": "ORTHO",
+              "position": [
+                60,
+                58,
+                54
+              ],
+              "quaternion": [
+                -0.2948892116546631,
+                0.2756864130496979,
+                0.08928526192903519,
+                0.9105303287506104
+              ],
+              "orthoScale": 56,
+              "aspect": 1.25,
+              "fov": 3.0523661813726846,
+              "shift": [
+                0,
+                0
+              ]
+            },
+            "lights": [
+              {
+                "name": "Prayer_warm_lamp",
+                "type": "AREA",
+                "position": [
+                  1.2999999523162842,
+                  0.8999999761581421,
+                  -2
+                ],
+                "direction": [
+                  0,
+                  -0.9999999403953552,
+                  0
+                ],
+                "color": [
+                  1,
+                  0.5400000214576721,
+                  0.20000000298023224
+                ],
+                "energy": 48,
+                "size": 0.699999988079071,
+                "angle": 0
+              },
+              {
+                "name": "Prayer_warm_lamp.001",
+                "type": "AREA",
+                "position": [
+                  1.2999999523162842,
+                  0.8999999761581421,
+                  -10
+                ],
+                "direction": [
+                  0,
+                  -0.9999999403953552,
+                  0
+                ],
+                "color": [
+                  1,
+                  0.5400000214576721,
+                  0.20000000298023224
+                ],
+                "energy": 48,
+                "size": 0.699999988079071,
+                "angle": 0
+              },
+              {
+                "name": "Large_softbox",
+                "type": "AREA",
+                "position": [
+                  12,
+                  17,
+                  6
+                ],
+                "direction": [
+                  0,
+                  -0.9999999403953552,
+                  0
+                ],
+                "color": [
+                  1,
+                  0.8999999761581421,
+                  0.7699999809265137
+                ],
+                "energy": 9200,
+                "size": 24,
+                "angle": 0
+              },
+              {
+                "name": "Fill",
+                "type": "AREA",
+                "position": [
+                  4,
+                  14,
+                  -24
+                ],
+                "direction": [
+                  0,
+                  -0.9999999403953552,
+                  0
+                ],
+                "color": [
+                  0.8199999928474426,
+                  0.8899999856948853,
+                  1
+                ],
+                "energy": 6800,
+                "size": 20,
+                "angle": 0
+              }
+            ],
+            "world": {
+              "color": [
+                0.05087608844041824,
+                0.05087608844041824,
+                0.05087608844041824
+              ],
+              "strength": 1
+            },
+            "view": {
+              "transform": "Filmic",
+              "look": "Medium High Contrast",
+              "exposure": 0,
+              "gamma": 1
+            }
+          },
+          "rendered": {
+            "width": 795,
+            "height": 636,
+            "samples": 24
+          },
+          "bake": {
+            "schema": 1,
+            "file": "baked.glb",
+            "bytes": 7229280,
+            "sha256": "ffab1ee3cdd869bfe73fb67307427fb7c4e3b45fda7fcfc7cb8e1c37da8bdc1d",
+            "displayReferred": true,
+            "viewTransform": "Filmic",
+            "look": "Medium High Contrast",
+            "opaqueObjects": 248,
+            "dynamicObjects": [
+              "Projector_Lens",
+              "Showcase_End_Glass",
+              "Showcase_End_Glass.001",
+              "Showcase_Side_Glass",
+              "Showcase_Side_Glass.001",
+              "Showcase_Top_Glass",
+              "Showcase_End_Glass.002",
+              "Showcase_End_Glass.003",
+              "Showcase_Side_Glass.002",
+              "Showcase_Side_Glass.003",
+              "Showcase_Top_Glass.001"
+            ],
+            "backdrop": "Backdrop",
+            "atlases": [
+              {
+                "name": "surfaces.png",
+                "width": 1024,
+                "height": 1024
+              },
+              {
+                "name": "backdrop.png",
+                "width": 1024,
+                "height": 1024
+              }
+            ],
+            "samples": 24,
+            "triangles": 115788,
+            "denoise": "Blender OpenImageDenoise",
+            "seconds": 83.4,
+            "limitations": [
+              "Static lighting and current frame only",
+              "Glass and transparency remain approximate PBR",
+              "Glossy view-dependent highlights are not baked",
+              "Volumes, procedural instances and non-mesh geometry require preparation"
+            ]
+          },
+          "mode": "bake",
+          "seconds": 91.08
+        }
+      },
+      "bake": {
+        "id": "e3258766-6064-4ce1-a8f8-f13b530b81ec",
+        "status": "complete",
+        "quality": "preview",
+        "scene": "01_Clay_Normal",
+        "mode": "bake",
+        "sourceCommit": "8e036d3f7694cef1c41d8302101241246754b77b",
+        "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/42012716854",
+        "repo": "livinglikeagiraffe/livinglikeagiraffe.github.io",
+        "report": {
+          "schema": 1,
+          "file": "baked.glb",
+          "bytes": 7229280,
+          "sha256": "ffab1ee3cdd869bfe73fb67307427fb7c4e3b45fda7fcfc7cb8e1c37da8bdc1d",
+          "displayReferred": true,
+          "viewTransform": "Filmic",
+          "look": "Medium High Contrast",
+          "opaqueObjects": 248,
+          "dynamicObjects": [
+            "Projector_Lens",
+            "Showcase_End_Glass",
+            "Showcase_End_Glass.001",
+            "Showcase_Side_Glass",
+            "Showcase_Side_Glass.001",
+            "Showcase_Top_Glass",
+            "Showcase_End_Glass.002",
+            "Showcase_End_Glass.003",
+            "Showcase_Side_Glass.002",
+            "Showcase_Side_Glass.003",
+            "Showcase_Top_Glass.001"
+          ],
+          "backdrop": "Backdrop",
+          "atlases": [
+            {
+              "name": "surfaces.png",
+              "width": 1024,
+              "height": 1024
+            },
+            {
+              "name": "backdrop.png",
+              "width": 1024,
+              "height": 1024
+            }
+          ],
+          "samples": 24,
+          "triangles": 115788,
+          "denoise": "Blender OpenImageDenoise",
+          "seconds": 83.4,
+          "limitations": [
+            "Static lighting and current frame only",
+            "Glass and transparency remain approximate PBR",
+            "Glossy view-dependent highlights are not baked",
+            "Volumes, procedural instances and non-mesh geometry require preparation"
+          ]
+        },
+        "webScene": {
+          "schema": 1,
+          "coordinateSystem": "gltf-y-up",
+          "source": "01_Clay_Normal",
+          "camera": {
+            "name": "Quarter_Camera",
+            "type": "ORTHO",
+            "position": [
+              60,
+              58,
+              54
+            ],
+            "quaternion": [
+              -0.2948892116546631,
+              0.2756864130496979,
+              0.08928526192903519,
+              0.9105303287506104
+            ],
+            "orthoScale": 56,
+            "aspect": 1.25,
+            "fov": 3.0523661813726846,
+            "shift": [
+              0,
+              0
+            ]
+          },
+          "lights": [
+            {
+              "name": "Prayer_warm_lamp",
+              "type": "AREA",
+              "position": [
+                1.2999999523162842,
+                0.8999999761581421,
+                -2
+              ],
+              "direction": [
+                0,
+                -0.9999999403953552,
+                0
+              ],
+              "color": [
+                1,
+                0.5400000214576721,
+                0.20000000298023224
+              ],
+              "energy": 48,
+              "size": 0.699999988079071,
+              "angle": 0
+            },
+            {
+              "name": "Prayer_warm_lamp.001",
+              "type": "AREA",
+              "position": [
+                1.2999999523162842,
+                0.8999999761581421,
+                -10
+              ],
+              "direction": [
+                0,
+                -0.9999999403953552,
+                0
+              ],
+              "color": [
+                1,
+                0.5400000214576721,
+                0.20000000298023224
+              ],
+              "energy": 48,
+              "size": 0.699999988079071,
+              "angle": 0
+            },
+            {
+              "name": "Large_softbox",
+              "type": "AREA",
+              "position": [
+                12,
+                17,
+                6
+              ],
+              "direction": [
+                0,
+                -0.9999999403953552,
+                0
+              ],
+              "color": [
+                1,
+                0.8999999761581421,
+                0.7699999809265137
+              ],
+              "energy": 9200,
+              "size": 24,
+              "angle": 0
+            },
+            {
+              "name": "Fill",
+              "type": "AREA",
+              "position": [
+                4,
+                14,
+                -24
+              ],
+              "direction": [
+                0,
+                -0.9999999403953552,
+                0
+              ],
+              "color": [
+                0.8199999928474426,
+                0.8899999856948853,
+                1
+              ],
+              "energy": 6800,
+              "size": 20,
+              "angle": 0
+            }
+          ],
+          "world": {
+            "color": [
+              0.05087608844041824,
+              0.05087608844041824,
+              0.05087608844041824
+            ],
+            "strength": 1
+          },
+          "view": {
+            "transform": "Filmic",
+            "look": "Medium High Contrast",
+            "exposure": 0,
+            "gamma": 1
+          }
+        }
+      },
+      "previewMode": "baked",
+      "manifest": "studio/modules/62720f3a-2122-4261-a115-eb5b9a03ba77/versions/784f34ac-6c68-418f-bd34-55a9df7f8179/manifest.json"
+    },
+    {
+      "schema": 1,
       "id": "d048e626-6da6-465a-b81b-3cfef13cffbf",
       "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
       "title": "리라지 · 원본 조명",
