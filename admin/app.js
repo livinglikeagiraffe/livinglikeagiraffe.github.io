@@ -22,7 +22,7 @@ async function action(fn){if(busy)return;busy=true;try{await fn();}catch(e){cons
 function option(select,label,value){const o=document.createElement('option');o.textContent=label;o.value=value;select.append(o);}
 function updateButtons(){
   $('#save-version').disabled=busy||!current;
-  $('#render-button').disabled=busy||!current?.remote||!current?.blend||!github.connection()?.authenticated||Boolean(current?.job&&!['complete','failed'].includes(current.job.status));
+  $('#render-button').disabled=busy||!current?.blend||!github.connection()?.authenticated||Boolean(current?.job&&!['complete','failed'].includes(current.job.status));
   $('#add-module').disabled=busy||!current||!versions.some(v=>v.id===current.id);
 }
 function listVersions(){
@@ -45,7 +45,7 @@ async function selectVersion(version){
   if(!viewer)viewer=new StudioViewer($('#viewer-host'));
   const asset=await viewer.showVersion(version);if(generation!==loadGeneration)return;
   if(asset)$('#model-info').textContent=`${asset.size.x.toFixed(1)} × ${asset.size.z.toFixed(1)}m · ${Math.round(asset.triangles).toLocaleString()} triangles`;
-  updateImage();listVersions();updateButtons();
+  updateImage();listVersions();$('#module-target').value=versions.some(v=>v.moduleId===version.moduleId)?version.moduleId:'';updateButtons();
   $('#render-status').textContent=version.job?.status==='complete'?'원본 렌더가 완료되었습니다. 비교 화면에서 확인해 주세요.':version.remote?'GitHub에 저장된 버전입니다. 원본 렌더를 요청할 수 있습니다.':'이 브라우저에서 미리보는 중입니다. GitHub에 저장하면 원본 렌더를 요청할 수 있습니다.';
   if(version.job&&!['complete','failed'].includes(version.job.status)&&github.connection())pollRender();
 }
@@ -126,8 +126,17 @@ $('#github-form').onsubmit=e=>{e.preventDefault();action(async()=>{
 });};
 $('#disconnect').onclick=()=>{github.disconnect();clearTimeout(renderTimer);$('#connection-label').textContent='이 브라우저에 저장';$('#open-github').textContent='GitHub 연결 ↗';$('#github-message').textContent='연결을 해제했습니다.';updateButtons();};
 $('#render-button').onclick=()=>action(async()=>{
-  if(!current.blend)throw Error('.blend 원본을 포함한 버전을 저장해 주세요.');
-  const quality=$('#render-quality').value,job=await github.renderRemote(current,quality,$('#scene-name').value.trim());current.job={...job,status:'queued',quality};await storage.saveVersion(current);notice('Blender 렌더를 요청했습니다.');pollRender();
+  if(!current.blend)throw Error('.blend 원본을 함께 넣어 주세요.');
+  const conn=github.connection();if(!conn?.authenticated)throw Error('GitHub를 먼저 연결해 주세요.');
+  if(!conn.private&&!publicConsent)throw Error('공개 저장소에 원본을 저장하려면 공개 동의가 필요합니다.');
+  const scene=$('#scene-name').value.trim(),quality=$('#render-quality').value;
+  if(!current.remote||current.remote.repo!==conn.repo){
+    const title=$('#module-title').value.trim();if(!title)throw Error('모듈 이름을 입력해 주세요.');
+    current={...current,id:crypto.randomUUID(),title,scene,createdAt:new Date().toISOString(),job:null,renderBlob:null};
+    current.remote=await github.saveRemote(current,m=>notice(`렌더 입력 저장 · ${m}`));
+    await storage.saveVersion(current);versions=await storage.get('versions');listVersions();
+  }
+  const job=await github.renderRemote(current,quality,scene);current.scene=scene;current.job={...job,status:'queued',quality};await storage.saveVersion(current);notice('Blender 렌더를 요청했습니다.');pollRender();
 });
 async function pollRender(){
   clearTimeout(renderTimer);const id=current?.id,job=current?.job;if(!job||['complete','failed'].includes(job.status)||!github.connection())return;

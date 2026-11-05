@@ -42,6 +42,11 @@ async function commit(entries,updateCatalog,message){
 }
 export async function listVersions(){return (await fileJSON('studio/catalog.json'))?.versions||[];}
 export async function saveRemote(version,onProgress=()=>{}){
+  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+  if(!uuid.test(version.id)||!uuid.test(version.moduleId))throw Error('잘못된 모듈 식별자입니다.');
+  if(!Array.isArray(version.files)||version.files.length>100||version.files.reduce((n,f)=>n+f.blob.size,0)>MAX_TOTAL)throw Error('업로드 크기 제한을 초과합니다.');
+  const names=new Set();for(const file of version.files){safePath(file.name);if(names.has(file.name)||file.blob.size>MAX_FILE)throw Error('중복된 파일 또는 크기를 초과한 파일이 있습니다.');names.add(file.name);}
+  if(!names.has(version.model)||version.blend&&!names.has(version.blend))throw Error('선택한 모델 또는 원본 파일이 없습니다.');
   const existing=await fileJSON(`studio/modules/${version.moduleId}/versions/${version.id}/manifest.json`);
   if(existing)throw Error('이 버전은 이미 GitHub에 저장되어 있습니다. 새 버전으로 저장해 주세요.');
   const root=`studio/modules/${version.moduleId}/versions/${version.id}`, entries=[],assets=[];
@@ -93,6 +98,7 @@ export async function refreshRender(version){
   return {...version,job:{...record,repo:session.repo},renderBlob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
 }
 export async function renderRemote(version,quality,scene){
+  if(!session?.token)throw Error('렌더 요청에는 GitHub 쓰기 권한 연결이 필요합니다.');
   if(!version.remote||version.remote.repo!==session?.repo)throw Error('선택한 버전을 연결된 GitHub 저장소에 먼저 저장해 주세요.');
   const workflow=await request('/actions/workflows/render-module.yml',{optional:true});
   if(!workflow)throw Error('연결한 저장소에 render-module.yml 워크플로를 먼저 설치해야 합니다. 설정 안내를 확인해 주세요.');
