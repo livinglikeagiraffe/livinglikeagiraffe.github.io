@@ -24,3 +24,5 @@ nav button:hover,nav button[aria-pressed=true]{background:#fff9}
 #loading p{margin:12px 0 0}#retry{margin-top:16px;background:#fff9;border:1px solid #bbb6a6;border-radius:20px;padding:8px 16px}
 #reference{z-index:1;margin:0;background:#d5d2c9}#reference img{width:100%;height:100%;object-fit:contain}figcaption{position:absolute;bottom:88px;left:0;right:0;text-align:center;font-size:11px;color:#fff;text-shadow:0 1px 5px #000}
 @media(max-width:650px){header,footer{left:22px;right:22px}header{top:25px}.brand{font-size:22px}.edition{font-size:8px;letter-spacing:1px}.edition span{margin-left:5px}footer{bottom:max(20px,env(safe-area-inset-bottom));flex-direction:column;gap:14px}#hint{font-size:10px}nav button{padding:10px 18px}figcaption{bottom:120px}}
+/* Keep navigation legible over the studio floor's darker outer falloff. */
+header{color:#f4f0e7;text-shadow:0 1px 8px #0005}.edition span{color:#d4d0c7}.dot{color:#d3c191}#hint{color:#e4e0d7;text-shadow:0 1px 6px #0006}

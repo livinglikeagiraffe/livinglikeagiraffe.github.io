@@ -2,6 +2,7 @@ import {unpack} from './archive.js';
 import * as storage from './storage.js';
 import * as github from './github.js';
 import {StudioViewer} from './viewer.js';
+import {normalizeLook} from './appearance.js';
 import {DEFAULT_GRID,validateLayout,validateGrid,nextCell} from './grid.js';
 
 const $=s=>document.querySelector(s);
@@ -44,11 +45,31 @@ async function selectVersion(version){
   $('#scene-name').value=version.scene||'';$('#viewer-empty').hidden=true;
   if(!viewer)viewer=new StudioViewer($('#viewer-host'));
   const asset=await viewer.showVersion(version);if(generation!==loadGeneration)return;
+  updateLookControls();
   if(asset)$('#model-info').textContent=`${asset.size.x.toFixed(1)} × ${asset.size.z.toFixed(1)}m · ${Math.round(asset.triangles).toLocaleString()} triangles`;
   updateImage();listVersions();$('#module-target').value=versions.some(v=>v.moduleId===version.moduleId)?version.moduleId:'';updateButtons();
   $('#render-status').textContent=version.job?.status==='complete'?'원본 렌더가 완료되었습니다. 비교 화면에서 확인해 주세요.':version.remote?'GitHub에 저장된 버전입니다. 원본 렌더를 요청할 수 있습니다.':'이 브라우저에서 미리보는 중입니다. GitHub에 저장하면 원본 렌더를 요청할 수 있습니다.';
   if(version.job&&!['complete','failed'].includes(version.job.status)&&github.connection())pollRender();
 }
+function updateLookControls(){
+  const look=normalizeLook(current?.webLook);
+  for(const input of document.querySelectorAll('[data-look]')){input.value=look[input.dataset.look];const output=$(`#look-${input.dataset.look}-value`);if(output)output.value=Number(input.value).toFixed(input.step==='1'?0:2);}
+  $('#look-controls').disabled=!current;$('#reset-look').disabled=!current;$('#source-look').disabled=!current;
+  $('#look-source').textContent=viewer?.profile?`${viewer.profile.source||'Blender 원본'} · 카메라·조명 배치 적용`:viewer?.authoredCamera?'GLB 카메라 적용 · 조명은 기본 설정':'기본 조명 · 원본 렌더 후 씬 정보 적용';
+  $('#look-status').textContent=current?.webLook?'저장된 웹 조정값을 불러왔습니다.':'조정값은 버전과 함께 저장됩니다.';
+}
+for(const input of document.querySelectorAll('[data-look]'))input.oninput=()=>{
+  if(!current||busy)return;
+  const key=input.dataset.look,currentLook=normalizeLook(current.webLook);currentLook[key]=input.type==='range'?Number(input.value):input.value;current.webLook=normalizeLook(currentLook);
+  viewer.setLook(current.webLook,{fit:key==='camera'});const output=$(`#look-${key}-value`);if(output)output.value=Number(input.value).toFixed(input.step==='1'?0:2);
+  $('#look-status').textContent='변경됨 · 버전 저장을 눌러 보관하세요.';
+};
+$('#reset-look').onclick=()=>{if(!current||busy)return;current.webLook=normalizeLook();viewer.setLook(current.webLook,{fit:true});updateLookControls();$('#look-status').textContent='초기화됨 · 버전 저장을 눌러 보관하세요.';};
+$('#source-look').onclick=()=>action(async()=>{
+  if(!current)return;
+  if(!viewer.profile){notice('먼저 Blender 원본 렌더를 요청해 주세요. 완료되면 카메라·조명 배치를 자동 적용합니다.');return;}
+  current.webLook=normalizeLook();viewer.applySource(viewer.profile);viewer.setLook(current.webLook,{fit:true});updateLookControls();$('#look-status').textContent='원본 배치 적용됨 · 버전 저장을 눌러 보관하세요.';
+});
 function updateImage(){
   if(imageURL){URL.revokeObjectURL(imageURL);imageURL=null;}
   const f=current?.files.find(f=>f.name===current.reference),blob=imageMode==='render'?current?.renderBlob:f?.blob;
@@ -66,7 +87,7 @@ async function importFiles(files){
 $('#upload-input').onchange=e=>action(async()=>{await importFiles([...e.target.files]);e.target.value='';});
 const drop=$('#upload-zone');for(const type of ['dragenter','dragover'])drop.addEventListener(type,e=>{e.preventDefault();drop.classList.add('drag');});for(const type of ['dragleave','drop'])drop.addEventListener(type,e=>{e.preventDefault();drop.classList.remove('drag');});drop.addEventListener('drop',e=>action(()=>importFiles([...e.dataTransfer.files])));
 $('#load-example').onclick=()=>action(async()=>{const files=await Promise.all([['riraji_normal.glb','../v2/assets/riraji_normal.glb'],['reference.png','../v2/assets/reference.png']].map(async([name,url])=>{const r=await fetch(url);if(!r.ok)throw Error('예제 파일을 찾을 수 없습니다.');return new File([await r.blob()],name);}));await importFiles(files);$('#module-title').value='리라지 · 작은 공간';});
-$('#model-select').onchange=()=>action(async()=>{current={...current,id:crypto.randomUUID(),model:$('#model-select').value,remote:null,job:null,renderBlob:null};await selectVersion(current);});
+$('#model-select').onchange=()=>action(async()=>{current={...current,id:crypto.randomUUID(),model:$('#model-select').value,remote:null,job:null,renderBlob:null,webLook:null};await selectVersion(current);});
 $('#image-select').onchange=()=>{if(current){current.reference=$('#image-select').value;updateImage();}};
 $('#blend-select').onchange=()=>{if(current){current.blend=$('#blend-select').value;current.remote=null;current.job=null;current.renderBlob=null;updateButtons();updateImage();}};
 $('#reset-camera').onclick=()=>viewer?.fit();
@@ -75,7 +96,7 @@ for(const button of document.querySelectorAll('[data-image]'))button.onclick=()=
 $('#save-version').onclick=()=>action(async()=>{
   const title=$('#module-title').value.trim();if(!title)throw Error('모듈 이름을 입력해 주세요.');
   const scene=$('#scene-name').value.trim(),keepRender=current.job?.status==='complete'&&scene===(current.scene||'');
-  const version={...current,id:crypto.randomUUID(),moduleId:$('#module-target').value||current.moduleId,title,createdAt:new Date().toISOString(),scene,remote:null,job:keepRender?current.job:null,renderBlob:keepRender?current.renderBlob:null};
+  const version={...current,id:crypto.randomUUID(),moduleId:$('#module-target').value||current.moduleId,title,createdAt:new Date().toISOString(),scene,webLook:normalizeLook(current.webLook),remote:null,job:keepRender?current.job:null,renderBlob:keepRender?current.renderBlob:null};
   const conn=github.connection()?.authenticated?github.connection():null;
   if(conn){if(!conn.private&&!publicConsent)throw Error('공개 저장소에 원본을 저장하려면 GitHub 연결 화면에서 공개 동의가 필요합니다.');version.remote=await github.saveRemote(version,message=>notice(message));}
   await storage.saveVersion(version);versions=await storage.get('versions');await selectVersion(version);notice(conn?'GitHub에 새 버전을 저장했습니다.':'이 브라우저에 새 버전을 저장했습니다. GitHub 연결 후 저장하면 저장소에도 기록됩니다.');
@@ -132,7 +153,7 @@ $('#render-button').onclick=()=>action(async()=>{
   const scene=$('#scene-name').value.trim(),quality=$('#render-quality').value;
   if(!current.remote||current.remote.repo!==conn.repo){
     const title=$('#module-title').value.trim();if(!title)throw Error('모듈 이름을 입력해 주세요.');
-    current={...current,id:crypto.randomUUID(),title,scene,createdAt:new Date().toISOString(),job:null,renderBlob:null};
+    current={...current,id:crypto.randomUUID(),title,scene,createdAt:new Date().toISOString(),webLook:normalizeLook(current.webLook),job:null,renderBlob:null};
     current.remote=await github.saveRemote(current,m=>notice(`렌더 입력 저장 · ${m}`));
     await storage.saveVersion(current);versions=await storage.get('versions');listVersions();
   }
@@ -142,6 +163,7 @@ async function pollRender(){
   clearTimeout(renderTimer);const id=current?.id,job=current?.job;if(!job||['complete','failed'].includes(job.status)||!github.connection())return;
   try{
     const result=await github.renderStatus(job);if(current?.id!==id)return;current.job={...job,...result};delete current.job.blob;if(result.blob)current.renderBlob=result.blob;
+    if(result.report?.webScene){viewer.applySource(result.report.webScene);updateLookControls();}
     $('#render-status').textContent=({queued:'GitHub Actions 대기열에 있습니다.',in_progress:'Blender가 원본 씬을 렌더링하고 있습니다.',complete:'렌더가 완료되었습니다. Blender 렌더 탭에서 확인해 주세요.',failed:result.message})[result.status]||'렌더 작업을 준비하고 있습니다.';
     await storage.saveVersion(current);updateImage();updateButtons();if(!['complete','failed'].includes(result.status))renderTimer=setTimeout(pollRender,10000);else{versions=await storage.get('versions');listVersions();if(result.status==='complete'){imageMode='render';document.querySelectorAll('[data-image]').forEach(b=>b.classList.toggle('active',b.dataset.image==='render'));updateImage();}}
   }catch(e){$('#render-status').textContent=`상태 확인 중단: ${e.message} GitHub를 다시 연결하면 이어서 확인합니다.`;updateButtons();}

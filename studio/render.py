@@ -47,6 +47,50 @@ def validate_manifest(path):
     return manifest, contained(root, manifest['blend'])
 
 
+def web_scene(scene):
+    """Export an approximation recipe in glTF axes, alongside the exact Cycles PNG.
+
+    Energy remains Blender watts, not a claim of equivalent WebGL radiometry.
+    Procedural shaders, GI and OCIO transforms cannot be represented by this recipe.
+    """
+    from mathutils import Matrix, Vector
+    axes = Matrix(((1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 0, 1)))
+    camera = scene.camera
+    transform = axes @ camera.matrix_world
+    q = transform.to_quaternion()
+    aspect = scene.render.resolution_x * scene.render.pixel_aspect_x / (scene.render.resolution_y * scene.render.pixel_aspect_y)
+    projection = camera.calc_matrix_camera(scene.view_layers[0].depsgraph, x=scene.render.resolution_x,
+                                           y=scene.render.resolution_y, scale_x=scene.render.pixel_aspect_x,
+                                           scale_y=scene.render.pixel_aspect_y)
+    import math
+    lights = []
+    for obj in scene.objects:
+        if obj.type != 'LIGHT' or obj.hide_render:
+            continue
+        m = axes @ obj.matrix_world
+        lights.append({'name': obj.name, 'type': obj.data.type,
+                       'position': list(m.translation),
+                       'direction': list(m.to_quaternion() @ Vector((0, 0, -1))),
+                       'color': list(obj.data.color), 'energy': obj.data.energy,
+                       'size': getattr(obj.data, 'size', 0),
+                       'angle': getattr(obj.data, 'spot_size', 0)})
+    world = {'color': [0.05, 0.05, 0.05], 'strength': 1}
+    if scene.world and scene.world.use_nodes:
+        background = next((n for n in scene.world.node_tree.nodes if n.type == 'BACKGROUND'), None)
+        if background:
+            world = {'color': list(background.inputs['Color'].default_value[:3]),
+                     'strength': background.inputs['Strength'].default_value}
+    return {'schema': 1, 'coordinateSystem': 'gltf-y-up', 'source': scene.name,
+            'camera': {'name': camera.name, 'type': camera.data.type,
+                       'position': list(transform.translation), 'quaternion': [q.x, q.y, q.z, q.w],
+                       'orthoScale': camera.data.ortho_scale, 'aspect': aspect,
+                       'fov': 2 * math.atan(1 / projection[1][1]),
+                       'shift': [camera.data.shift_x, camera.data.shift_y]},
+            'lights': lights, 'world': world,
+            'view': {'transform': scene.view_settings.view_transform, 'look': scene.view_settings.look,
+                     'exposure': scene.view_settings.exposure, 'gamma': scene.view_settings.gamma}}
+
+
 def main():
     import bpy
     parser = argparse.ArgumentParser()
@@ -93,7 +137,8 @@ def main():
               'lights': [{'name': o.name, 'type': o.data.type, 'energy': o.data.energy,
                           'position': list(o.location), 'color': list(o.data.color)}
                          for o in scene.objects if o.type == 'LIGHT'],
-              'missingFiles': missing, 'original': original, 'quality': args.quality}
+              'missingFiles': missing, 'original': original, 'quality': args.quality,
+              'webScene': web_scene(scene)}
     if not args.inspect_only:
         if scene.render.engine != 'CYCLES':
             raise ValueError('This worker supports Cycles scenes; no renderer substitution is performed.')

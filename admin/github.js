@@ -81,9 +81,9 @@ export async function loadRemote(item){
   }
   let renderBlob,job=manifest.job;
   const renderIndex=await fileJSON('studio/render-index.json',commitSha),record=renderIndex?.versions?.[manifest.id];
-  if(record){job={...record,repo:session.repo};renderBlob=await rawFile(`studio/renders/${record.id}/render.png`,commitSha);}
+  if(record){job={...record,repo:session.repo,report:await fileJSON(`studio/renders/${record.id}/report.json`,commitSha)};renderBlob=await rawFile(`studio/renders/${record.id}/render.png`,commitSha);}
   else if(manifest.job?.status==='complete'){
-    const r=await renderStatus(manifest.job);if(r.status==='complete')renderBlob=r.blob;
+    const r=await renderStatus(manifest.job);if(r.status==='complete'){renderBlob=r.blob;job={...job,report:r.report};}
   }
   return {...manifest,files,job,renderBlob,remote:{repo:session.repo,commit:commitSha,manifest:item.manifest,branch:session.branch}};
 }
@@ -94,8 +94,9 @@ export async function loadLayout(){return fileJSON('studio/layout.json');}
 export async function refreshRender(version){
   if(version.remote?.repo!==session?.repo)return version;
   const index=await fileJSON('studio/render-index.json'),record=index?.versions?.[version.id];
-  if(!record||record.id===version.job?.id&&version.renderBlob)return version;
-  return {...version,job:{...record,repo:session.repo},renderBlob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
+  if(!record||record.id===version.job?.id&&version.renderBlob&&version.job?.report)return version;
+  const report=await fileJSON(`studio/renders/${record.id}/report.json`);
+  return {...version,job:{...record,repo:session.repo,report},renderBlob:record.id===version.job?.id&&version.renderBlob?version.renderBlob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
 }
 export async function renderRemote(version,quality,scene){
   if(!session?.token)throw Error('렌더 요청에는 GitHub 쓰기 권한 연결이 필요합니다.');

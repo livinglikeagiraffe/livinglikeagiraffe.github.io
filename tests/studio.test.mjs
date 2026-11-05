@@ -28,3 +28,24 @@ test('ZIP expansion is bounded even when compressed input is small',async()=>{
   const zip=zipSync({'model.glb':new Uint8Array(49*1024*1024)});
   await assert.rejects(()=>unpack([new File([zip],'oversized.zip')]),/48MiB/);
 });
+
+import {LOOK_DEFAULTS,normalizeLook,sceneProfile} from '../admin/appearance.js';
+import {summary} from '../admin/storage.js';
+import {readFile} from 'node:fs/promises';
+test('appearance versions retain independent adjustments and reject malformed values',()=>{
+  const edited=normalizeLook({exposure:-.6,key:1.4,tone:'agx',texture:.55,background:'#b2a99f'});
+  const version={id:'a',webLook:edited,files:[{name:'source.blend',blob:new Blob(['x'])}],renderBlob:new Blob(['png'])};
+  const restored=JSON.parse(JSON.stringify(summary(version)));
+  assert.deepEqual(restored.webLook,edited);assert.equal(restored.files,undefined);assert.equal(restored.renderBlob,undefined);
+  restored.webLook.exposure=1;assert.equal(version.webLook.exposure,-.6);assert.equal(normalizeLook().key,LOOK_DEFAULTS.key);
+  const hostile=normalizeLook({exposure:Infinity,key:999,contact:-2,tone:'unknown',background:'url(remote)',camera:'script'});
+  assert.equal(hostile.exposure,LOOK_DEFAULTS.exposure);assert.equal(hostile.key,3);assert.equal(hostile.contact,0);assert.equal(hostile.camera,'authored');assert.equal(hostile.background,LOOK_DEFAULTS.background);
+});
+test('Blender recipe preserves the authored camera and all four lights in glTF axes',async()=>{
+  const raw=JSON.parse(await readFile(new URL('../v2/assets/scene-profile.json',import.meta.url),'utf8')),recipe=sceneProfile(raw);
+  assert.equal(recipe.lights.length,4);assert.deepEqual(recipe.camera.position,[60,58,54]);assert.equal(recipe.camera.orthoScale,56);
+  assert.deepEqual(recipe.lights.find(l=>l.name==='Large_softbox').position,[12,17,6]);
+  assert.equal(sceneProfile({...raw,coordinateSystem:'blender-z-up'}),null);
+  assert.equal(sceneProfile({...raw,lights:[{position:[0,NaN,1]}]}).lights.length,0);
+  assert.equal(sceneProfile({...raw,camera:{...raw.camera,type:'PERSP',fov:NaN}}).camera,null);
+});
