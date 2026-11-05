@@ -10,7 +10,7 @@ export class LayoutBakeUI{
     $('[data-layout-view="render"]').onclick=()=>action(()=>this.switch('render'));
     $('#layout-floor').onchange=()=>action(async()=>{this.getLayout().environment=environment({floor:$('#layout-floor').value});this.invalidate();if(this.viewer)await this.show(this.viewer);});
     $('#retry-layout').onclick=()=>action(()=>this.request());
-    $('#refresh-layout').onclick=()=>action(async()=>{const saved=await github.loadLayout();if(!saved)throw Error('GitHub에 저장된 배치가 없습니다.');this.setLayout(saved);await storage.put('layout',saved);this.loadedId=null;await this.restore();if(this.viewer)await this.show(this.viewer);});
+    $('#refresh-layout').onclick=()=>action(async()=>{const id=new URL(location.href).searchParams.get('layout'),saved=id?await github.loadLayoutSnapshot(id):await github.loadLayout();if(!saved)throw Error('GitHub에 저장된 배치가 없습니다.');this.setLayout(saved);if(!id)await storage.put('layout',saved);this.loadedId=null;await this.restore();if(this.viewer)await this.show(this.viewer);});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden&&this.job&&!['complete','failed'].includes(this.job.status))this.poll();});
   }
   get enabled(){return $('#auto-layout-bake').checked;}
