@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "c12ccae4-985b-4364-9651-3c794f1f5b84",
+  "key": "{\"grid\":{\"columns\":2,\"rows\":1,\"width\":40,\"depth\":32,\"gap\":2},\"cells\":[{\"x\":0,\"z\":0,\"versionId\":\"784f34ac-6c68-418f-bd34-55a9df7f8179\",\"rotation\":0},{\"x\":1,\"z\":0,\"versionId\":\"784f34ac-6c68-418f-bd34-55a9df7f8179\",\"rotation\":90}],\"environment\":{\"floor\":\"#b6b0a4\",\"lighting\":\"shared-softbox\"}}",
+  "digest": "fb4baa04714840104817dc7f8b26a49d63c2efc041c4eadbab9317cfd12e19f9",
+  "quality": "preview",
+  "grid": {
+    "columns": 2,
+    "rows": 1,
+    "width": 40,
+    "depth": 32,
+    "gap": 2
+  },
+  "cells": [
+    {
+      "x": 0,
+      "z": 0,
+      "versionId": "784f34ac-6c68-418f-bd34-55a9df7f8179",
+      "rotation": 0
+    },
+    {
+      "x": 1,
+      "z": 0,
+      "versionId": "784f34ac-6c68-418f-bd34-55a9df7f8179",
+      "rotation": 90
+    }
+  ],
+  "environment": {
+    "floor": "#b6b0a4",
+    "lighting": "shared-softbox"
+  },
+  "sources": {
+    "784f34ac-6c68-418f-bd34-55a9df7f8179": {
+      "manifest": "studio/modules/62720f3a-2122-4261-a115-eb5b9a03ba77/versions/784f34ac-6c68-418f-bd34-55a9df7f8179/manifest.json",
+      "scene": "01_Clay_Normal"
+    }
+  },
+  "createdAt": "2026-11-05T11:48:22.379Z"
+}
