@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "grid": {
+    "columns": 4,
+    "rows": 3,
+    "width": 40,
+    "depth": 32,
+    "gap": 2
+  },
+  "cells": [
+    {
+      "x": 0,
+      "z": 0,
+      "rotation": 0,
+      "versionId": "d8efe52d-9851-4928-ac43-058bca875578"
+    }
+  ]
+}
