@@ -10,12 +10,24 @@
       "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/41949990412"
     },
     "d048e626-6da6-465a-b81b-3cfef13cffbf": {
-      "id": "8c6a3c32-dafd-4b72-a233-92107d493432",
+      "id": "e3258766-6064-4ce1-a8f8-f13b530b81ec",
       "status": "complete",
-      "quality": "original",
+      "quality": "preview",
       "scene": "01_Clay_Normal",
+      "mode": "bake",
       "sourceCommit": "8e036d3f7694cef1c41d8302101241246754b77b",
-      "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/41952569373"
+      "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/42012716854"
+    }
+  },
+  "bakes": {
+    "d048e626-6da6-465a-b81b-3cfef13cffbf": {
+      "id": "e3258766-6064-4ce1-a8f8-f13b530b81ec",
+      "status": "complete",
+      "quality": "preview",
+      "scene": "01_Clay_Normal",
+      "mode": "bake",
+      "sourceCommit": "8e036d3f7694cef1c41d8302101241246754b77b",
+      "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/42012716854"
     }
   }
 }
