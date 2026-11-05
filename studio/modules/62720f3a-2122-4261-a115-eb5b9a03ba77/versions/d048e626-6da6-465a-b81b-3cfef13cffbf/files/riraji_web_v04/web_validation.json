@@ -1,0 +1,30 @@
+[
+  {
+    "file": "riraji_normal.glb",
+    "bytes": 4201896,
+    "triangles": 115776,
+    "normalMaterials": 18,
+    "externalImages": 0,
+    "roots": [
+      "01_MentalSauna_WebRoot",
+      "02_Sports_WebRoot",
+      "03_Supporters_WebRoot",
+      "04_Vintage_WebRoot",
+      "05_Scale_Giraffes_WebRoot"
+    ]
+  },
+  {
+    "file": "riraji_displacement.glb",
+    "bytes": 17399120,
+    "triangles": 684036,
+    "normalMaterials": 0,
+    "externalImages": 0,
+    "roots": [
+      "01_MentalSauna_WebRoot.001",
+      "02_Sports_WebRoot.001",
+      "03_Supporters_WebRoot.001",
+      "04_Vintage_WebRoot.001",
+      "05_Scale_Giraffes_WebRoot.001"
+    ]
+  }
+]

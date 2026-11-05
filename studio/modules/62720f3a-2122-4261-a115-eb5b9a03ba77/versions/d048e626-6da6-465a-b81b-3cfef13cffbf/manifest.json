@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "id": "d048e626-6da6-465a-b81b-3cfef13cffbf",
+  "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
+  "title": "리라지 · 원본 조명",
+  "createdAt": "2026-11-05T02:02:18.118Z",
+  "model": "riraji_web_v04/riraji_normal.glb",
+  "reference": "riraji_web_v04/clay_normal_v04.png",
+  "blend": "riraji_clay_v04.blend",
+  "scene": "01_Clay_Normal",
+  "webLook": {
+    "schema": 1,
+    "exposure": -0.15,
+    "key": 1,
+    "fill": 0.85,
+    "ambient": 0.18,
+    "softness": 18,
+    "contact": 1,
+    "roughness": 1,
+    "texture": 0.4,
+    "warmth": 0.1,
+    "contrast": 1.12,
+    "saturation": 1.1,
+    "background": "#aaa79f",
+    "tone": "aces",
+    "camera": "authored"
+  },
+  "assets": [
+    {
+      "name": "riraji_web_v04/README_KO.md",
+      "sha256": "ff00122c2a0653405aeaf069cd440a1937443f032a628366be9340f35d821e58",
+      "bytes": 2433
+    },
+    {
+      "name": "riraji_web_v04/clay_displacement_v04.png",
+      "sha256": "ae8dbd414331bbaacce10fce8d27ca2945a032e9e547e71340150f857cfbadd1",
+      "bytes": 1990194
+    },
+    {
+      "name": "riraji_web_v04/clay_normal_atlas.png",
+      "sha256": "5ec4b25f23e3c5bb9deb23e2cedd08265b8c45a05aeb1ba490c7a61bd6983120",
+      "bytes": 1124318
+    },
+    {
+      "name": "riraji_web_v04/clay_normal_v04.png",
+      "sha256": "c16971942e1977f44484f459730600c0f1dbc87fe93dbb580aaa8d1351dbb6f9",
+      "bytes": 2000176
+    },
+    {
+      "name": "riraji_web_v04/export_report.json",
+      "sha256": "889211627c1aabc302693436fbc59df44b450f93f7f028a3e59d7b9dcf7c0c77",
+      "bytes": 282
+    },
+    {
+      "name": "riraji_web_v04/riraji_displacement.glb",
+      "sha256": "d8e5ad75973a25695c06fd83abf9f44a352bde77d92f486c5582ad6b751900b6",
+      "bytes": 17399120
+    },
+    {
+      "name": "riraji_web_v04/riraji_normal.glb",
+      "sha256": "d0bd5ba7f22b97244660530c58fe20ff233f53153c384536fec2fa62cd10b24d",
+      "bytes": 4201896
+    },
+    {
+      "name": "riraji_web_v04/web_validation.json",
+      "sha256": "2de289c6cf9340d5deb44488f7054987a32afc5fe08742a8fe0a15c8a9b0f0eb",
+      "bytes": 656
+    },
+    {
+      "name": "riraji_clay_v04.blend",
+      "sha256": "e42fa419f9d53bd1bf5566cfb5cd1ac958aaec3fc5c6563509258b22c1705b52",
+      "bytes": 14267996
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "riraji_normal.glb": {
+    "bytes": 4201896,
+    "objects": 259,
+    "triangles": 115776,
+    "scene": "01_Clay_Normal"
+  },
+  "riraji_displacement.glb": {
+    "bytes": 17399232,
+    "objects": 259,
+    "triangles": 684036,
+    "scene": "02_Clay_Displacement"
+  }
+}

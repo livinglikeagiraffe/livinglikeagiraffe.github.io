@@ -3,6 +3,35 @@
   "versions": [
     {
       "schema": 1,
+      "id": "d048e626-6da6-465a-b81b-3cfef13cffbf",
+      "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
+      "title": "리라지 · 원본 조명",
+      "createdAt": "2026-11-05T02:02:18.118Z",
+      "model": "riraji_web_v04/riraji_normal.glb",
+      "reference": "riraji_web_v04/clay_normal_v04.png",
+      "blend": "riraji_clay_v04.blend",
+      "scene": "01_Clay_Normal",
+      "webLook": {
+        "schema": 1,
+        "exposure": -0.15,
+        "key": 1,
+        "fill": 0.85,
+        "ambient": 0.18,
+        "softness": 18,
+        "contact": 1,
+        "roughness": 1,
+        "texture": 0.4,
+        "warmth": 0.1,
+        "contrast": 1.12,
+        "saturation": 1.1,
+        "background": "#aaa79f",
+        "tone": "aces",
+        "camera": "authored"
+      },
+      "manifest": "studio/modules/62720f3a-2122-4261-a115-eb5b9a03ba77/versions/d048e626-6da6-465a-b81b-3cfef13cffbf/manifest.json"
+    },
+    {
+      "schema": 1,
       "id": "d8efe52d-9851-4928-ac43-058bca875578",
       "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
       "title": "리라지 · 작은 공간",
