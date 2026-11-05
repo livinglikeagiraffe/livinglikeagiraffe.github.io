@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "versionId": "d8efe52d-9851-4928-ac43-058bca875578",
+  "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
+  "blenderVersion": "3.6.23",
+  "scene": "01_Clay_Normal",
+  "scenes": [
+    "01_Clay_Normal",
+    "02_Clay_Displacement"
+  ],
+  "camera": "Quarter_Camera",
+  "objects": 266,
+  "materials": 37,
+  "lights": [
+    {
+      "name": "Prayer_warm_lamp",
+      "type": "AREA",
+      "energy": 48.0,
+      "position": [
+        1.2999999523162842,
+        2.0,
+        0.8999999761581421
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "Prayer_warm_lamp.001",
+      "type": "AREA",
+      "energy": 48.0,
+      "position": [
+        1.2999999523162842,
+        10.0,
+        0.8999999761581421
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "Large_softbox",
+      "type": "AREA",
+      "energy": 9200.0,
+      "position": [
+        12.0,
+        -6.0,
+        17.0
+      ],
+      "color": [
+        1.0,
+        0.8999999761581421,
+        0.7699999809265137
+      ]
+    },
+    {
+      "name": "Fill",
+      "type": "AREA",
+      "energy": 6800.0,
+      "position": [
+        4.0,
+        24.0,
+        14.0
+      ],
+      "color": [
+        0.8199999928474426,
+        0.8899999856948853,
+        1.0
+      ]
+    }
+  ],
+  "missingFiles": [],
+  "original": {
+    "engine": "CYCLES",
+    "width": 1500,
+    "height": 1200,
+    "percentage": 100,
+    "samples": 40,
+    "viewTransform": "Filmic",
+    "look": "Medium High Contrast",
+    "exposure": 0.0,
+    "gamma": 1.0
+  },
+  "quality": "original",
+  "rendered": {
+    "width": 1500,
+    "height": 1200,
+    "samples": 40
+  },
+  "seconds": 70.93
+}
