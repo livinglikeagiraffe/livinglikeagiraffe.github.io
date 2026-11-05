@@ -4,6 +4,12 @@ const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=u
 http.createServer((req,res)=>{
  let file;try{file=path.resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://localhost').pathname));}catch{res.writeHead(400).end();return;}
  if(file===root)file=path.join(root,'index.html');if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}
+ if(['v2','admin'].some(folder=>file===path.join(root,folder))){
+  const url=new URL(req.url,'http://localhost');
+  if(!url.pathname.endsWith('/')){res.writeHead(301,{Location:`${url.pathname}/${url.search}`}).end();return;}
+  file=path.join(file,'index.html');
+ }
+ if(file===path.join(root,'admin/setup/render-module.yml'))file=path.join(root,'.github/workflows/render-module.yml');
  fs.stat(file,(err,stat)=>{
   if(err||!stat.isFile()){res.writeHead(404).end('Not found');return;}
   const headers={'Content-Type':mime[path.extname(file)]||'application/octet-stream','Accept-Ranges':'bytes'};

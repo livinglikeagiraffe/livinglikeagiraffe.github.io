@@ -11,6 +11,7 @@
   "author": "",
   "type": "module",
   "dependencies": {
+    "fflate": "^0.8.3",
     "three": "^0.186.1"
   },
   "private": true

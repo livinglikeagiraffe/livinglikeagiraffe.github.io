@@ -75,3 +75,9 @@ The supplied body material uses alphaMode BLEND. Rendered as alpha-tested cutout
 Original source files are retained locally in .source-assets/ and excluded from publication. Grass color remains 2048px; normal/roughness are 1024px and JPEG-optimized. Main giraffe body color is reduced from 8192px to 4096px, roughness/tongue color to 1024px, and embedded images recompressed. All original geometry, skin, animation and non-image buffer bytes are unchanged. Original source/license links above apply to these modified copies.
 
 모바일 파생본(`assets/mobile/`)은 같은 라이선스를 따릅니다. 텍스처 해상도를 낮췄으며 기린의 기하·리깅·애니메이션은 변경하지 않았습니다. 공유 카드와 favicon은 팀의 공식 Instagram 프로필 이미지에서 구성했습니다.
+
+## New space prototype (2026-11-05)
+
+- `v2/assets/riraji_normal.glb`: supplied by the user in `riraji_web_v04`, copied without modification. Includes four room groups, two giraffes, embedded materials/textures and orthographic cameras. 115,776 triangles; 4,201,896 bytes. No separate third-party license was supplied for this scene; rights remain with the respective owners.
+- `v2/assets/reference.png`: the user-supplied reference render, shown only in the reference-image view. It is not the interactive scene.
+- The web background, lighting, shadows and ambient occlusion are implemented separately. Blender studio lighting was excluded from the supplied GLB; no claim of identical rendering is made.

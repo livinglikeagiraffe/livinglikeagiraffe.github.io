@@ -6,7 +6,7 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const out=path.join(root,'dist');
 await rm(out,{recursive:true,force:true});
 const copied=new Set();
-const destination=file=>file.replace(/^node_modules\/three\//,'vendor/three/');
+const destination=file=>file.replace(/^node_modules\/(three|fflate)\//,'vendor/$1/');
 async function copy(file){
  file=path.normalize(file);
  if(copied.has(file))return;
@@ -15,7 +15,7 @@ async function copy(file){
  const target=path.join(out,destination(file));await mkdir(path.dirname(target),{recursive:true});
  if(/\.(js|html)$/.test(file)){
   const source=await readFile(path.join(root,file),'utf8');
-  await writeFile(target,source.replaceAll('./node_modules/three/','./vendor/three/'));
+  await writeFile(target,source.replaceAll('node_modules/three/','vendor/three/').replaceAll('node_modules/fflate/','vendor/fflate/'));
   if(file.endsWith('.js')){
    // Follow the installed ES module graph instead of shipping all node_modules.
    for(const match of source.matchAll(/^\s*(?:import|export)\s+(?:[\w*{},\s]+?\s+from\s*)?['"]([^'"]+)['"]/gm)){
@@ -38,6 +38,14 @@ async function directory(folder){
  }
 }
 for(const file of ['index.html','style.css','main.js','bootstrap.js','credits.html','ASSETS.md','node_modules/three/LICENSE'])await copy(file);
+await directory('v2');
+await directory('admin');
+await copy('node_modules/fflate/LICENSE');
+// Only the trusted worker source is public. Uploaded Blender sources and saved
+// studio versions are intentionally excluded from the Pages build.
+await copy('studio/render.py');
+await mkdir(path.join(out,'admin/setup'),{recursive:true});
+await copyFile(path.join(root,'.github/workflows/render-module.yml'),path.join(out,'admin/setup/render-module.yml'));
 await directory('assets/mobile');await directory('assets/branding');await directory('assets/fonts');await directory('assets/green-grass');
 await directory('assets/props/wood');await copy('assets/tree/tree.gltf');
 const propsSource=await readFile(path.join(root,'props.js'),'utf8');

@@ -1,0 +1,132 @@
+name: Render studio module
+run-name: Render module · ${{ inputs.request_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      manifest:
+        description: Version manifest path
+        required: true
+        type: string
+      source_ref:
+        description: Exact asset commit SHA
+        required: true
+        type: string
+      request_id:
+        description: Unique render request UUID
+        required: true
+        type: string
+      quality:
+        description: Render quality
+        type: choice
+        options: [preview, original]
+        default: preview
+      scene:
+        description: Scene name, or empty for authored active scene
+        type: string
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: studio-render
+  cancel-in-progress: false
+jobs:
+  render:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: worker
+          persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.source_ref }}
+          path: input
+          persist-credentials: false
+      - name: Validate request
+        env:
+          MANIFEST: ${{ inputs.manifest }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+          REQUEST_ID: ${{ inputs.request_id }}
+        run: |
+          python3 - <<'PY'
+          import os, re, uuid
+          assert re.fullmatch(r'[0-9a-f]{40}', os.environ['SOURCE_REF'])
+          uuid.UUID(os.environ['REQUEST_ID'])
+          assert re.fullmatch(r'studio/modules/[0-9a-f-]{36}/versions/[0-9a-f-]{36}/manifest\.json', os.environ['MANIFEST'])
+          PY
+      - name: Install pinned Blender
+        run: |
+          curl --fail --location --retry 3 https://download.blender.org/release/Blender3.6/blender-3.6.23-linux-x64.tar.xz -o "$RUNNER_TEMP/blender.tar.xz"
+          curl --fail --location --retry 3 https://download.blender.org/release/Blender3.6/blender-3.6.23.sha256 -o "$RUNNER_TEMP/blender.sha256"
+          python3 - <<'PY'
+          import hashlib, os, pathlib
+          root=pathlib.Path(os.environ['RUNNER_TEMP'])
+          expected=next(line.split()[0] for line in (root/'blender.sha256').read_text().splitlines() if line.endswith('blender-3.6.23-linux-x64.tar.xz'))
+          assert hashlib.sha256((root/'blender.tar.xz').read_bytes()).hexdigest()==expected
+          PY
+          mkdir -p "$RUNNER_TEMP/blender"
+          tar -xJf "$RUNNER_TEMP/blender.tar.xz" -C "$RUNNER_TEMP/blender" --strip-components=1
+      - name: Render uploaded scene
+        env:
+          MANIFEST: ${{ inputs.manifest }}
+          QUALITY: ${{ inputs.quality }}
+          SCENE: ${{ inputs.scene }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/render-output" "$RUNNER_TEMP/blender-home"
+          env -i PATH="$PATH" HOME="$RUNNER_TEMP/blender-home" BLENDER_THREADS=2 \
+            "$RUNNER_TEMP/blender/blender" --background --factory-startup --disable-autoexec \
+            --python-exit-code 1 --python worker/studio/render.py -- \
+            --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-render-${{ inputs.request_id }}
+          path: |
+            ${{ runner.temp }}/render-output/render.png
+            ${{ runner.temp }}/render-output/report.json
+          if-no-files-found: error
+          retention-days: 3
+  save:
+    needs: render
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: studio-render-${{ inputs.request_id }}
+          path: result
+      - name: Save render as repository files
+        env:
+          REQUEST_ID: ${{ inputs.request_id }}
+          SOURCE_REF: ${{ inputs.source_ref }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, shutil, uuid, json
+          request=str(uuid.UUID(os.environ['REQUEST_ID']))
+          dest=pathlib.Path('studio/renders')/request
+          dest.mkdir(parents=True,exist_ok=False)
+          for name in ['render.png','report.json']:
+              source=pathlib.Path('result')/name
+              assert source.is_file() and not source.is_symlink() and source.stat().st_size<48*1024**2
+              shutil.copyfile(source,dest/name)
+          report=json.loads((dest/'report.json').read_text())
+          index_path=pathlib.Path('studio/render-index.json')
+          index=json.loads(index_path.read_text()) if index_path.exists() else {'schema':1,'versions':{}}
+          index['versions'][report['versionId']]={'id':request,'status':'complete','quality':report['quality'],'scene':report['scene'],'sourceCommit':os.environ['SOURCE_REF'],'url':os.environ['RUN_URL']}
+          index_path.write_text(json.dumps(index,ensure_ascii=False,indent=2))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "studio/renders/$REQUEST_ID" studio/render-index.json
+          git commit -m "studio: save render $REQUEST_ID"
+          for attempt in 1 2 3; do
+            git pull --rebase && git push && exit 0
+          done
+          exit 1

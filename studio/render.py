@@ -1,0 +1,129 @@
+"""Trusted Blender worker. Run with --factory-startup --disable-autoexec --background.
+
+blender -b -Y --python studio/render.py -- --manifest ... --output ...
+The source file is opened by this script only after path/hash validation.
+"""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import sys
+import time
+
+
+def contained(root, relative):
+    if not isinstance(relative, str) or not relative or '\\' in relative:
+        raise ValueError('Invalid asset path')
+    path = (root / relative).resolve()
+    if not path.is_relative_to(root.resolve()) or not path.is_file():
+        raise ValueError('Missing or unsafe asset: ' + relative)
+    return path
+
+
+def validate_manifest(path):
+    manifest = json.loads(path.read_text())
+    if manifest.get('schema') != 1 or not isinstance(manifest.get('assets'), list):
+        raise ValueError('Unsupported module manifest')
+    root = path.parent / 'files'
+    if len(manifest['assets']) > 100:
+        raise ValueError('Too many assets')
+    total = 0
+    names = set()
+    for asset in manifest['assets']:
+        source = contained(root, asset['name'])
+        if asset['name'] in names:
+            raise ValueError('Duplicate asset')
+        names.add(asset['name'])
+        size = source.stat().st_size
+        total += size
+        if size > 48 * 1024**2 or total > 180 * 1024**2:
+            raise ValueError('Asset size limit exceeded')
+        if size != asset['bytes'] or hashlib.sha256(source.read_bytes()).hexdigest() != asset['sha256']:
+            raise ValueError('Asset checksum mismatch: ' + asset['name'])
+    if manifest.get('blend') not in names or not manifest['blend'].lower().endswith('.blend'):
+        raise ValueError('No Blender source selected')
+    return manifest, contained(root, manifest['blend'])
+
+
+def main():
+    import bpy
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--manifest', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--quality', choices=['preview', 'original'], default='preview')
+    parser.add_argument('--scene', default='')
+    parser.add_argument('--inspect-only', action='store_true')
+    args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
+    manifest, blend = validate_manifest(args.manifest.resolve())
+    args.output.mkdir(parents=True, exist_ok=True)
+    start = time.monotonic()
+    bpy.ops.wm.open_mainfile(filepath=str(blend), load_ui=False, use_scripts=False)
+    name = args.scene or manifest.get('scene') or bpy.context.scene.name
+    if name not in bpy.data.scenes:
+        raise ValueError('Scene not found: ' + name)
+    scene = bpy.data.scenes[name]
+    bpy.context.window.scene = scene
+    if not scene.camera:
+        raise ValueError('The selected scene has no active camera')
+    root = args.manifest.resolve().parent / 'files'
+    missing = []
+    for library in bpy.data.libraries:
+        path = Path(bpy.path.abspath(library.filepath)).resolve()
+        if not path.is_relative_to(root) or not path.is_file():
+            missing.append(library.filepath)
+    for image in bpy.data.images:
+        if image.source != 'FILE' or image.packed_file:
+            continue
+        path = Path(bpy.path.abspath(image.filepath)).resolve()
+        if not path.is_relative_to(root) or not path.is_file():
+            missing.append(image.filepath)
+    if missing:
+        raise ValueError('Pack external assets into the .blend: ' + ', '.join(missing))
+    original = {'engine': scene.render.engine, 'width': scene.render.resolution_x,
+                'height': scene.render.resolution_y, 'percentage': scene.render.resolution_percentage,
+                'samples': scene.cycles.samples if scene.render.engine == 'CYCLES' else None,
+                'viewTransform': scene.view_settings.view_transform, 'look': scene.view_settings.look,
+                'exposure': scene.view_settings.exposure, 'gamma': scene.view_settings.gamma}
+    report = {'schema': 1, 'versionId': manifest['id'], 'moduleId': manifest['moduleId'],
+              'blenderVersion': bpy.app.version_string, 'scene': scene.name,
+              'scenes': [s.name for s in bpy.data.scenes], 'camera': scene.camera.name,
+              'objects': len(scene.objects), 'materials': len(bpy.data.materials),
+              'lights': [{'name': o.name, 'type': o.data.type, 'energy': o.data.energy,
+                          'position': list(o.location), 'color': list(o.data.color)}
+                         for o in scene.objects if o.type == 'LIGHT'],
+              'missingFiles': missing, 'original': original, 'quality': args.quality}
+    if not args.inspect_only:
+        if scene.render.engine != 'CYCLES':
+            raise ValueError('This worker supports Cycles scenes; no renderer substitution is performed.')
+        scene.cycles.device = 'CPU'
+        scene.render.threads_mode = 'FIXED'
+        scene.render.threads = max(1, min(4, int(os.getenv('BLENDER_THREADS', '2'))))
+        if args.quality == 'preview':
+            scene.render.resolution_percentage = min(scene.render.resolution_percentage, max(1, int(800 / max(scene.render.resolution_x, scene.render.resolution_y) * 100)))
+            scene.cycles.samples = min(scene.cycles.samples, 24)
+        pixels = scene.render.resolution_x * scene.render.resolution_y * (scene.render.resolution_percentage / 100)**2
+        if pixels > 16_000_000:
+            raise ValueError('Render exceeds the 16-megapixel worker limit')
+        # Never allow compositor output nodes to write into arbitrary file paths.
+        for tree in bpy.data.node_groups:
+            for node in tree.nodes:
+                if node.bl_idname == 'CompositorNodeOutputFile': node.mute = True
+        if scene.node_tree:
+            for node in scene.node_tree.nodes:
+                if node.bl_idname == 'CompositorNodeOutputFile': node.mute = True
+        scene.render.image_settings.file_format = 'PNG'
+        scene.render.filepath = str((args.output / 'render.png').resolve())
+        scene.render.use_file_extension = True
+        bpy.ops.render.render(write_still=True)
+        report['rendered'] = {'width': int(scene.render.resolution_x * scene.render.resolution_percentage / 100),
+                              'height': int(scene.render.resolution_y * scene.render.resolution_percentage / 100),
+                              'samples': scene.cycles.samples}
+    report['seconds'] = round(time.monotonic() - start, 2)
+    (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
+    print('STUDIO_RENDER_COMPLETE ' + str(args.output))
+
+
+if __name__ == '__main__':
+    main()

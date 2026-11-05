@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Living like a giraffe — 새로운 공간을 위한 작은 모형.">
+  <meta name="robots" content="noindex">
+  <title>Our little space · Living like a giraffe</title>
+  <link rel="icon" href="../assets/branding/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"../node_modules/three/build/three.module.js"}}</script>
+</head>
+<body>
+  <main id="world" aria-label="리라지의 새로운 공간, 3D 모형"></main>
+  <header>
+    <a class="brand" href="../" aria-label="기존 포트폴리오로 이동">Living like<br>a giraffe<span class="dot">.</span></a>
+    <span class="edition">OUR LITTLE SPACE <span>— 02</span></span>
+  </header>
+  <div id="loading" role="status" aria-live="polite"><span class="loading-dot"></span><p id="status">공간을 불러오고 있어요.</p><button id="retry" hidden>다시 불러오기</button></div>
+  <figure id="reference" hidden><img loading="lazy" src="./assets/reference.png" alt="따뜻한 조명 아래 사우나, 초록 벽의 방, 편집숍, 두 기린이 있는 운동장을 내려다본 원본 렌더 이미지"><figcaption>제작자 참고 이미지</figcaption></figure>
+  <footer>
+    <p id="hint">드래그로 둘러보기 <span>·</span> 스크롤로 가까이</p>
+    <nav aria-label="공간 보기">
+      <button id="reset" disabled>처음 시점</button>
+      <button id="compare" aria-pressed="false">참고 이미지</button>
+    </nav>
+  </footer>
+  <script type="module" src="./scene.js"></script>
+</body>
+</html>
