@@ -37,7 +37,7 @@ concurrency:
 jobs:
   render:
     runs-on: ubuntu-22.04
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:
@@ -81,7 +81,7 @@ jobs:
           MODE: ${{ inputs.mode }}
         run: |
           mkdir -p "$RUNNER_TEMP/render-output" "$RUNNER_TEMP/blender-home"
-          env -i PATH="$PATH" HOME="$RUNNER_TEMP/blender-home" BLENDER_THREADS=2 \
+          env -i PATH="$PATH" HOME="$RUNNER_TEMP/blender-home" BLENDER_THREADS=4 \
             "$RUNNER_TEMP/blender/blender" --background --factory-startup --disable-autoexec \
             --python-exit-code 1 --python worker/studio/render.py -- \
             --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE" --mode "${MODE:-render}"

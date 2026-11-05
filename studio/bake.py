@@ -11,6 +11,33 @@ from pathlib import Path
 UV_NAME = 'StudioBakeUV'
 
 
+def protect_thin_islands(mesh, minimum):
+    """Reserve texels for bevels/painted lines that would otherwise bake black."""
+    uv=mesh.uv_layers[UV_NAME].data
+    parent=list(range(len(uv)))
+    def root(i):
+        while parent[i]!=i:
+            parent[i]=parent[parent[i]];i=parent[i]
+        return i
+    def union(a,b):parent[root(a)]=root(b)
+    shared={}
+    for polygon in mesh.polygons:
+        loops=list(polygon.loop_indices)
+        for i in loops:
+            union(loops[0],i)
+            key=(mesh.loops[i].vertex_index,round(uv[i].uv.x,6),round(uv[i].uv.y,6))
+            if key in shared:union(i,shared[key])
+            else:shared[key]=i
+    islands={}
+    for i in range(len(uv)):islands.setdefault(root(i),[]).append(i)
+    for loops in islands.values():
+        for axis in range(2):
+            low=min(uv[i].uv[axis] for i in loops);high=max(uv[i].uv[axis] for i in loops)
+            if 0<high-low<minimum:
+                center=(low+high)*.5;factor=minimum/(high-low)
+                for i in loops:uv[i].uv[axis]=center+(uv[i].uv[axis]-center)*factor
+
+
 def save_denoised(image, path, source_scene):
     """Use Blender's bundled OpenImageDenoise, then the source OCIO transform."""
     import bpy
@@ -44,7 +71,8 @@ def save_denoised(image, path, source_scene):
 
 def bake_scene(scene, output, quality):
     import bpy
-    from mathutils import Vector
+    from mathutils import Vector, Matrix
+    from array import array
     start = time.monotonic()
     meshes = [o for o in scene.objects if o.type == 'MESH' and not o.hide_render and o.visible_get()]
     if not meshes or len(meshes) > 600:
@@ -149,11 +177,29 @@ def bake_scene(scene, output, quality):
                 obj.data.materials[i]=clones[key]
             obj.select_set(True)
         bpy.context.view_layer.objects.active=objects[0]
+        # UV operators measure local mesh coordinates. Account for object scale
+        # temporarily so tiny scaled spheres do not consume most of the atlas.
+        # Restore exact coordinates before Cycles evaluates procedural materials.
+        coordinates=[]
+        for obj in objects:
+            saved=array('f',[0.0])*(len(obj.data.vertices)*3)
+            obj.data.vertices.foreach_get('co',saved);coordinates.append((obj,saved))
+            scale=obj.matrix_world.to_scale()
+            obj.data.transform(Matrix.Diagonal((scale.x,scale.y,scale.z,1)))
         bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.uv.smart_project(angle_limit=math.radians(66),island_margin=0,area_weight=.1,correct_aspect=True,scale_to_bounds=True)
+        bpy.ops.uv.smart_project(angle_limit=math.radians(45),island_margin=.002,area_weight=.1,correct_aspect=True,scale_to_bounds=True)
+        bpy.ops.uv.select_all(action='SELECT')
         bpy.ops.uv.average_islands_scale()
-        bpy.ops.uv.pack_islands(rotate=True,margin_method='FRACTION',margin=4/resolution)
+        bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=(6 if quality=='preview' else 12)/resolution)
         bpy.ops.object.mode_set(mode='OBJECT')
+        for _ in range(2):
+            for obj in objects:protect_thin_islands(obj.data,6/resolution)
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.uv.select_all(action='SELECT')
+            bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=(6 if quality=='preview' else 12)/resolution)
+            bpy.ops.object.mode_set(mode='OBJECT')
+        for obj,saved in coordinates:
+            obj.data.vertices.foreach_set('co',saved);obj.data.update()
         print('STUDIO_BAKE_STAGE cycles',name,resolution,samples,flush=True)
         bpy.ops.object.bake(type='COMBINED',uv_layer=UV_NAME)
         path=output/(name+'.png')
@@ -182,7 +228,7 @@ def bake_scene(scene, output, quality):
     scene['studioBake']={'schema':1,'displayReferred':True,'viewTransform':scene.view_settings.view_transform,'look':scene.view_settings.look}
     path=output/'baked.glb'
     print('STUDIO_BAKE_STAGE export',flush=True)
-    bpy.ops.export_scene.gltf(filepath=str(path),export_format='GLB',use_selection=True,export_cameras=True,export_lights=False,export_extras=True,export_animations=False,export_texcoords=True,export_normals=True,export_materials='EXPORT')
+    bpy.ops.export_scene.gltf(filepath=str(path),export_format='GLB',use_selection=True,use_active_scene=True,export_cameras=True,export_lights=False,export_extras=True,export_animations=False,export_texcoords=True,export_normals=True,export_materials='EXPORT')
     if path.stat().st_size>48*1024**2:raise ValueError('Baked GLB exceeds 48 MiB; use preview quality')
     # Assert portable unlit materials before reporting a successful conversion.
     import json,struct

@@ -29,7 +29,7 @@
 - 원본 공개가 승인된 현재 사이트 저장소를 사용합니다. 공개 카탈로그는 로그인 없이 읽으며, 쓰기·렌더 요청에는 저장소 Contents/Actions 쓰기 권한 토큰이 필요합니다. 토큰은 페이지 메모리에만 보관합니다.
 - 원본과 버전은 `studio/modules/<module UUID>/versions/<version UUID>/`에, 목록은 `studio/catalog.json`, 배치는 `studio/layout.json`에 저장합니다. 사이트 빌드에는 업로드 원본을 복사하지 않지만 공개 GitHub 저장소에서는 누구나 내려받을 수 있습니다.
 - `render-module.yml`은 정확한 에셋 커밋의 파일 해시를 검사한 뒤 Blender 3.6.23 / Cycles CPU로 렌더링합니다. 빠른 미리보기는 긴 변 최대 800px·24샘플, 원본 설정은 저장된 렌더 설정을 유지합니다. 업로드된 Python은 자동 실행하지 않습니다.
-- 렌더 작업과 저장 작업의 권한을 분리했습니다. 렌더 결과는 `studio/renders/<request UUID>/`에 커밋하므로 임시 Actions artifact 만료 후에도 보관됩니다. 작업당 25분 제한이며 실패 시 Actions 로그를 표시합니다.
+- 렌더 작업과 저장 작업의 권한을 분리했습니다. 렌더 결과는 `studio/renders/<request UUID>/`에 커밋하므로 임시 Actions artifact 만료 후에도 보관됩니다. 작업당 45분 제한이며 실패 시 Actions 로그를 표시합니다.
 - 업로드 제한: 파일당 48MiB, 압축 해제 합계 180MiB, 100개 파일. 경로 이탈·중복 경로·압축 해제 크기를 검사합니다. 저장소가 커지면 원본을 Releases나 전용 오브젝트 저장소로 옮기는 것이 좋습니다.
 
 GitHub 설정 및 제작자 사용 안내: `admin/setup.html`. 공개 포트폴리오에 새 격자 배치를 자동 반영하는 기능은 포함하지 않으며, 검수 작업실과 현재 홈페이지 배포는 분리됩니다.
