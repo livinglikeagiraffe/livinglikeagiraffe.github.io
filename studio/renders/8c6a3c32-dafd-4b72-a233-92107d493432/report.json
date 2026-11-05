@@ -1,0 +1,226 @@
+{
+  "schema": 1,
+  "versionId": "d048e626-6da6-465a-b81b-3cfef13cffbf",
+  "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
+  "blenderVersion": "3.6.23",
+  "scene": "01_Clay_Normal",
+  "scenes": [
+    "01_Clay_Normal",
+    "02_Clay_Displacement"
+  ],
+  "camera": "Quarter_Camera",
+  "objects": 266,
+  "materials": 37,
+  "lights": [
+    {
+      "name": "Prayer_warm_lamp",
+      "type": "AREA",
+      "energy": 48.0,
+      "position": [
+        1.2999999523162842,
+        2.0,
+        0.8999999761581421
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "Prayer_warm_lamp.001",
+      "type": "AREA",
+      "energy": 48.0,
+      "position": [
+        1.2999999523162842,
+        10.0,
+        0.8999999761581421
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "Large_softbox",
+      "type": "AREA",
+      "energy": 9200.0,
+      "position": [
+        12.0,
+        -6.0,
+        17.0
+      ],
+      "color": [
+        1.0,
+        0.8999999761581421,
+        0.7699999809265137
+      ]
+    },
+    {
+      "name": "Fill",
+      "type": "AREA",
+      "energy": 6800.0,
+      "position": [
+        4.0,
+        24.0,
+        14.0
+      ],
+      "color": [
+        0.8199999928474426,
+        0.8899999856948853,
+        1.0
+      ]
+    }
+  ],
+  "missingFiles": [],
+  "original": {
+    "engine": "CYCLES",
+    "width": 1500,
+    "height": 1200,
+    "percentage": 100,
+    "samples": 40,
+    "viewTransform": "Filmic",
+    "look": "Medium High Contrast",
+    "exposure": 0.0,
+    "gamma": 1.0
+  },
+  "quality": "original",
+  "webScene": {
+    "schema": 1,
+    "coordinateSystem": "gltf-y-up",
+    "source": "01_Clay_Normal",
+    "camera": {
+      "name": "Quarter_Camera",
+      "type": "ORTHO",
+      "position": [
+        60.0,
+        58.0,
+        54.0
+      ],
+      "quaternion": [
+        -0.2948892116546631,
+        0.2756864130496979,
+        0.08928526192903519,
+        0.9105303287506104
+      ],
+      "orthoScale": 56.0,
+      "aspect": 1.25,
+      "fov": 3.0523661813726846,
+      "shift": [
+        0.0,
+        0.0
+      ]
+    },
+    "lights": [
+      {
+        "name": "Prayer_warm_lamp",
+        "type": "AREA",
+        "position": [
+          1.2999999523162842,
+          0.8999999761581421,
+          -2.0
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.5400000214576721,
+          0.20000000298023224
+        ],
+        "energy": 48.0,
+        "size": 0.699999988079071,
+        "angle": 0
+      },
+      {
+        "name": "Prayer_warm_lamp.001",
+        "type": "AREA",
+        "position": [
+          1.2999999523162842,
+          0.8999999761581421,
+          -10.0
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.5400000214576721,
+          0.20000000298023224
+        ],
+        "energy": 48.0,
+        "size": 0.699999988079071,
+        "angle": 0
+      },
+      {
+        "name": "Large_softbox",
+        "type": "AREA",
+        "position": [
+          12.0,
+          17.0,
+          6.0
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.8999999761581421,
+          0.7699999809265137
+        ],
+        "energy": 9200.0,
+        "size": 24.0,
+        "angle": 0
+      },
+      {
+        "name": "Fill",
+        "type": "AREA",
+        "position": [
+          4.0,
+          14.0,
+          -24.0
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          0.8199999928474426,
+          0.8899999856948853,
+          1.0
+        ],
+        "energy": 6800.0,
+        "size": 20.0,
+        "angle": 0
+      }
+    ],
+    "world": {
+      "color": [
+        0.05087608844041824,
+        0.05087608844041824,
+        0.05087608844041824
+      ],
+      "strength": 1.0
+    },
+    "view": {
+      "transform": "Filmic",
+      "look": "Medium High Contrast",
+      "exposure": 0.0,
+      "gamma": 1.0
+    }
+  },
+  "rendered": {
+    "width": 1500,
+    "height": 1200,
+    "samples": 40
+  },
+  "seconds": 68.99
+}
