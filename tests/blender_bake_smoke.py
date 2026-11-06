@@ -1,7 +1,7 @@
 """Run in Blender: --python tests/blender_bake_smoke.py -- --output <private dir>.
 
-Two differently scaled meshes force separate atlases. The second must retain
-direct/indirect lighting after the first atlas's albedo and normal guide passes.
+Three meshes exercise multi-object coverage and separate atlases. The second
+atlas must retain lighting after the first atlas's albedo/normal guide passes.
 """
 import argparse
 from pathlib import Path
@@ -30,7 +30,7 @@ def main():
     scene=bpy.context.scene;scene.render.engine='CYCLES';scene.cycles.device='CPU'
     scene.render.threads_mode='FIXED';scene.render.threads=4
     scene.world.use_nodes=True;scene.world.node_tree.nodes['Background'].inputs['Strength'].default_value=.8
-    for name,size,x in [('A',2,0),('B',.1,4)]:
+    for name,size,x in [('A',2,0),('A2',2,-4),('B',.1,4)]:
         bpy.ops.mesh.primitive_cube_add(size=size,location=(x,0,1))
         obj=bpy.context.object;obj.name=name
         mat=bpy.data.materials.new(name);mat.use_nodes=True

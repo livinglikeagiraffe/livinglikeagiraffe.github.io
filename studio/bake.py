@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 UV_NAME = 'StudioBakeUV'
-BAKER_VERSION = 3
+BAKER_VERSION = 4
 
 
 def surface_area(obj):
@@ -256,8 +256,10 @@ def bake_scene(scene, output, quality, whole_space=False):
     for name, objects, resolution in groups+[('backdrop',[backdrop] if backdrop else [],size)]:
         if not objects:continue
         print('STUDIO_BAKE_STAGE unwrap',name,len(objects),flush=True)
-        image=bpy.data.images.new('Studio_'+name,resolution,resolution,alpha=False,float_buffer=True)
-        image.generated_color=(0,0,0,1)
+        # Multi-object baking merges into an initialized buffer. RGB-only
+        # images initialize empty pixels with alpha=1, destroying coverage.
+        image=bpy.data.images.new('Studio_'+name,resolution,resolution,alpha=True,float_buffer=True)
+        image.generated_color=(0,0,0,0)
         clones={}
         bpy.ops.object.select_all(action='DESELECT')
         for obj in objects:
@@ -294,7 +296,7 @@ def bake_scene(scene, output, quality, whole_space=False):
         scene.cycles.samples=4  # Deterministic color/normal guides need no path-traced GI samples.
         for kind in ('DIFFUSE','NORMAL'):
             print('STUDIO_BAKE_STAGE guide',name,kind,flush=True)
-            guide=bpy.data.images.new('Studio guide '+kind,resolution,resolution,alpha=False,float_buffer=True)
+            guide=bpy.data.images.new('Studio guide '+kind,resolution,resolution,alpha=True,float_buffer=True)
             guide.colorspace_settings.name='Non-Color'
             for material in clones.values():material.node_tree.nodes.active.image=guide
             if kind=='DIFFUSE':bpy.ops.object.bake(type=kind,margin=0,pass_filter={'COLOR'},uv_layer=UV_NAME)
@@ -315,6 +317,7 @@ def bake_scene(scene, output, quality, whole_space=False):
         display=bpy.data.images.load(str(path),check_existing=False);display.colorspace_settings.name='sRGB'
         image.pixels.foreach_get(pixels.ravel())
         coverage=pixels.reshape((resolution,resolution,4))[:,:,3]>.5
+        if not coverage.any() or coverage.all():raise ValueError('Invalid bake coverage mask: '+name)
         pad_bake_images([display],coverage=coverage)
         # save() preserves the already applied source OCIO view; save_render()
         # here would incorrectly apply Filmic a second time.
