@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "versionId": "9454c0ba-9bfb-52d1-bc2f-68ae14400586",
+  "moduleId": "layout",
+  "blenderVersion": "3.6.23",
+  "scene": "Whole space",
+  "scenes": [
+    "Scene",
+    "Scene.001",
+    "Whole space"
+  ],
+  "camera": "Whole space camera",
+  "objects": 6,
+  "materials": 6,
+  "lights": [
+    {
+      "name": "Softbox.001",
+      "type": "AREA",
+      "energy": 2962.962890625,
+      "position": [
+        1.6666667461395264,
+        1.2222222089767456,
+        15.555556297302246
+      ],
+      "color": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "missingFiles": [],
+  "original": {
+    "engine": "CYCLES",
+    "width": 1600,
+    "height": 1200,
+    "percentage": 100,
+    "samples": 64,
+    "viewTransform": "Filmic",
+    "look": "None",
+    "exposure": 0.0,
+    "gamma": 1.0
+  },
+  "quality": "preview",
+  "webScene": {
+    "schema": 1,
+    "coordinateSystem": "gltf-y-up",
+    "source": "Whole space",
+    "camera": {
+      "name": "Whole space camera",
+      "type": "ORTHO",
+      "position": [
+        13.784799575805664,
+        12.061697959899902,
+        15.507896423339844
+      ],
+      "quaternion": [
+        -0.24326469004154205,
+        0.3431342840194702,
+        0.09248907119035721,
+        0.902511477470398
+      ],
+      "orthoScale": 12.157858848571777,
+      "aspect": 1.3333333333333333,
+      "fov": 2.709757257047686,
+      "shift": [
+        0.0,
+        0.0
+      ]
+    },
+    "lights": [
+      {
+        "name": "Softbox.001",
+        "type": "AREA",
+        "position": [
+          1.6666667461395264,
+          15.555556297302246,
+          -1.2222222089767456
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "energy": 2962.962890625,
+        "size": 8.88888931274414,
+        "angle": 0
+      }
+    ],
+    "world": {
+      "color": [
+        0.05087608844041824,
+        0.05087608844041824,
+        0.05087608844041824
+      ],
+      "strength": 0.4000000059604645
+    },
+    "view": {
+      "transform": "Filmic",
+      "look": "None",
+      "exposure": 0.0,
+      "gamma": 1.0
+    }
+  },
+  "layoutId": "9454c0ba-9bfb-52d1-bc2f-68ae14400586",
+  "layoutDigest": "003da2090fe4961b7d9a691ea3a400db5804eeb62308ccb5aa750848d5883b68",
+  "layout": {
+    "grid": {
+      "columns": 1,
+      "rows": 1,
+      "width": 8,
+      "depth": 6,
+      "gap": 0
+    },
+    "cells": [
+      {
+        "x": 0,
+        "z": 0,
+        "versionId": "4bc41987-0ae6-5a53-9ae5-b993ac2614c3",
+        "rotation": 0
+      }
+    ],
+    "environment": {
+      "floor": "#b6b0a4",
+      "lighting": "shared-softbox"
+    }
+  },
+  "placements": [
+    {
+      "x": 0,
+      "z": 0,
+      "versionId": "4bc41987-0ae6-5a53-9ae5-b993ac2614c3",
+      "rotation": 0,
+      "scale": 1,
+      "position": [
+        0.0,
+        0,
+        0.0
+      ],
+      "sourceBounds": [
+        [
+          -1.0,
+          -2.0999999046325684,
+          0.0
+        ],
+        [
+          3.5,
+          1.0,
+          2.0
+        ]
+      ]
+    }
+  ],
+  "sharedFloor": "Shared floor",
+  "sharedLights": [
+    "Softbox.001"
+  ],
+  "rendered": {
+    "width": 800,
+    "height": 600,
+    "samples": 24
+  },
+  "bake": {
+    "schema": 1,
+    "bakerVersion": 5,
+    "hybridVersion": 1,
+    "file": "baked.glb",
+    "bytes": 18704004,
+    "sha256": "3641524314d95f5044daf5863dd7fbbd039d0aaf7dad575c39c6620e1cacf3ac",
+    "displayReferred": false,
+    "lighting": "indirect-only",
+    "encoding": "RGBM",
+    "samples": 96,
+    "atlases": [
+      {
+        "name": "module_0_0_albedo.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 2,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_normal.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 2,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_roughness.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 2,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_indirect.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 2,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_albedo.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 1,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_normal.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 1,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_roughness.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 1,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_indirect.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 1,
+        "kind": "indirect"
+      },
+      {
+        "name": "backdrop_albedo.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 1,
+        "kind": "albedo"
+      },
+      {
+        "name": "backdrop_normal.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 1,
+        "kind": "normal"
+      },
+      {
+        "name": "backdrop_roughness.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 1,
+        "kind": "roughness"
+      },
+      {
+        "name": "backdrop_indirect.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 1,
+        "kind": "indirect"
+      }
+    ],
+    "triangles": 38,
+    "opaqueObjects": 3,
+    "dynamicObjects": [],
+    "seconds": 425.78,
+    "limitations": [
+      "Static indirect illumination; rebake after layout changes",
+      "Direct area lights and glass are approximated in the browser"
+    ]
+  },
+  "mode": "hybrid",
+  "seconds": 431.46
+}
