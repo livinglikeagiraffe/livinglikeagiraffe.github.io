@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {RectAreaLightUniformsLib} from '../node_modules/three/examples/jsm/lights/RectAreaLightUniformsLib.js';
+RectAreaLightUniformsLib.init();
 
 export function createLighting(profile,bounds,{mobile=false,offset=new THREE.Vector3()}={}){
   const group=new THREE.Group(),span=Math.max(bounds.getSize(new THREE.Vector3()).length(),10),center=bounds.getCenter(new THREE.Vector3());
@@ -15,10 +17,15 @@ export function createLighting(profile,bounds,{mobile=false,offset=new THREE.Vec
     // An area emitter radiates into a hemisphere with a cosine distribution.
     // Its on-axis radiant intensity is power/pi, rather than power/(4*pi).
     light.intensity=source.type==='SUN'?source.energy:source.energy/(source.type==='AREA'?Math.PI:4*Math.PI);
+    if(source.type==='AREA'){
+      const size=Math.max(.1,source.size||1),area=new THREE.RectAreaLight(0xffffff,1,size,source.sizeY||size);
+      area.color.copy(light.color);area.position.copy(light.position);area.lookAt(light.target.position);area.power=source.energy*.7;
+      area.userData={energy:area.intensity,role:i===0?'key':'fill'};group.add(area);light.intensity*=.3;
+    }
     light.userData={energy:light.intensity,role:i===0?'key':'fill'};
     // Shadow budget is bounded independently of the number of uploaded lights.
     light.castShadow=i<(mobile?3:6);
-    if(light.shadow){light.shadow.mapSize.setScalar(mobile?1024:2048);light.shadow.camera.near=.05;light.shadow.camera.far=span*5;light.shadow.normalBias=span*.00015;light.shadow.bias=-.00002;light.shadow.radius=source.type==='AREA'?8:3;light.shadow.blurSamples=8;
+    if(light.shadow){light.shadow.mapSize.setScalar(mobile?1024:2048);light.shadow.camera.near=.05;light.shadow.camera.far=span*5;light.shadow.normalBias=span*.00035;light.shadow.bias=-.0001;light.shadow.radius=source.type==='AREA'?8:3;light.shadow.blurSamples=8;
       if(light.isDirectionalLight)Object.assign(light.shadow.camera,{left:-span,right:span,top:span,bottom:-span});}
     group.add(light);
   });

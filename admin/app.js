@@ -186,7 +186,7 @@ async function pollRender(){
     const result=await github.renderStatus(job);if(current?.id!==id)return;current.job={...job,...result};delete current.job.blob;delete current.job.bakedBlob;delete current.job.bake;if(result.blob)current.renderBlob=result.blob;
     if(result.bakedBlob){current.bake=result.bake;current.bakedBlob=result.bakedBlob;current.previewMode='baked';}
     if(result.report?.webScene){viewer.applySource(result.report.webScene);updateLookControls();}
-    $('#render-status').textContent=({queued:'GitHub Actions 대기열에 있습니다.',in_progress:job.mode==='bake'?'원본 렌더 · UV 생성 · 조명 베이킹 중입니다. 수 분 이상 걸릴 수 있습니다.':'Blender가 원본 씬을 렌더링하고 있습니다.',complete:result.bake?'베이킹이 완료되어 3D에 적용했습니다. 버전 저장으로 검수 결과를 보관하세요.':'렌더가 완료되었습니다. Blender 렌더 탭에서 확인해 주세요.',failed:result.message})[result.status]||'렌더 작업을 준비하고 있습니다.';
+    $('#render-status').textContent=({queued:'대기 중',in_progress:job.mode!=='render'?'렌더 · 간접광 베이킹 중…':'Blender 렌더 중…',complete:result.bake?'완료 · 간접광 적용':'렌더 완료',failed:result.message})[result.status]||'준비 중…';
     await storage.saveVersion(current);updateImage();updateButtons();if(!['complete','failed'].includes(result.status))renderTimer=setTimeout(pollRender,10000);else{versions=await storage.get('versions');listVersions();if(result.status==='complete'){if(result.bakedBlob)await selectVersion(current);imageMode='render';document.querySelectorAll('[data-image]').forEach(b=>b.classList.toggle('active',b.dataset.image==='render'));updateImage();}}
   }catch(e){$('#render-status').textContent=`상태 확인 중단: ${e.message} GitHub를 다시 연결하면 이어서 확인합니다.`;updateButtons();}
 }

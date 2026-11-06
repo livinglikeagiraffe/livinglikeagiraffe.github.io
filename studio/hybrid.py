@@ -139,7 +139,12 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
     cursor=0
     while cursor<len(groups):
         name,objects,resolution=groups[cursor];cursor+=1
-        resolution=resolution_override or resolution
+        resolution=resolution_override or (1024 if '_detail' in name and quality=='preview' else resolution)
+        # Bound island density AND Cycles' per-object scene synchronization cost.
+        if len(objects)>128 or sum(len(o.data.polygons) for o in objects)>60000 and len(objects)>1:
+            midpoint=len(objects)//2
+            groups[cursor:cursor]=[(name+'_p0',objects[:midpoint],resolution),(name+'_p1',objects[midpoint:],resolution)]
+            continue
         print('STUDIO_HYBRID unwrap',name,len(objects),resolution,flush=True)
         bpy.ops.object.select_all(action='DESELECT');clones={}
         def new_image(label):
@@ -169,7 +174,7 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
                 obj.data.materials[i]=clones[key]
             obj.select_set(True)
         bpy.context.view_layer.objects.active=objects[0]
-        try:unwrap_objects(objects,resolution,'_detail' in name,padding=4,minimum=2)
+        try:unwrap_objects(objects,resolution,'_detail' in name,padding=4,minimum=6)
         except ValueError as error:
             if 'UV atlas' not in str(error) or len(objects)<2:raise
             midpoint=len(objects)//2
@@ -184,14 +189,32 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
             if kind=='NORMAL':args['normal_space']=normal_space
             print('STUDIO_HYBRID bake',name,kind,passes,flush=True)
             with bake_log():bpy.ops.object.bake(**args)
-        scene.cycles.samples=samples
-        bake('DIFFUSE',indirect,{'INDIRECT'})
         albedo=new_image('albedo');normal=new_image('normal');roughness=new_image('roughness');guide=new_image('guide')
         scene.cycles.samples=1
-        bake('DIFFUSE',albedo,{'COLOR'});bake('NORMAL',normal);bake('ROUGHNESS',roughness);bake('NORMAL',guide,normal_space='OBJECT')
+        bake('DIFFUSE',albedo,{'COLOR'})
         pixels=np.empty(resolution*resolution*4,dtype=np.float32)
-        indirect.pixels.foreach_get(pixels);coverage=pixels.reshape((resolution,resolution,4))[:,:,3]>.5
+        albedo.pixels.foreach_get(pixels);coverage=pixels.reshape((resolution,resolution,4))[:,:,3]>.5
         if not coverage.any():raise ValueError('Empty lightmap: '+name)
+        pad_bake_images([albedo],radius=3,coverage=coverage)
+        albedo.pixels.foreach_get(pixels);mask=pixels.reshape((resolution,resolution,4))[:,:,3]>.5
+        missing=0
+        for obj in objects:
+            obj.data.calc_loop_triangles();uv=obj.data.uv_layers[UV_NAME].data
+            for triangle in obj.data.loop_triangles:
+                point=sum((uv[i].uv for i in triangle.loops),uv[triangle.loops[0]].uv*0)/3
+                x=min(resolution-1,max(0,int(point.x*resolution)));y=min(resolution-1,max(0,int(point.y*resolution)))
+                if not mask[y,x]:missing+=1
+        if missing:
+            for image in (indirect,albedo,normal,roughness,guide):bpy.data.images.remove(image)
+            if len(objects)<2 or name.count('_p')>=12:raise ValueError('Insufficient texels for small surfaces: '+name)
+            midpoint=len(objects)//2
+            groups[cursor:cursor]=[(name+'_p0',objects[:midpoint],resolution),(name+'_p1',objects[midpoint:],resolution)]
+            print('STUDIO_HYBRID split uncovered surfaces',name,missing,flush=True)
+            continue
+        scene.cycles.samples=samples
+        bake('DIFFUSE',indirect,{'INDIRECT'})
+        scene.cycles.samples=1
+        bake('NORMAL',normal);bake('ROUGHNESS',roughness);bake('NORMAL',guide,normal_space='OBJECT')
         guide.pixels.foreach_get(pixels);pixels.reshape((-1,4))[:,:3]=pixels.reshape((-1,4))[:,:3]*2-1;guide.pixels.foreach_set(pixels)
         exr=output/(name+'_linear.exr');save_denoised(indirect,exr,scene,normal=guide,linear=True)
         clean=bpy.data.images.load(str(exr),check_existing=False);clean.colorspace_settings.name='Non-Color'

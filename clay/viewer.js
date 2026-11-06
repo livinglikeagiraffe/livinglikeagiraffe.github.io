@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import {RoomEnvironment} from '../node_modules/three/examples/jsm/environments/RoomEnvironment.js';
 import {MapControls} from './controls.js';
-import {hybridPlugin,installClay} from './materials.js';
+import {hybridPlugin,installClay,extendGround} from './materials.js';
 import {createLighting} from './lighting.js';
 import {batchOpaque} from './batch.js';
 
@@ -25,7 +25,7 @@ export class ClayViewer{
     const root=gltf.scene;root.updateMatrixWorld(true);const bounds=new THREE.Box3();
     root.traverse(o=>{if(o.isLight)o.visible=false;if(!o.isMesh)return;
       if(!o.userData.studioBackdrop){o.geometry.computeBoundingBox();bounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}
-      o.castShadow=true;o.receiveShadow=true;
+      o.castShadow=!o.userData.studioBackdrop;o.receiveShadow=true;
       for(const material of Array.isArray(o.material)?o.material:[o.material]){
         if(material.transmission>0)o.castShadow=false;
         if(!material.userData.studioLightMap)installClay(material);
@@ -44,6 +44,7 @@ export class ClayViewer{
     // Continue the ground beyond the baked plane without a visible viewport edge.
     this.floor=new THREE.Mesh(new THREE.PlaneGeometry(span*30,span*30),new THREE.MeshStandardMaterial({color:profile?.floor||'#b6b0a4',roughness:1,envMapIntensity:0}));this.floor.rotation.x=-Math.PI/2;this.floor.position.y=-.08;this.floor.receiveShadow=true;this.scene.add(this.floor);
     this.scene.fog=new THREE.Fog('#e8e3d9',span*2.5,span*7);
+    root.traverse(o=>{if(o.isMesh&&o.userData.studioBackdrop){extendGround(o);this.floor.visible=false;}});
     this.controls.configure(bounds);this.draw();return gltf;
   }
   dispose(){this.observer.disconnect();this.controls.dispose();cancelAnimationFrame(this.frame);this.environment.dispose();this.renderer.dispose();}

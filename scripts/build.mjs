@@ -52,8 +52,12 @@ for(const file of adminFiles.filter(file=>/\.(js|html)$/.test(file))){
  await writeFile(target,source.replace(/(["'])(\.(?:\/|\.\/(?:clay|admin)\/)[^"'?]+\.(?:js|css))\1/g,(_,quote,url)=>`${quote}${url}?v=${adminRevision}${quote}`));
 }
 await copy('node_modules/fflate/LICENSE');
-// Only the trusted worker source is public. Uploaded Blender sources and saved
-// studio versions are intentionally excluded from the Pages build.
+// Ship the last verified public scene as an offline/CDN fallback, without the
+// upload archive or Blender originals. New results still load from the repository.
+const published=JSON.parse(await readFile(path.join(root,'studio/public-scene.json'),'utf8'));
+if(!/^studio\/renders\/[0-9a-f-]{36}\/baked\.glb$/.test(published.model))throw Error('Invalid public scene path');
+await copy('studio/public-scene.json');await copy(published.model);
+// Trusted worker sources are downloadable for repository setup.
 await copy('studio/render.py');
 await copy('studio/bake.py');
 await copy('studio/compose.py');

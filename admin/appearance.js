@@ -12,7 +12,7 @@ export function normalizeLook(value={}){
 export function sceneProfile(value){
   const vector=(v,n)=>Array.isArray(v)&&v.length===n&&v.every(x=>typeof x==='number'&&Number.isFinite(x)&&Math.abs(x)<1e7);
   if(value?.schema!==1||value.coordinateSystem!=='gltf-y-up')return null;
-  const lights=(Array.isArray(value.lights)?value.lights:[]).filter(l=>l&&vector(l.position,3)&&vector(l.direction,3)&&vector(l.color,3)&&Number.isFinite(l.energy)&&l.energy>=0&&l.energy<1e8).slice(0,8).map(l=>({...l,size:Number.isFinite(l.size)?Math.min(10000,Math.max(.2,l.size)):1,angle:Number.isFinite(l.angle)?l.angle:Math.PI/2}));
+  const lights=(Array.isArray(value.lights)?value.lights:[]).filter(l=>l&&vector(l.position,3)&&vector(l.direction,3)&&vector(l.color,3)&&Number.isFinite(l.energy)&&l.energy>=0&&l.energy<1e8).slice(0,24).map(l=>({...l,size:Number.isFinite(l.size)?Math.min(10000,Math.max(.2,l.size)):1,angle:Number.isFinite(l.angle)?l.angle:Math.PI/2}));
   const c=value.camera,camera=c&&['ORTHO','PERSP'].includes(c.type)&&vector(c.position,3)&&vector(c.quaternion,4)&&Number.isFinite(c.orthoScale)&&c.orthoScale>0&&Number.isFinite(c.aspect)&&c.aspect>.01&&c.aspect<100&&(c.type==='ORTHO'||Number.isFinite(c.fov)&&c.fov>.01&&c.fov<Math.PI)?c:null;
   return {schema:1,coordinateSystem:'gltf-y-up',camera,lights,world:value.world,view:value.view,source:value.source};
 }

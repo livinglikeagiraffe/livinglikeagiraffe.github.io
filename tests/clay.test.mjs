@@ -18,7 +18,9 @@ test('zoom is bounded and zooming out lowers height gently without rotating azim
 test('indirect-only lightmap decodes RGBM in linear space without converting PBR to unlit',async()=>{
  const material=new MeshStandardMaterial(),texture=new Texture();const range=8;
  const parser={json:{materials:[{extras:{studioLightMap:{texture:0,texCoord:0,encoding:'RGBM',range,indirectOnly:true}}}],extras:{studioHybrid:{schema:1}}},getDependencies:async()=>[material],getDependency:async()=>texture};
- const root={userData:{}};await hybridPlugin(parser).afterRoot(root);
+ const clone=material.clone();clone.userData.studioLightMap=parser.json.materials[0].extras.studioLightMap;
+ const root={userData:{},scene:{traverse:fn=>fn({material:clone})}};await hybridPlugin(parser).afterRoot(root);
+ assert.equal(clone.lightMapIntensity,Math.PI*range);assert.equal(clone.lightMap.colorSpace,NoColorSpace);
  assert.equal(material.lightMap.colorSpace,NoColorSpace);assert.equal(material.lightMap.channel,0);assert.equal(material.lightMapIntensity,Math.PI*range);assert.ok(material.isMeshStandardMaterial);assert.equal(root.userData.studioHybrid.schema,1);
  const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <normal_fragment_maps>\n#include <lights_fragment_maps>'};material.onBeforeCompile(shader);
  assert.match(shader.fragmentShader,/lightMapTexel\.rgb \* lightMapTexel\.a/);assert.doesNotMatch(shader.fragmentShader,/iblIrradiance \+= getIBLIrradiance/);
@@ -32,4 +34,19 @@ test('static batching preserves transforms and leaves transmission sorting indep
  const a=new Mesh(new BoxGeometry(),material),b=new Mesh(new BoxGeometry(),material),c=new Mesh(new BoxGeometry(),glass),d=new Mesh(new BoxGeometry(),glass);b.position.x=4;c.position.x=8;d.position.x=12;parent.add(a,b,c,d);
  const before=new Box3().setFromObject(root).getSize(new Vector3());batchOpaque(root);let meshes=0;root.traverse(o=>{if(o.isMesh)meshes++;});
  assert.equal(meshes,3);assert.equal(c.parent,parent);assert.equal(d.parent,parent);assert.deepEqual(new Box3().setFromObject(root).getSize(new Vector3()),before);
+});
+
+import {extendGround} from '../clay/materials.js';
+import {PlaneGeometry} from 'three';
+import {sceneProfile} from '../admin/appearance.js';
+test('ground extension preserves original texel density and clamps every baked map at the border',()=>{
+ const geometry=new PlaneGeometry(20,20),material=new MeshStandardMaterial(),mesh=new Mesh(geometry,material);
+ const before=geometry.attributes.position.getX(0)/ (geometry.attributes.uv.getX(0)-.5);extendGround(mesh);
+ assert.equal(geometry.attributes.position.getX(0)/(geometry.attributes.uv.getX(0)-.5),before);
+ const shader={uniforms:{},fragmentShader:'#include <map_fragment>\n#include <roughnessmap_fragment>'};material.onBeforeCompile(shader);
+ assert.match(shader.fragmentShader,/texture2D\( map, clamp\(/);assert.match(shader.fragmentShader,/texture2D\( roughnessMap, clamp\(/);assert.equal(mesh.castShadow,false);
+});
+test('whole-scene lighting keeps the shared area lights after the room lights',()=>{
+ const lights=Array.from({length:12},(_,i)=>({type:'AREA',name:String(i),position:[0,5,0],direction:[0,-1,0],color:[1,1,1],energy:100,size:3}));
+ assert.equal(sceneProfile({schema:1,coordinateSystem:'gltf-y-up',lights}).lights.length,12);
 });

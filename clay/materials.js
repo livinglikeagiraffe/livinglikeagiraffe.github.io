@@ -27,14 +27,38 @@ if(abs(clayDet)>1e-9)normal=normalize(abs(clayDet)*normal-sign(clayDet)*(dFdx(cl
 }
 
 export function hybridPlugin(parser){return {name:'STUDIO_indirect_lightmaps',async afterRoot(gltf){
-  const materials=await parser.getDependencies('material');
-  await Promise.all(materials.map(async(material,index)=>{
-    const spec=parser.json.materials[index].extras?.studioLightMap;
+  const dependencies=await parser.getDependencies('material'),materials=new Set(dependencies);
+  // GLTFLoader creates geometry-specific clones before afterRoot (tangents/colors).
+  // Attach maps and shader hooks to those rendered materials as well.
+  for(const scene of gltf.scenes||[gltf.scene])scene?.traverse(object=>{for(const material of object.material?(Array.isArray(object.material)?object.material:[object.material]):[])materials.add(material);});
+  await Promise.all([...materials].map(async material=>{
+    const index=parser.associations?.get(material)?.materials??dependencies.indexOf(material);
+    const spec=material.userData.studioLightMap||parser.json.materials[index]?.extras?.studioLightMap;
     if(!spec)return;
     if(spec.encoding!=='RGBM'||spec.indirectOnly!==true||!Number.isFinite(spec.range)||spec.range<=0||spec.range>1e8||!Number.isInteger(spec.texture)||spec.texCoord!==0)throw Error('지원하지 않는 간접광 텍스처입니다.');
     const texture=(await parser.getDependency('texture',spec.texture)).clone();texture.colorSpace=THREE.NoColorSpace;texture.channel=0;texture.flipY=false;texture.needsUpdate=true;
+    material.normalScale?.multiplyScalar(.35);
     material.lightMap=texture;material.lightMapIntensity=Math.PI*spec.range;material.userData.studioLightMap=spec;
     installClay(material,{lightMapRange:spec.range});
   }));
   gltf.userData.studioHybrid=parser.json.extras?.studioHybrid;
 }};}
+
+// Extend the studio ground while preserving texel density around the modules.
+// Outside the baked rectangle, clamp to its edge instead of stretching the bake.
+export function extendGround(mesh){
+  const geometry=mesh.geometry,position=geometry.attributes.position,uv=geometry.attributes.uv;
+  if(!position||!uv)return;
+  geometry.computeBoundingBox();const center=geometry.boundingBox.getCenter(new THREE.Vector3());
+  const low=new THREE.Vector2(Infinity,Infinity),high=new THREE.Vector2(-Infinity,-Infinity);
+  for(let i=0;i<uv.count;i++){low.min(new THREE.Vector2(uv.getX(i),uv.getY(i)));high.max(new THREE.Vector2(uv.getX(i),uv.getY(i)));}
+  const middle=low.clone().add(high).multiplyScalar(.5);
+  for(let i=0;i<position.count;i++){const p=new THREE.Vector3().fromBufferAttribute(position,i).sub(center).multiplyScalar(8).add(center);position.setXYZ(i,p.x,p.y,p.z);uv.setXY(i,middle.x+(uv.getX(i)-middle.x)*8,middle.y+(uv.getY(i)-middle.y)*8);}
+  position.needsUpdate=true;uv.needsUpdate=true;geometry.computeBoundingBox();geometry.computeBoundingSphere();
+  const material=mesh.material,compile=material.onBeforeCompile.bind(material);low.addScalar(.001);high.subScalar(.001);
+  material.onBeforeCompile=shader=>{compile(shader);shader.uniforms.floorUvMin={value:low};shader.uniforms.floorUvMax={value:high};
+    for(const chunk of ['map_fragment','roughnessmap_fragment','metalnessmap_fragment'])shader.fragmentShader=shader.fragmentShader.replace('#include <'+chunk+'>',THREE.ShaderChunk[chunk]);
+    shader.fragmentShader='uniform vec2 floorUvMin; uniform vec2 floorUvMax;\n'+shader.fragmentShader.replace(/texture2D\( (map|normalMap|roughnessMap|metalnessMap|lightMap), ([^)]+) \)/g,'texture2D( $1, clamp( $2, floorUvMin, floorUvMax ) )');
+  };
+  material.customProgramCacheKey=()=> 'studio-clay-ground-2';material.needsUpdate=true;mesh.castShadow=false;
+}
