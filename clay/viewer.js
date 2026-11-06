@@ -33,13 +33,15 @@ export class ClayViewer{
       }
     });
     if(bounds.isEmpty())throw Error('표시할 모델이 없습니다.');
-    if(this.mobile){
-      const textures=new Map();root.traverse(o=>{for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])for(const key of ['map','lightMap','normalMap','roughnessMap','metalnessMap'])if(m[key])textures.set(m[key],['normalMap','roughnessMap','metalnessMap'].includes(key)?512:1024);});
-      for(const [texture,limit] of textures){const source=texture.image;if(!source?.width||Math.max(source.width,source.height)<=limit)continue;const scale=limit/Math.max(source.width,source.height);
-        const width=Math.max(1,Math.round(source.width*scale)),height=Math.max(1,Math.round(source.height*scale));
-        try{texture.image=await createImageBitmap(source,{resizeWidth:width,resizeHeight:height,resizeQuality:'high',premultiplyAlpha:'none',colorSpaceConversion:'none'});}catch{const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d');context.drawImage(source,0,0,width,height);texture.image=canvas;}texture.needsUpdate=true;
-      }
+    // Bound GPU texture memory for dense uploads as well as individual images.
+    const textures=new Map();root.traverse(o=>{for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])for(const key of ['map','lightMap','normalMap','roughnessMap','metalnessMap'])if(m[key])textures.set(m[key],this.mobile?(['normalMap','roughnessMap','metalnessMap'].includes(key)?512:1024):2048);});
+    const planned=[...textures].reduce((sum,[texture,limit])=>{const image=texture.image;if(!image?.width)return sum;const scale=Math.min(1,limit/Math.max(image.width,image.height));return sum+image.width*image.height*scale*scale*4*4/3;},0);
+    const budgetScale=Math.min(1,Math.sqrt((this.mobile?128:512)*1048576/Math.max(1,planned))),before=new Set([...textures.keys()].map(t=>t.image)),processed=new Set();
+    for(const [texture,limit] of textures){if(processed.has(texture.source))continue;processed.add(texture.source);const source=texture.image;if(!source?.width)continue;const scale=Math.min(1,limit/Math.max(source.width,source.height))*budgetScale;if(scale>=.99)continue;
+      const width=Math.max(1,Math.round(source.width*scale)),height=Math.max(1,Math.round(source.height*scale));
+      try{texture.image=await createImageBitmap(source,{resizeWidth:width,resizeHeight:height,resizeQuality:'high',premultiplyAlpha:'none',colorSpaceConversion:'none'});}catch{const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d');context.drawImage(source,0,0,width,height);texture.image=canvas;}texture.needsUpdate=true;
     }
+    const retained=new Set([...textures.keys()].map(t=>t.image));for(const source of before)if(!retained.has(source))source?.close?.();
     batchOpaque(root);
     if(this.model){this.scene.remove(this.model,this.rig,this.ambient,this.floor);this.model.traverse(o=>{o.geometry?.dispose();for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[]){for(const value of Object.values(m))if(value?.isTexture)value.dispose();m.dispose();}});this.rig.traverse(o=>{o.shadow?.map?.dispose();o.shadow?.mapPass?.dispose();});this.floor?.geometry.dispose();this.floor?.material.dispose();}
     this.model=root;this.hybrid=Boolean(gltf.userData.studioHybrid);profile=gltf.userData.studioHybrid?.lighting||profile;
