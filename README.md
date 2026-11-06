@@ -90,22 +90,31 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 
 미리보기 재생성: `python3 scripts/gallery-previews.py` (Pillow 필요). `posts.json`의 preview/display 경로와 생성 파일을 함께 커밋합니다.
 
-## Blender 조명 베이킹
+## Clay 페이지와 편집 스튜디오
 
-관리자에서 ‘조명·그림자 베이킹 함께 생성’을 선택하면 업로드 → 원본 PNG 렌더 → 자동 UV → Cycles Combined 베이킹 → OpenImageDenoise → 원본 OCIO 색 변환 → unlit GLB 내보내기 → 저장소 보관을 실행합니다. `studio/bake.py`는 Blender 내장 Cycles와 Khronos glTF exporter를 사용합니다. 별도 변환 서버 없이 GitHub Actions가 처리합니다.
+기존 `/`와 `/v2/`를 유지하고 `/clay/`에서 v06 공간을 표시합니다. 드래그·터치 이동, 휠·핀치 줌, 방향키·+/−·Home을 지원합니다. 줌아웃할 때 높이와 각도가 조금 낮아지고 감속하며 정지합니다. 움직임 줄이기 설정을 따릅니다.
 
-- 표준: 큰 표면·소품 각각 2048px / 배경 1024px, 64샘플. 원본 설정: 모두 2048px, 192샘플. 면적에 따라 아틀라스를 자동 분리하고 albedo/normal 가이드로 노이즈를 제거합니다. Cycles 여백 확장은 끄고, 노이즈 제거 후 실제 면의 픽셀만 8px 확장해 모서리의 색 번짐을 막습니다. 결과는 `studio/renders/<request UUID>/`의 GLB·PNG·report.json이며 `render-index.json`이 버전에 연결합니다.
-- 원본 GLB와 베이킹 GLB를 전환하고 결과를 다운로드할 수 있습니다. 결과 파일의 크기·SHA-256을 검사하고, 베이킹 참조를 새 검수 버전과 함께 보관합니다. 원본 렌더만 다시 요청해도 기존 베이킹 기록은 유지합니다.
-- 불투명 재질은 `KHR_materials_unlit`으로 표시해 빛과 톤 매핑을 중복 적용하지 않습니다. 투명·유리 재질은 PBR로 남습니다. 현재 프레임·고정 조명 전용이며, 시점 의존 반사·굴절과 모듈 간 새 그림자/간접광까지 같아지지는 않습니다. 구조나 조명 변경 시 다시 베이킹합니다.
-- 큰 촬영 배경은 별도 아틀라스에 굽고 단일 미리보기에서만 표시합니다. 격자에서는 배경을 제거하고 전체 씬을 한 모듈로 배치합니다.
-- 최대 600개 메시·150만 삼각형·48MiB GLB. 볼륨, 비메시, 절차적 인스턴스는 사전 정리가 필요하며 지원되지 않는 입력은 오류로 안내합니다.
-- [Blender 베이킹 문서](https://docs.blender.org/manual/en/4.4/render/cycles/baking.html) · [Khronos glTF-Blender-IO](https://github.com/KhronosGroup/glTF-Blender-IO) · [별도 오픈소스 애드온 The Lightmapper](https://github.com/Naxela/The_Lightmapper) (이 프로젝트에 설치하지 않음).
+`/admin/` → GitHub 연결 → ZIP 선택 → 배치에 추가 → 배치 저장·베이킹. 저장되지 않은 모듈도 배치 저장 시 원본 파일과 함께 업로드됩니다. 전체 씬 하나가 한 모듈이며 내부 방의 상대 위치를 유지합니다. v06은 `full/`의 Normal GLB와 .blend가 우선 선택됩니다.
 
-## 전체 공간 베이킹
+### 간접광 파이프라인
 
-격자의 ‘배치 저장 후 전체 공간 자동 베이킹’을 켜면 불변 배치 기록을 만들고 Actions에 `kind=layout`을 요청합니다. `studio/compose.py`가 각 .blend의 메시·재질·작은 조명을 배치하고, 개별 촬영 배경 대신 공통 바닥과 큰 조명을 구성합니다. 모든 원본 재질을 유지한 채 모듈별 UV 아틀라스를 굽기 때문에 모듈 간 그림자·간접광이 함께 계산됩니다.
+- `studio/compose.py`: 배치 스냅샷·원본 해시 검증, 전체 씬 합성, 공통 바닥·조명 구성.
+- `studio/hybrid.py`: Cycles INDIRECT diffuse(색 제외), albedo, tangent normal, roughness를 각각 계산. 모든 아틀라스가 끝날 때까지 원본 재질을 유지합니다. UV 검증 실패 시 묶음을 이분해 재시도합니다.
+- 간접광은 OIDN 후 선형 RGBM으로 저장합니다. OCIO 화면용 변환을 텍스처에 넣지 않습니다. GLB 재질 extras의 `studioLightMap`이 내장 PNG·UV·범위를 참조합니다. 웹 로더가 RGBM을 복원하고 pi를 곱해 조도 입력으로 사용합니다.
+- `clay/materials.js`: PBR 재질·직접광·표면 노멀을 유지하고 작은 절차적 클레이 요철을 추가합니다. 베이킹된 간접광과 환경의 확산광을 중복 계산하지 않습니다. 면광원과 반사·굴절은 웹에서 근사합니다.
+- 표준 2K·96샘플 / 정밀 2K·256샘플. 불투명 메시를 아틀라스별로 합쳐 그리기 호출 수를 줄입니다. 유리·금속·발광 재질은 별도로 유지합니다.
+- 기존 `studio/bake.py`의 Combined/unlit 결과도 이전 버전 검수용으로 계속 지원합니다.
 
-- 배치·회전·간격·바닥 색의 SHA-256과 원본 자산 SHA-256을 검증합니다. `studio/layouts/<id>.json`은 배치 기록, `render-index.json`의 `layouts`는 결과 연결입니다. 배치가 바뀌면 이전 결과 표시를 중단하고 재저장을 안내합니다.
-- 편집용 3D / 전체 베이킹 3D / Blender 렌더를 전환합니다. `/admin/?layout=<id>`는 특정 배치 기록을 열며 현재 저장된 배치를 덮어쓰지 않습니다. `saveLayoutSnapshot(..., {makeCurrent:false})`로 검수용 기록만 만들 수도 있습니다.
-- 최대 6개 모듈·총 1,800개 메시·150만 삼각형·48MiB GLB, 작업당 90분 제한. 각 모듈은 패킹된 Cycles 원본이 필요합니다. 큰 표면과 소품은 각각 별도 2K, 배경은 품질 설정에 따라 1K/2K입니다. 유리·시점 의존 반사는 근사하며 모듈에 포함된 바닥 판과 벽은 그대로 유지합니다.
-- 검증: `npm test`, `python3 -B tests/test_compose.py`. Blender에서는 `studio/render.py -- --manifest studio/layouts/<id>.json --output <directory> --mode bake --kind layout --quality preview`를 사용합니다.
+### 버전과 공개
+
+GitHub Actions `render-module.yml`이 `mode=hybrid`, `kind=layout`으로 실행됩니다. `studio/layouts/<id>.json`은 고정 배치, `studio/renders/<request>/`는 결과입니다. `studio/save_result.py`는 결과 SHA-256을 검사하고 **현재 배치와 ID·digest가 일치하는 성공 결과만** `studio/public-scene.json`에 연결합니다. 오래된 작업이 늦게 끝나도 최신 배치를 덮어쓰지 않습니다. 저장 충돌 시 최신 브랜치에서 공개 조건을 다시 검사합니다.
+
+`/clay/`는 현재 저장소의 공개 포인터를 읽고 GLB 해시를 검증합니다. 새 배치가 계산 중이면 이전 완료 결과를 유지합니다. 원본 .blend는 저장소에 보관하고 Pages 산출물에는 넣지 않습니다. 소스 변경 시 Pages를 배포하며, 이후 배치 베이킹 결과는 별도 Pages 재배포 없이 반영됩니다. 저장소가 공개이므로 방문자가 토큰 없이 결과를 읽습니다.
+
+### 검증과 한계
+
+`npm test`, `PYTHONPYCACHEPREFIX=/tmp/giraffe-pycache python3 -m unittest discover -s tests -p 'test_*.py'`, `npm run build`.
+
+Blender 검증: `blender --background --factory-startup --disable-autoexec --python-exit-code 1 --python studio/render.py -- --manifest studio/layouts/<id>.json --output <directory> --kind layout --mode hybrid --quality preview`.
+
+최대 6모듈, 원본당 4,000메시, 전체 12,000메시·300만 삼각형, GLB 48MiB, 90분. 실제 처리 가능 범위는 UV·재질 복잡도에 따라 달라집니다. Cycles의 임의 셰이더와 모든 조명 효과를 실시간 웹에 1:1 재현하지는 않습니다. 구조나 조명이 바뀌면 전체 간접광을 다시 계산해야 합니다.

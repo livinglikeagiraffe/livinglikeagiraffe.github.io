@@ -72,7 +72,7 @@ def compose_scene(path):
         # Localize them before copying or baking, without changing the source file.
         bpy.ops.object.make_local(type='ALL')
         meshes=[o for o in scene.objects if o.type=='MESH' and not o.hide_render and o.visible_get()]
-        if not meshes or len(meshes)>600:raise ValueError('Source supports 1–600 visible meshes')
+        if not meshes or len(meshes)>4000:raise ValueError('Source supports 1–4000 visible meshes')
         if any(o.type in {'VOLUME','CURVE','FONT','META','SURFACE'} and not o.hide_render for o in scene.objects):raise ValueError('Convert non-mesh geometry before composition')
         if any(o.instance_type!='NONE' or any(m.type in {'NODES','PARTICLE_SYSTEM'} for m in o.modifiers) for o in meshes):raise ValueError('Realize procedural instances before composition')
         deps=bpy.context.evaluated_depsgraph_get();frozen=[]

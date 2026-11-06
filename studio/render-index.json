@@ -40,6 +40,16 @@
       "sourceCommit": "1471f53949fd2602f9898823c62d904f4a2c785b",
       "digest": "fb4baa04714840104817dc7f8b26a49d63c2efc041c4eadbab9317cfd12e19f9",
       "execution": "local-verified"
+    },
+    "b304115d-5402-42f4-aaae-c75f5874939d": {
+      "id": "159788df-e0af-5a63-b095-b6681595f040",
+      "status": "complete",
+      "quality": "preview",
+      "scene": "Whole space",
+      "mode": "hybrid",
+      "sourceCommit": "1e1faed87537d416ab05c03ef6f7df196958ffde",
+      "url": "",
+      "digest": "dc53d4db550d5de51eea69f679c5d3ebd09c06d584faff14715393c25ee87cb1"
     }
   }
 }

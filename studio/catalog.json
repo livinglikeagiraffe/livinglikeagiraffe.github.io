@@ -3,6 +3,35 @@
   "versions": [
     {
       "schema": 1,
+      "id": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
+      "moduleId": "a5f967f6-aaaf-574e-b3ef-d26e76c05bde",
+      "title": "리라지 v06",
+      "createdAt": "2026-11-06T19:40:29.505265+00:00",
+      "model": "riraji_normal.glb",
+      "reference": "clay_normal_v06.png",
+      "blend": "riraji_full.blend",
+      "scene": "01_Clay_Normal",
+      "assets": [
+        {
+          "name": "riraji_full.blend",
+          "sha256": "5dd17152335c1adba5355e3c32d0cf9c616fbbc9fb4baf03111a2584948c1cfa",
+          "bytes": 32844660
+        },
+        {
+          "name": "riraji_normal.glb",
+          "sha256": "dddb88e38907948c093ced298229e6b1ddc90793a76791735baab632a9444488",
+          "bytes": 11630788
+        },
+        {
+          "name": "clay_normal_v06.png",
+          "sha256": "1444ae6ee07fccc3a1a61bcd2dda6fbfe77b364a7c1215657cac474863b181fb",
+          "bytes": 2045974
+        }
+      ],
+      "manifest": "studio/modules/a5f967f6-aaaf-574e-b3ef-d26e76c05bde/versions/7e655b0f-2336-51a0-bb0e-06beb6576f8a/manifest.json"
+    },
+    {
+      "schema": 1,
       "id": "784f34ac-6c68-418f-bd34-55a9df7f8179",
       "moduleId": "62720f3a-2122-4261-a115-eb5b9a03ba77",
       "title": "리라지 · 조명 베이킹",

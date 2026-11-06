@@ -1,0 +1,247 @@
+"""Linear indirect diffuse lightmaps + live PBR. Uploads never execute scripts.
+
+The lightmap stores indirect diffuse outgoing radiance without surface color.
+The browser decodes RGBM and multiplies by pi before the Lambert BRDF. Direct
+lighting, normal response and specular remain live; no display transform is
+baked into these textures. All original shaders stay until transport finishes.
+"""
+import hashlib
+import json
+import math
+import struct
+import time
+import contextlib
+import os
+import sys
+from bake import UV_NAME, atlas_groups, unwrap_objects, pad_bake_images, save_denoised
+
+HYBRID_VERSION=1
+
+
+@contextlib.contextmanager
+def bake_log():
+    """Cycles repeats the whole object inventory for every baked object."""
+    if os.getenv('STUDIO_VERBOSE')=='1':
+        yield;return
+    sys.stdout.flush();saved=os.dup(1)
+    try:
+        with open(os.devnull,'w') as sink:
+            os.dup2(sink.fileno(),1)
+            yield
+    finally:
+        sys.stdout.flush();os.dup2(saved,1);os.close(saved)
+
+
+def inject_lightmaps(path, maps, lighting):
+    data=path.read_bytes();length=struct.unpack_from('<I',data,12)[0]
+    doc=json.loads(data[20:20+length]);start=20+length
+    binary=bytearray(data[start+8:start+8+struct.unpack_from('<I',data,start)[0]])
+    for material in doc.get('materials',[]):
+        spec=maps.get(material.get('name'))
+        if not spec:continue
+        while len(binary)%4:binary.append(0)
+        png=spec['path'].read_bytes();offset=len(binary);binary.extend(png)
+        views=doc.setdefault('bufferViews',[]);view=len(views)
+        views.append({'buffer':0,'byteOffset':offset,'byteLength':len(png)})
+        images=doc.setdefault('images',[]);index=len(images)
+        images.append({'bufferView':view,'mimeType':'image/png','name':spec['path'].stem})
+        textures=doc.setdefault('textures',[]);texture=len(textures)
+        textures.append({'source':index})
+        material.setdefault('extras',{})['studioLightMap']={'texture':texture,'texCoord':0,'encoding':'RGBM','range':spec['range'],'indirectOnly':True}
+        if 'KHR_materials_unlit' in material.get('extensions',{}):raise ValueError('Hybrid material cannot be unlit')
+    doc['buffers'][0]['byteLength']=len(binary)
+    doc.setdefault('extras',{})['studioHybrid']={'schema':HYBRID_VERSION,'lighting':lighting}
+    encoded=json.dumps(doc,separators=(',',':')).encode();encoded+=b' '*((-len(encoded))%4)
+    binary+=b'\0'*((-len(binary))%4)
+    path.write_bytes(struct.pack('<4sII',b'glTF',2,28+len(encoded)+len(binary))+struct.pack('<I4s',len(encoded),b'JSON')+encoded+struct.pack('<I4s',len(binary),b'BIN\0')+binary)
+
+
+def encode_rgbm(pixels):
+    import numpy as np
+    rgb=np.maximum(pixels[...,:3],0)
+    if not np.isfinite(rgb).all():raise ValueError('Non-finite irradiance')
+    scale=max(1,2**math.ceil(math.log2(max(float(rgb.max()),.00001))))
+    multiplier=np.ceil(np.clip(rgb.max(axis=-1)/scale,0,1)*255)/255
+    result=np.zeros_like(pixels)
+    result[...,:3]=rgb/np.maximum(multiplier[...,None]*scale,1e-8)
+    result[...,3]=multiplier
+    return result,scale
+
+
+def write_png(path,pixels,color=False):
+    """Write explicit 8-bit data; normal/RGBM maps must never pass through OCIO."""
+    import numpy as np
+    import zlib
+    data=np.array(pixels,copy=True)
+    if color:
+        rgb=data[...,:3];data[...,:3]=np.where(rgb<=.0031308,rgb*12.92,1.055*np.maximum(rgb,0)**(1/2.4)-.055)
+    rgba=np.rint(np.clip(data,0,1)*255).astype(np.uint8)
+    height,width=rgba.shape[:2]
+    def chunk(kind,content):return struct.pack('>I',len(content))+kind+content+struct.pack('>I',zlib.crc32(kind+content)&0xffffffff)
+    # Blender image rows start at the bottom; PNG scanlines start at the top.
+    raw=b''.join(b'\0'+row.tobytes() for row in rgba[::-1])
+    path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',width,height,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,6))+chunk(b'IEND',b''))
+
+
+def dynamic_material(mat):
+    if not mat or not mat.use_nodes:return False
+    for node in mat.node_tree.nodes:
+        if node.type in {'BSDF_GLASS','BSDF_TRANSPARENT','BSDF_REFRACTION','EMISSION'}:return True
+        if node.type=='BSDF_PRINCIPLED':
+            for name,threshold in [('Transmission',.01),('Transmission Weight',.01),('Metallic',.1)]:
+                v=node.inputs.get(name)
+                if v and (v.is_linked or v.default_value>threshold):return True
+            v=node.inputs.get('Alpha')
+            if v and (v.is_linked or v.default_value<.99):return True
+            emission=node.inputs.get('Emission') or node.inputs.get('Emission Color')
+            strength=node.inputs.get('Emission Strength')
+            if emission and (emission.is_linked or max(emission.default_value[:3])>.001) and (not strength or strength.is_linked or strength.default_value>.001):return True
+    return False
+
+
+def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,samples_override=None):
+    import bpy
+    import numpy as np
+    from mathutils import Vector
+    from render import web_scene
+    start=time.monotonic();lighting=web_scene(scene)
+    meshes=[o for o in scene.objects if o.type=='MESH' and not o.hide_render and o.visible_get()]
+    if not 1<=len(meshes)<=12000:raise ValueError('Hybrid baking supports 1–12000 visible meshes')
+    if any(o.type in {'VOLUME','CURVE','FONT','META','SURFACE'} and not o.hide_render for o in scene.objects):raise ValueError('Convert non-mesh geometry before baking')
+    if any(o.instance_type!='NONE' or any(m.type in {'NODES','PARTICLE_SYSTEM'} for m in o.modifiers) for o in meshes):raise ValueError('Realize procedural instances before baking')
+    deps=bpy.context.evaluated_depsgraph_get()
+    evaluated=[(o,bpy.data.meshes.new_from_object(o.evaluated_get(deps),preserve_all_data_layers=True,depsgraph=deps)) for o in meshes]
+    triangles=sum(sum(len(p.vertices)-2 for p in mesh.polygons) for _,mesh in evaluated)
+    if triangles>3_000_000:raise ValueError('Hybrid baking exceeds 3 million triangles')
+    for obj,mesh in evaluated:
+        obj.data=mesh;obj.modifiers.clear();obj.hide_select=False
+    backdrop=next((o for o in meshes if o.get('studioKeepBackdrop')),None) or max(meshes,key=lambda o:o.dimensions.x*o.dimensions.y)
+    others=[o for o in meshes if o!=backdrop]
+    points=[o.matrix_world@Vector(c) for o in others or meshes for c in o.bound_box]
+    low=Vector(tuple(min(p[k] for p in points) for k in range(3)));high=Vector(tuple(max(p[k] for p in points) for k in range(3)))
+    span=max(high.x-low.x,high.y-low.y,1)
+    if not (backdrop.get('studioKeepBackdrop') or backdrop.dimensions.z<span*.04 and backdrop.dimensions.x>span*3 and backdrop.dimensions.y>span*3):backdrop=None
+    if backdrop:
+        backdrop['studioBackdrop']=True
+        # Bound the otherwise enormous studio plane so it receives useful texels.
+        z=max((backdrop.matrix_world@Vector(c)).z for c in backdrop.bound_box);center=(low+high)*.5;radius=span*1.25
+        inverse=backdrop.matrix_world.inverted();material=backdrop.data.materials[0]
+        plane=bpy.data.meshes.new('Hybrid floor');plane.from_pydata([inverse@Vector((center.x+x*radius,center.y+y*radius,z)) for x,y in [(-1,-1),(1,-1),(1,1),(-1,1)]],[],[(0,1,2,3)]);plane.materials.append(material);plane.update();backdrop.data=plane
+    dynamic=[o for o in meshes if any(dynamic_material(m) for m in o.data.materials)]
+    opaque=[o for o in meshes if o not in dynamic and o!=backdrop]
+    if not opaque:raise ValueError('No opaque surfaces to bake')
+    samples=samples_override or (96 if quality=='preview' else 256)
+    scene.cycles.samples=samples;scene.cycles.use_denoising=False
+    scene.render.bake.use_selected_to_active=False;scene.render.bake.use_clear=True;scene.render.bake.margin=0
+    scene.render.bake.margin_type='EXTEND';scene.render.bake.view_from='ABOVE_SURFACE'
+    groups=atlas_groups(opaque,whole_space,quality)+([('backdrop',[backdrop],2048)] if backdrop else [])
+    atlases=[];replacements=[];maps={}
+    cursor=0
+    while cursor<len(groups):
+        name,objects,resolution=groups[cursor];cursor+=1
+        resolution=resolution_override or resolution
+        print('STUDIO_HYBRID unwrap',name,len(objects),resolution,flush=True)
+        bpy.ops.object.select_all(action='DESELECT');clones={}
+        def new_image(label):
+            image=bpy.data.images.new(name+'_'+label,resolution,resolution,alpha=True,float_buffer=True)
+            image.generated_color=(0,0,0,0);image.colorspace_settings.name='Non-Color';image.alpha_mode='STRAIGHT'
+            return image
+        indirect=new_image('indirect')
+        for obj in objects:
+            old_uv=obj.data.uv_layers.active.name if obj.data.uv_layers.active else ''
+            layer=obj.data.uv_layers.get(UV_NAME) or obj.data.uv_layers.new(name=UV_NAME)
+            obj.data.uv_layers.active=layer;layer.active_render=True
+            for i,mat in enumerate(list(obj.data.materials)):
+                if not mat:raise ValueError('Assign a material to '+obj.name)
+                key=(mat.name,old_uv)
+                if key not in clones:
+                    copy=mat.copy();copy.use_nodes=True;nodes=copy.node_tree.nodes;links=copy.node_tree.links
+                    if old_uv:
+                        uv=nodes.new('ShaderNodeUVMap');uv.uv_map=old_uv
+                        for node in list(nodes):
+                            if node.type=='TEX_IMAGE' and not node.inputs['Vector'].is_linked:links.new(uv.outputs['UV'],node.inputs['Vector'])
+                            if node.type=='NORMAL_MAP' and not node.uv_map:node.uv_map=old_uv
+                            if node.type=='TEX_COORD':
+                                for link in list(node.outputs['UV'].links):links.new(uv.outputs['UV'],link.to_socket)
+                    tex=nodes.new('ShaderNodeTexImage');tex.image=indirect
+                    for node in nodes:node.select=False
+                    tex.select=True;nodes.active=tex;clones[key]=copy
+                obj.data.materials[i]=clones[key]
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active=objects[0]
+        try:unwrap_objects(objects,resolution,'_detail' in name,padding=4,minimum=2)
+        except ValueError as error:
+            if 'UV atlas' not in str(error) or len(objects)<2:raise
+            midpoint=len(objects)//2
+            groups[cursor:cursor]=[(name+'_p0',objects[:midpoint],resolution),(name+'_p1',objects[midpoint:],resolution)]
+            bpy.data.images.remove(indirect)
+            print('STUDIO_HYBRID split',name,len(objects),flush=True)
+            continue
+        def bake(kind,target,passes=None,normal_space='TANGENT'):
+            for material in clones.values():material.node_tree.nodes.active.image=target
+            args={'type':kind,'margin':0,'uv_layer':UV_NAME}
+            if passes is not None:args['pass_filter']=passes
+            if kind=='NORMAL':args['normal_space']=normal_space
+            print('STUDIO_HYBRID bake',name,kind,passes,flush=True)
+            with bake_log():bpy.ops.object.bake(**args)
+        scene.cycles.samples=samples
+        bake('DIFFUSE',indirect,{'INDIRECT'})
+        albedo=new_image('albedo');normal=new_image('normal');roughness=new_image('roughness');guide=new_image('guide')
+        scene.cycles.samples=1
+        bake('DIFFUSE',albedo,{'COLOR'});bake('NORMAL',normal);bake('ROUGHNESS',roughness);bake('NORMAL',guide,normal_space='OBJECT')
+        pixels=np.empty(resolution*resolution*4,dtype=np.float32)
+        indirect.pixels.foreach_get(pixels);coverage=pixels.reshape((resolution,resolution,4))[:,:,3]>.5
+        if not coverage.any():raise ValueError('Empty lightmap: '+name)
+        guide.pixels.foreach_get(pixels);pixels.reshape((-1,4))[:,:3]=pixels.reshape((-1,4))[:,:3]*2-1;guide.pixels.foreach_set(pixels)
+        exr=output/(name+'_linear.exr');save_denoised(indirect,exr,scene,normal=guide,linear=True)
+        clean=bpy.data.images.load(str(exr),check_existing=False);clean.colorspace_settings.name='Non-Color'
+        clean.pixels.foreach_get(pixels);rgba=pixels.reshape((resolution,resolution,4));rgba[:,:,3]=coverage
+        clean.pixels.foreach_set(rgba.ravel());clean.update()
+        pad_bake_images([clean,albedo,normal,roughness],radius=3,coverage=coverage)
+        clean.pixels.foreach_get(pixels);encoded,scale=encode_rgbm(pixels.reshape((resolution,resolution,4)))
+        rgbm=new_image('rgbm');rgbm.pixels.foreach_set(encoded.ravel());rgbm.update()
+        def save(image,suffix,color=False):
+            path=output/(name+'_'+suffix+'.png')
+            values=np.empty(resolution*resolution*4,dtype=np.float32);image.pixels.foreach_get(values)
+            write_png(path,values.reshape((resolution,resolution,4)),color)
+            loaded=bpy.data.images.load(str(path),check_existing=False);loaded.colorspace_settings.name='sRGB' if color else 'Non-Color';loaded.pack()
+            atlases.append({'name':path.name,'width':resolution,'height':resolution,'objects':len(objects),'kind':suffix})
+            return loaded
+        color_map=save(albedo,'albedo',True);normal_map=save(normal,'normal');rough_map=save(roughness,'roughness');save(rgbm,'indirect')
+        material=bpy.data.materials.new('Studio hybrid '+name);material.use_nodes=True
+        nodes=material.node_tree.nodes;links=material.node_tree.links;shader=nodes.get('Principled BSDF');shader.inputs['Metallic'].default_value=0
+        uv=nodes.new('ShaderNodeUVMap');uv.uv_map=UV_NAME
+        def texture(image):
+            node=nodes.new('ShaderNodeTexImage');node.image=image;links.new(uv.outputs['UV'],node.inputs['Vector']);return node
+        links.new(texture(color_map).outputs['Color'],shader.inputs['Base Color'])
+        links.new(texture(rough_map).outputs['Color'],shader.inputs['Roughness'])
+        normal_node=nodes.new('ShaderNodeNormalMap');normal_node.uv_map=UV_NAME
+        links.new(texture(normal_map).outputs['Color'],normal_node.inputs['Color']);links.new(normal_node.outputs['Normal'],shader.inputs['Normal'])
+        maps[material.name]={'path':output/(name+'_indirect.png'),'range':scale}
+        replacements.append((objects,material))
+        for image in (indirect,albedo,normal,roughness,guide,clean,rgbm):bpy.data.images.remove(image)
+        exr.unlink(missing_ok=True)
+    # Replace only after ALL atlases saw every neighboring original material.
+    for objects,material in replacements:
+        bpy.ops.object.select_all(action='DESELECT')
+        for obj in objects:
+            obj.data.materials.clear();obj.data.materials.append(material)
+            for polygon in obj.data.polygons:polygon.material_index=0
+            for name in [layer.name for layer in obj.data.uv_layers]:
+                if name!=UV_NAME:obj.data.uv_layers.remove(obj.data.uv_layers[name])
+            obj['studioHybrid']=True;obj.select_set(True)
+        bpy.context.view_layer.objects.active=objects[0]
+        if len(objects)>1:bpy.ops.object.join()
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in scene.objects:
+        if obj.type=='MESH' and not obj.hide_render or obj==scene.camera:obj.select_set(True)
+    path=output/'baked.glb'
+    print('STUDIO_HYBRID export',flush=True)
+    bpy.ops.export_scene.gltf(filepath=str(path),export_format='GLB',use_selection=True,use_active_scene=True,export_cameras=True,export_lights=False,export_extras=True,export_animations=False,export_texcoords=True,export_normals=True,export_materials='EXPORT')
+    inject_lightmaps(path,maps,lighting)
+    data=path.read_bytes()
+    if len(data)>48*1024**2:raise ValueError('Hybrid GLB exceeds 48 MiB')
+    return {'schema':1,'bakerVersion':5,'hybridVersion':HYBRID_VERSION,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
+            'displayReferred':False,'lighting':'indirect-only','encoding':'RGBM','samples':samples,'atlases':atlases,
+            'triangles':triangles,'opaqueObjects':len(opaque),'dynamicObjects':[o.name for o in dynamic],
+            'seconds':round(time.monotonic()-start,2),'limitations':['Static indirect illumination; rebake after layout changes','Direct area lights and glass are approximated in the browser']}

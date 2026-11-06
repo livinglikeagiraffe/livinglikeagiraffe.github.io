@@ -1,0 +1,16 @@
+{
+  "assets": [
+    {
+      "name": "riraji_full.blend",
+      "path": "studio/modules/a5f967f6-aaaf-574e-b3ef-d26e76c05bde/versions/7e655b0f-2336-51a0-bb0e-06beb6576f8a/files/riraji_full.blend"
+    },
+    {
+      "name": "riraji_normal.glb",
+      "path": "studio/modules/a5f967f6-aaaf-574e-b3ef-d26e76c05bde/versions/7e655b0f-2336-51a0-bb0e-06beb6576f8a/files/riraji_normal.glb"
+    },
+    {
+      "name": "clay_normal_v06.png",
+      "path": "studio/modules/a5f967f6-aaaf-574e-b3ef-d26e76c05bde/versions/7e655b0f-2336-51a0-bb0e-06beb6576f8a/files/clay_normal_v06.png"
+    }
+  ]
+}

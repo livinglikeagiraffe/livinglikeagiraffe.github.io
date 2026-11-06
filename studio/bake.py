@@ -77,7 +77,7 @@ def validate_uv(objects):
         if area < 1e-12:raise ValueError('UV atlas collapsed: split or simplify this mesh: '+obj.name)
 
 
-def unwrap_objects(objects, resolution, detail=False):
+def unwrap_objects(objects, resolution, detail=False, padding=10, minimum=None):
     import bpy
     from mathutils import Matrix
     from array import array
@@ -94,13 +94,13 @@ def unwrap_objects(objects, resolution, detail=False):
     bpy.ops.uv.smart_project(angle_limit=math.radians(45),island_margin=.002,area_weight=.1,correct_aspect=True,scale_to_bounds=True)
     bpy.ops.uv.select_all(action='SELECT')
     bpy.ops.uv.average_islands_scale()
-    bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=10/resolution)
+    bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=padding/resolution)
     bpy.ops.object.mode_set(mode='OBJECT')
     for _ in range(2):
-        for obj in objects:protect_thin_islands(obj.data,(6 if detail else 2)/resolution)
+        for obj in objects:protect_thin_islands(obj.data,(minimum if minimum is not None else (6 if detail else 2))/resolution)
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.uv.select_all(action='SELECT')
-        bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=10/resolution)
+        bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=padding/resolution)
         bpy.ops.object.mode_set(mode='OBJECT')
     for obj,saved in coordinates:
         obj.data.vertices.foreach_set('co',saved);obj.data.update()
@@ -138,7 +138,7 @@ def pad_bake_images(images, radius=8, coverage=None):
         image.pixels.foreach_set(pixels);image.update()
 
 
-def save_denoised(image, path, source_scene, albedo=None, normal=None):
+def save_denoised(image, path, source_scene, albedo=None, normal=None, linear=False):
     """Use Blender's bundled OpenImageDenoise, then the source OCIO transform."""
     import bpy
     post=bpy.data.scenes.new('Studio texture denoise')
@@ -151,6 +151,10 @@ def save_denoised(image, path, source_scene, albedo=None, normal=None):
     post.view_settings.gamma=source_scene.view_settings.gamma
     post.render.image_settings.file_format='PNG';post.render.image_settings.color_mode='RGB';post.render.image_settings.color_depth='8'
     post.render.filepath=str(path)
+    if linear:
+        post.view_settings.view_transform='Standard';post.view_settings.look='None'
+        post.view_settings.exposure=0;post.view_settings.gamma=1
+        post.render.image_settings.file_format='OPEN_EXR';post.render.image_settings.color_depth='32'
     camera=bpy.data.objects.new('Studio denoise camera',bpy.data.cameras.new('Studio denoise camera'))
     post.collection.objects.link(camera);post.camera=camera
     post.use_nodes=True;nodes=post.node_tree.nodes;nodes.clear();links=post.node_tree.links
@@ -166,7 +170,7 @@ def save_denoised(image, path, source_scene, albedo=None, normal=None):
     try:
         bpy.ops.render.render(scene=post.name,write_still=True)
         import struct
-        if not path.is_file() or struct.unpack('>II',path.read_bytes()[16:24])!=tuple(image.size):
+        if not path.is_file() or (not linear and struct.unpack('>II',path.read_bytes()[16:24])!=tuple(image.size)):
             raise ValueError('Denoising did not produce a texture of the requested size')
     finally:
         bpy.context.window.scene=source_scene

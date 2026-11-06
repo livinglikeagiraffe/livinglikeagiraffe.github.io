@@ -11,8 +11,10 @@ import {ShaderPass} from '../node_modules/three/examples/jsm/postprocessing/Shad
 import {cellPosition,fitScale} from './grid.js';
 import {normalizeLook,sceneProfile} from './appearance.js';
 import {previewVersion,isTagged,removeBackdrops} from './baked.js';
+import {hybridPlugin,installClay} from '../clay/materials.js';
+import {createLighting} from '../clay/lighting.js';
 
-let referenceProfile;
+let referenceProfile,clayProfile;
 const correction={uniforms:{tDiffuse:{value:null},warmth:{value:0},contrast:{value:1},saturation:{value:1}},vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`uniform sampler2D tDiffuse; uniform float warmth,contrast,saturation; varying vec2 vUv;
 void main(){vec4 c=texture2D(tDiffuse,vUv); c.rgb*=vec3(1.+warmth*.09,1.+warmth*.015,1.-warmth*.09);float l=dot(c.rgb,vec3(.2126,.7152,.0722)); c.rgb=mix(vec3(l),c.rgb,saturation); c.rgb=(c.rgb-.5)*contrast+.5;gl_FragColor=vec4(clamp(c.rgb,0.,1.),c.a);}`};
 
@@ -66,7 +68,7 @@ export class StudioViewer {
     const bytes=await file.blob.arrayBuffer(),view=new DataView(bytes);if(bytes.byteLength<20||view.getUint32(0,true)!==0x46546c67||view.getUint32(4,true)!==2)throw Error('유효한 glTF 2.0 GLB 파일이 아닙니다.');
     const json=JSON.parse(new TextDecoder().decode(bytes.slice(20,20+view.getUint32(12,true))));
     if([...(json.images||[]),...(json.buffers||[])].some(x=>x.uri&&!x.uri.startsWith('data:')))throw Error('텍스처가 내장된 GLB로 내보내 주세요. 외부 주소를 참조하는 GLB는 지원하지 않습니다.');
-    const gltf=await new GLTFLoader().parseAsync(bytes,'');gltf.scene.updateMatrixWorld(true);
+    const loader=new GLTFLoader();loader.register(hybridPlugin);const gltf=await loader.parseAsync(bytes,'');gltf.scene.updateMatrixWorld(true);
     let baked=false,backdrop=false;const bounds=new THREE.Box3();
     gltf.scene.traverse(o=>{if(o.isMesh){const frozen=isTagged(o,'studioBaked');baked||=frozen;backdrop||=isTagged(o,'studioBackdrop');o.castShadow=!frozen&&!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.transmission>0);o.receiveShadow=!frozen;
       if(frozen)for(const material of Array.isArray(o.material)?o.material:[o.material]){material.toneMapped=false;if(material.map){material.map.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());material.map.needsUpdate=true;}}
@@ -77,8 +79,9 @@ export class StudioViewer {
     if(camera)authoredCamera={position:camera.getWorldPosition(new THREE.Vector3()).toArray(),quaternion:camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),orthoScale:camera.isOrthographicCamera?Math.max(camera.right-camera.left,camera.top-camera.bottom):1,aspect:camera.isOrthographicCamera?(camera.right-camera.left)/(camera.top-camera.bottom):camera.aspect,fov:THREE.MathUtils.degToRad(camera.fov||45),type:camera.isOrthographicCamera?'ORTHO':'PERSP'};
     const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');
     if(!referenceProfile)referenceProfile=fetch(new URL('../v2/assets/scene-profile.json',import.meta.url)).then(r=>r.ok?r.json():null).catch(()=>null);
-    const bundled=await referenceProfile,profile=bundled?.modelHashes?.includes(hash)?sceneProfile(bundled):null;
-    const asset={scene:gltf.scene,baked,backdrop,bounds,size:bounds.getSize(new THREE.Vector3()),authoredCamera,profile,triangles:(json.meshes||[]).reduce((sum,m)=>sum+m.primitives.reduce((n,p)=>n+((json.accessors[p.indices??p.attributes.POSITION]?.count||0)/3),0),0)};
+    if(!clayProfile)clayProfile=fetch(new URL('../clay/assets/profile.json',import.meta.url)).then(r=>r.ok?r.json():null).catch(()=>null);
+    const bundled=await referenceProfile,clay=await clayProfile,isClay=clay?.modelHashes?.includes(hash),profile=isClay?sceneProfile(clay):bundled?.modelHashes?.includes(hash)?sceneProfile(bundled):null;
+    const asset={scene:gltf.scene,baked,clay:isClay,hybrid:Boolean(gltf.userData.studioHybrid),backdrop,bounds,size:bounds.getSize(new THREE.Vector3()),authoredCamera,profile:sceneProfile(gltf.userData.studioHybrid?.lighting)||profile,triangles:(json.meshes||[]).reduce((sum,m)=>sum+m.primitives.reduce((n,p)=>n+((json.accessors[p.indices??p.attributes.POSITION]?.count||0)/3),0),0)};
     this.cache.set(key,asset);return asset;
   }
   clear(){
@@ -88,7 +91,7 @@ export class StudioViewer {
     const instance=asset.scene.clone(true),materials=new Map();
     if(this.isGrid)removeBackdrops(instance);
     instance.traverse(o=>{if(o.isLight||this.isGrid&&isTagged(o,'studioBackdrop'))o.visible=false;if(!o.isMesh)return;
-      const copy=m=>{if(!materials.has(m)){const n=m.clone();n.userData.original={roughness:m.roughness,normal:m.normalScale?.clone()};materials.set(m,n);this.materials.add(n);}return materials.get(m);};
+      const copy=m=>{if(!materials.has(m)){const n=m.clone();installClay(n,{lightMapRange:n.userData.studioLightMap?.range||0});n.userData.original={roughness:m.roughness,normal:m.normalScale?.clone()};materials.set(m,n);this.materials.add(n);}return materials.get(m);};
       o.material=Array.isArray(o.material)?o.material.map(copy):copy(o.material);
     });
     this.applyMaterials(materials.values(),look);return instance;
@@ -105,7 +108,8 @@ export class StudioViewer {
   buildRig(){
     for(const light of [...this.rig.children]){light.shadow?.map?.dispose();light.shadow?.mapPass?.dispose();this.rig.remove(light);}
     const size=this.bounds.getSize(new THREE.Vector3()),center=this.bounds.getCenter(new THREE.Vector3()),span=Math.max(size.x,size.z,10);
-    this.renderer.shadowMap.type=this.isGrid?THREE.PCFShadowMap:THREE.VSMShadowMap;
+    this.renderer.shadowMap.type=THREE.PCFShadowMap;
+    if((this.asset?.hybrid||this.asset?.clay)&&!this.isGrid){const lights=createLighting(this.profile,this.bounds,{mobile:this.mobile,offset:this.offset});this.lights=lights.children.filter(o=>o.isLight);this.rig.add(...[...lights.children]);return;}
     if(this.isGrid){
       this.lights=[];
       for(const [i,position] of [[-span*.3,span,span*.5],[span*.4,span*.5,-span*.5]].entries()){
@@ -132,7 +136,7 @@ export class StudioViewer {
     this.scene.background=new THREE.Color(l.background);this.scene.environmentIntensity=l.ambient*.65;this.ambient.intensity=l.ambient;
     if(this.ground)this.ground.material.color.set(l.background);
     for(const light of this.lights||[]){light.intensity=light.userData.energy*l[light.userData.role];if(light.shadow)light.shadow.radius=this.isGrid?3:l.softness;}
-    this.ao.enabled=l.contact>0;this.ao.ssaoMaterial.uniforms.strength.value=l.contact;
+    this.ao.enabled=l.contact>0&&!this.asset?.hybrid;this.ao.ssaoMaterial.uniforms.strength.value=l.contact;
     for(const key of ['warmth','contrast','saturation'])this.grade.uniforms[key].value=l[key];
     if(!this.isGrid)this.applyMaterials(this.materials,l);
     if(fit)this.fit();else this.draw();return l;

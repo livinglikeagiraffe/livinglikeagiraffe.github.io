@@ -1,4 +1,5 @@
 import {unpack} from './archive.js';
+import {inferSelection} from './selection.js';
 import * as storage from './storage.js';
 import * as github from './github.js';
 import {StudioViewer} from './viewer.js';
@@ -26,7 +27,7 @@ function option(select,label,value){const o=document.createElement('option');o.t
 function updateButtons(){
   $('#save-version').disabled=busy||!current;
   $('#render-button').disabled=busy||!current?.blend||!github.connection()?.authenticated||Boolean(current?.job&&!['complete','failed'].includes(current.job.status));
-  $('#add-module').disabled=busy||!current||!versions.some(v=>v.id===current.id);
+  $('#add-module').disabled=busy||!current;
   for(const button of document.querySelectorAll('[data-preview]'))button.disabled=busy||!current||(button.dataset.preview==='baked'&&!current.bakedBlob&&!viewer?.asset?.baked)||(button.dataset.preview==='live'&&viewer?.asset?.baked&&!current?.bakedBlob);
 }
 function listVersions(){
@@ -52,7 +53,7 @@ async function selectVersion(version){
   updateBakeControls();
   if(asset)$('#model-info').textContent=`${asset.size.x.toFixed(1)} × ${asset.size.z.toFixed(1)}m · ${Math.round(asset.triangles).toLocaleString()} triangles`;
   updateImage();listVersions();$('#module-target').value=versions.some(v=>v.moduleId===version.moduleId)?version.moduleId:'';updateButtons();
-  $('#render-status').textContent=version.job?.status==='complete'?(version.bakedBlob?'원본 렌더와 베이킹을 비교할 수 있습니다.':'원본 렌더가 완료되었습니다. 비교 화면에서 확인해 주세요.'):version.remote?'GitHub에 저장된 버전입니다. 원본 렌더를 요청할 수 있습니다.':'이 브라우저에서 미리보는 중입니다. GitHub에 저장하면 원본 렌더를 요청할 수 있습니다.';
+  $('#render-status').textContent=version.job?.status==='complete'?'완료':version.remote?'저장됨':'미저장';
   if(version.job&&!['complete','failed'].includes(version.job.status)&&github.connection())pollRender();
 }
 function updateLookControls(){
@@ -64,15 +65,15 @@ function updateLookControls(){
   if(viewer?.asset?.baked){$('#look-source').textContent='Blender 조명·그림자·색감이 텍스처에 저장되어 있습니다.';$('#look-status').textContent='베이킹 모드 · 불투명 표면의 조명·색감은 고정됩니다.';}
 }
 function updateBakeControls(){
-  const baked=Boolean(viewer?.asset?.baked);
+  const baked=Boolean(viewer?.asset?.baked||viewer?.asset?.hybrid);
   document.querySelectorAll('[data-preview]').forEach(b=>b.classList.toggle('active',b.dataset.preview===(baked?'baked':'live')));
-  $('#bake-status').textContent=baked?'베이킹 표시 중 · 회전 가능 · 유리·반사는 근사 표현':current?.bakedBlob?'베이킹 완료 · 두 방식으로 비교할 수 있습니다.':'원본 렌더 시 조명·그림자를 GLB로 만들 수 있습니다.';
+  $('#bake-status').textContent=viewer?.asset?.hybrid?'간접광 적용':baked?'고정 조명':current?.bakedBlob?'베이킹 있음':'';
   if(bakeURL){URL.revokeObjectURL(bakeURL);bakeURL=null;}
   const blob=current?.bakedBlob||(baked?current?.files.find(f=>f.name===current.model)?.blob:null);
   $('#download-baked').hidden=!blob;if(blob){bakeURL=URL.createObjectURL(blob);$('#download-baked').href=bakeURL;}
 }
 for(const button of document.querySelectorAll('[data-preview]'))button.onclick=()=>action(async()=>{if(!current)return;current.previewMode=button.dataset.preview;await selectVersion(current);});
-$('#bake-with-render').onchange=()=>{$('#render-button').textContent=$('#bake-with-render').checked?'렌더 · 베이킹 요청 ↗':'원본 렌더 요청 ↗';};
+$('#bake-with-render').onchange=()=>{$('#render-button').textContent=$('#bake-with-render').checked?'렌더·베이킹':'렌더';};
 for(const input of document.querySelectorAll('[data-look]'))input.oninput=()=>{
   if(!current||busy)return;
   const key=input.dataset.look,currentLook=normalizeLook(current.webLook);currentLook[key]=input.type==='range'?Number(input.value):input.value;current.webLook=normalizeLook(currentLook);
@@ -95,13 +96,13 @@ function updateImage(){
 }
 async function importFiles(files){
   if(!files.length)return;notice('파일을 읽고 있습니다.');
-  const parsed=await unpack(files),model=parsed.find(f=>/normal\.glb$/i.test(f.name))||parsed.find(f=>/\.glb$/i.test(f.name)),reference=parsed.find(f=>/normal.*\.png$/i.test(f.name)&&!/atlas/i.test(f.name))||parsed.find(f=>/\.(png|jpe?g|webp)$/i.test(f.name));
-  await selectVersion({schema:1,id:crypto.randomUUID(),moduleId:crypto.randomUUID(),title:model.name.split('/').pop().replace(/\.glb$/i,''),createdAt:new Date().toISOString(),files:parsed,model:model.name,reference:reference?.name||'',blend:parsed.find(f=>/\.blend$/i.test(f.name))?.name||'',scene:''});
-  notice(`${parsed.length}개 파일을 불러왔습니다. 원본은 아직 업로드되지 않았습니다.`);
+  const parsed=await unpack(files),selection=inferSelection(parsed);
+  await selectVersion({schema:1,id:crypto.randomUUID(),moduleId:crypto.randomUUID(),title:selection.model.split('/').pop().replace(/\.glb$/i,''),createdAt:new Date().toISOString(),files:parsed,...selection});
+  notice(`${parsed.length}개 파일 · 불러옴`);
 }
 $('#upload-input').onchange=e=>action(async()=>{await importFiles([...e.target.files]);e.target.value='';});
 const drop=$('#upload-zone');for(const type of ['dragenter','dragover'])drop.addEventListener(type,e=>{e.preventDefault();drop.classList.add('drag');});for(const type of ['dragleave','drop'])drop.addEventListener(type,e=>{e.preventDefault();drop.classList.remove('drag');});drop.addEventListener('drop',e=>action(()=>importFiles([...e.dataTransfer.files])));
-$('#load-example').onclick=()=>action(async()=>{const files=await Promise.all([['riraji_normal.glb','../v2/assets/riraji_normal.glb'],['reference.png','../v2/assets/reference.png']].map(async([name,url])=>{const r=await fetch(url);if(!r.ok)throw Error('예제 파일을 찾을 수 없습니다.');return new File([await r.blob()],name);}));await importFiles(files);$('#module-title').value='리라지 · 작은 공간';});
+$('#load-example').onclick=()=>action(async()=>{notice('v06 불러오는 중…');const r=await fetch('../clay/example.json');if(!r.ok)throw Error('v06 파일을 찾을 수 없습니다.');const spec=await r.json(),local=['localhost','127.0.0.1'].includes(location.hostname),base=local?new URL('../',location.href).href:'https://raw.githubusercontent.com/livinglikeagiraffe/livinglikeagiraffe.github.io/main/';const files=[];for(const asset of spec.assets){const response=await fetch(new URL(asset.path,base));if(!response.ok)throw Error('v06 파일을 읽지 못했습니다.');files.push(new File([await response.blob()],asset.name));}await importFiles(files);current.title='리라지 v06';$('#module-title').value=current.title;});
 $('#model-select').onchange=()=>action(async()=>{current={...current,id:crypto.randomUUID(),model:$('#model-select').value,remote:null,job:null,renderBlob:null,webLook:null,bake:null,bakedBlob:null,previewMode:'live'};await selectVersion(current);});
 $('#image-select').onchange=()=>{if(current){current.reference=$('#image-select').value;updateImage();}};
 $('#blend-select').onchange=()=>action(async()=>{if(current){current.blend=$('#blend-select').value;current.remote=null;current.job=null;current.renderBlob=null;current.bake=null;current.bakedBlob=null;current.previewMode='live';await selectVersion(current);}});
@@ -133,9 +134,10 @@ function updateMap(){const map=$('#cell-map');map.replaceChildren();map.style.gr
   for(const [name,value] of Object.entries(layout.grid))$('#grid-settings').elements[name].value=value;
 }
 $('#add-module').onclick=()=>action(async()=>{
-  if(!current||!versions.some(v=>v.id===current.id))throw Error('먼저 모듈을 버전으로 저장해 주세요.');
+  if(!current)throw Error('파일을 먼저 넣어 주세요.');
+  if(!versions.some(v=>v.id===current.id)){current={...current,title:$('#module-title').value.trim()||current.title,scene:$('#scene-name').value.trim()};await storage.saveVersion(current);versions=await storage.get('versions');listVersions();}
   const cell=selectedCell&&!layout.cells.some(c=>c.x===selectedCell.x&&c.z===selectedCell.z)?selectedCell:nextCell(layout);if(!cell)throw Error('격자가 가득 찼습니다. 칸 수를 늘려 주세요.');
-  layout.cells.push({...cell,versionId:current.id,rotation:0});selectedCell=cell;layoutBake.invalidate();await showGrid();notice('전체 씬을 한 칸에 배치했습니다.');
+  layout.cells.push({...cell,versionId:current.id,rotation:0});selectedCell=cell;layoutBake.invalidate();await switchView('grid');notice('모듈 추가됨');
 });
 $('#rotate-cell').onclick=()=>action(async()=>{const cell=layout.cells.find(c=>c.x===selectedCell?.x&&c.z===selectedCell?.z);if(!cell)throw Error('모듈이 있는 칸을 선택해 주세요.');cell.rotation=(cell.rotation+90)%360;layoutBake.invalidate();await showGrid();});
 $('#remove-cell').onclick=()=>action(async()=>{layout.cells=layout.cells.filter(c=>c.x!==selectedCell?.x||c.z!==selectedCell?.z);layoutBake.invalidate();await showGrid();});
@@ -143,6 +145,7 @@ $('#grid-settings').onsubmit=e=>{e.preventDefault();action(async()=>{const value
 $('#save-grid').onclick=()=>action(async()=>{
   validateLayout(layout,versions);
   if(github.connection()?.authenticated){
+    for(const id of new Set(layout.cells.map(c=>c.versionId))){const version=await resolve(id);if(version.remote?.repo!==github.connection().repo){if(!github.connection().private&&!publicConsent)throw Error('GitHub 연결에서 원본 공개에 동의해 주세요.');version.remote=await github.saveRemote(version,m=>notice(m));await storage.saveVersion(version);if(current?.id===id)current=version;}}
     if(layoutBake.enabled){if(!github.connection().private&&!publicConsent)throw Error('GitHub 연결 화면에서 공개 저장에 동의해 주세요.');await layoutBake.save();notice('배치를 저장하고 전체 공간 베이킹을 요청했습니다.');return;}
     for(const cell of layout.cells){const version=await resolve(cell.versionId);if(version.remote?.repo!==github.connection().repo)throw Error('배치한 모든 버전을 연결한 GitHub 저장소에 먼저 저장해 주세요.');}
     await github.saveLayout(layout);
@@ -167,7 +170,7 @@ $('#render-button').onclick=()=>action(async()=>{
   if(!current.blend)throw Error('.blend 원본을 함께 넣어 주세요.');
   const conn=github.connection();if(!conn?.authenticated)throw Error('GitHub를 먼저 연결해 주세요.');
   if(!conn.private&&!publicConsent)throw Error('공개 저장소에 원본을 저장하려면 공개 동의가 필요합니다.');
-  const scene=$('#scene-name').value.trim(),quality=$('#render-quality').value,mode=$('#bake-with-render').checked?'bake':'render';
+  const scene=$('#scene-name').value.trim(),quality=$('#render-quality').value,mode=$('#bake-with-render').checked?'hybrid':'render';
   if(!current.remote||current.remote.repo!==conn.repo||scene!==(current.scene||'')){
     const title=$('#module-title').value.trim();if(!title)throw Error('모듈 이름을 입력해 주세요.');
     const keepBake=scene===(current.scene||'');
@@ -175,7 +178,7 @@ $('#render-button').onclick=()=>action(async()=>{
     current.remote=await github.saveRemote(current,m=>notice(`렌더 입력 저장 · ${m}`));
     await storage.saveVersion(current);versions=await storage.get('versions');listVersions();
   }
-  const job=await github.renderRemote(current,quality,scene,mode);current.scene=scene;current.job={...job,status:'queued',quality};await storage.saveVersion(current);notice(mode==='bake'?'원본 렌더와 조명 베이킹을 요청했습니다. 완료되면 3D에 자동 적용합니다.':'Blender 렌더를 요청했습니다.');pollRender();
+  const job=await github.renderRemote(current,quality,scene,mode);current.scene=scene;current.job={...job,status:'queued',quality};await storage.saveVersion(current);notice(mode!=='render'?'렌더 · 간접광 베이킹 대기 중':'렌더 대기 중');pollRender();
 });
 async function pollRender(){
   clearTimeout(renderTimer);const id=current?.id,job=current?.job;if(!job||['complete','failed'].includes(job.status)||!github.connection())return;
@@ -201,6 +204,6 @@ async function init(){
     if(snapshotId){layout=validateLayout(await github.loadLayoutSnapshot(snapshotId),versions);updateMap();await switchView('grid');}
     $('#connection-label').textContent='공개 저장소 · 읽기 전용';
   }catch(e){console.info('Public catalog unavailable:',e.message);}
-  if(versions.length)await selectVersion(await resolve(versions[0].id));
+  if(versions.length&&!current&&!busy){const first=await resolve(versions[0].id);if(!current&&!busy)await selectVersion(first);}
 }
 init().catch(e=>notice(`저장소를 열지 못했습니다: ${e.message}`,true));

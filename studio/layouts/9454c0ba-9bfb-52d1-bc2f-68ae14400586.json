@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "9454c0ba-9bfb-52d1-bc2f-68ae14400586",
+  "key": "{\"grid\":{\"columns\":1,\"rows\":1,\"width\":8,\"depth\":6,\"gap\":0},\"cells\":[{\"x\":0,\"z\":0,\"versionId\":\"4bc41987-0ae6-5a53-9ae5-b993ac2614c3\",\"rotation\":0}],\"environment\":{\"floor\":\"#b6b0a4\",\"lighting\":\"shared-softbox\"}}",
+  "digest": "003da2090fe4961b7d9a691ea3a400db5804eeb62308ccb5aa750848d5883b68",
+  "quality": "preview",
+  "grid": {
+    "columns": 1,
+    "rows": 1,
+    "width": 8,
+    "depth": 6,
+    "gap": 0
+  },
+  "cells": [
+    {
+      "x": 0,
+      "z": 0,
+      "versionId": "4bc41987-0ae6-5a53-9ae5-b993ac2614c3",
+      "rotation": 0
+    }
+  ],
+  "environment": {
+    "floor": "#b6b0a4",
+    "lighting": "shared-softbox"
+  },
+  "sources": {
+    "4bc41987-0ae6-5a53-9ae5-b993ac2614c3": {
+      "manifest": "studio/modules/f48bff05-fed0-5694-ab14-88818633fe8b/versions/4bc41987-0ae6-5a53-9ae5-b993ac2614c3/manifest.json",
+      "scene": "Scene"
+    }
+  },
+  "createdAt": "2026-11-06T20:14:44.318353+00:00"
+}

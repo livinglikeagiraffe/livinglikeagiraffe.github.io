@@ -99,14 +99,14 @@ def main():
     parser.add_argument('--quality', choices=['preview', 'original'], default='preview')
     parser.add_argument('--scene', default='')
     parser.add_argument('--inspect-only', action='store_true')
-    parser.add_argument('--mode', choices=['render', 'bake'], default='render')
+    parser.add_argument('--mode', choices=['render', 'bake', 'hybrid'], default='hybrid')
     parser.add_argument('--kind', choices=['module','layout'], default='module')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     args.output.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
     layout_report={}
     if args.kind=='layout':
-        if args.mode!='bake':raise ValueError('Whole-space jobs require baking')
+        if args.mode not in ('bake','hybrid'):raise ValueError('Whole-space jobs require baking')
         sys.path.insert(0,str(Path(__file__).resolve().parent))
         from compose import compose_scene
         scene,manifest,layout_report=compose_scene(args.manifest.resolve())
@@ -175,9 +175,12 @@ def main():
         report['rendered'] = {'width': int(scene.render.resolution_x * scene.render.resolution_percentage / 100),
                               'height': int(scene.render.resolution_y * scene.render.resolution_percentage / 100),
                               'samples': scene.cycles.samples}
-        if args.mode == 'bake':
+        if args.mode in ('bake','hybrid'):
             sys.path.insert(0, str(Path(__file__).resolve().parent))
-            from bake import bake_scene
+            if args.mode=='hybrid':
+                from hybrid import bake_scene
+            else:
+                from bake import bake_scene
             report['bake'] = bake_scene(scene, args.output.resolve(), args.quality,whole_space=args.kind=='layout')
     report['mode'] = args.mode
     report['seconds'] = round(time.monotonic() - start, 2)

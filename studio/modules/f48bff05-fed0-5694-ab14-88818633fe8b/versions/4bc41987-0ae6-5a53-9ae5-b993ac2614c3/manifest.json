@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "id": "4bc41987-0ae6-5a53-9ae5-b993ac2614c3",
+  "moduleId": "f48bff05-fed0-5694-ab14-88818633fe8b",
+  "title": "Hybrid pipeline validation",
+  "blend": "source.blend",
+  "scene": "Scene",
+  "assets": [
+    {
+      "name": "source.blend",
+      "bytes": 893088,
+      "sha256": "0202bbacd3d007fa3c509f9889b1c1b9b16408725f4a6401e7eff27e861b17dd"
+    }
+  ]
+}

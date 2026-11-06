@@ -23,8 +23,8 @@ on:
       mode:
         description: Render only or render plus baked GLB
         type: choice
-        options: [render, bake]
-        default: render
+        options: [render, bake, hybrid]
+        default: hybrid
       kind:
         description: Single module or complete saved layout
         type: choice
@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ github.sha }}
           path: worker
           persist-credentials: false
       - uses: actions/checkout@v6
@@ -118,45 +118,28 @@ jobs:
         with:
           name: studio-render-${{ inputs.request_id }}
           path: result
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: worker
+          persist-credentials: false
       - name: Save render as repository files
         env:
           REQUEST_ID: ${{ inputs.request_id }}
           SOURCE_REF: ${{ inputs.source_ref }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          python3 - <<'PY'
-          import os, pathlib, shutil, uuid, json, re
-          request=str(uuid.UUID(os.environ['REQUEST_ID']))
-          dest=pathlib.Path('studio/renders')/request
-          dest.mkdir(parents=True,exist_ok=False)
-          report=json.loads(pathlib.Path('result/report.json').read_text())
-          atlases=[a['name'] for a in report.get('bake',{}).get('atlases',[])]
-          assert all(re.fullmatch(r'(backdrop|(surfaces|module_[0-5]_[0-5])(_detail)?)\.png',name) for name in atlases)
-          files=['render.png','report.json']+(['baked.glb']+atlases if report.get('bake') else [])
-          for name in files:
-              source=pathlib.Path('result')/name
-              assert source.is_file() and not source.is_symlink() and source.stat().st_size<48*1024**2
-              shutil.copyfile(source,dest/name)
-          index_path=pathlib.Path('studio/render-index.json')
-          index=json.loads(index_path.read_text()) if index_path.exists() else {'schema':1,'versions':{}}
-          record={'id':request,'status':'complete','quality':report['quality'],'scene':report['scene'],'mode':report.get('mode','render'),'sourceCommit':os.environ['SOURCE_REF'],'url':os.environ['RUN_URL']}
-          if report.get('layoutId'):
-              uuid.UUID(report['layoutId'])
-              assert re.fullmatch(r'[0-9a-f]{64}',report['layoutDigest'])
-              record['digest']=report['layoutDigest']
-              index.setdefault('layouts',{})[report['layoutId']]=record
-          else:index['versions'][report['versionId']]=record
-          if report.get('bake'):
-              import hashlib
-              assert hashlib.sha256((dest/'baked.glb').read_bytes()).hexdigest()==report['bake']['sha256']
-              if not report.get('layoutId'):index.setdefault('bakes',{})[report['versionId']]=record
-          index_path.write_text(json.dumps(index,ensure_ascii=False,indent=2))
-          PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "studio/renders/$REQUEST_ID" studio/render-index.json
-          git commit -m "studio: save render $REQUEST_ID"
           for attempt in 1 2 3; do
-            git pull --rebase && git push && exit 0
+            git fetch origin "$BRANCH"
+            git checkout -B studio-save "origin/$BRANCH"
+            python3 worker/studio/save_result.py
+            git add -- "studio/renders/$REQUEST_ID" studio/render-index.json
+            if [ -f studio/public-scene.json ]; then git add studio/public-scene.json; fi
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m "studio: save render $REQUEST_ID"
+            git push origin "HEAD:$BRANCH" && exit 0
           done
           exit 1

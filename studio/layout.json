@@ -1,18 +1,30 @@
 {
   "schema": 1,
   "grid": {
-    "columns": 4,
-    "rows": 3,
-    "width": 40,
-    "depth": 32,
+    "columns": 1,
+    "rows": 1,
+    "width": 80,
+    "depth": 60,
     "gap": 2
   },
   "cells": [
     {
       "x": 0,
       "z": 0,
-      "rotation": 0,
-      "versionId": "d8efe52d-9851-4928-ac43-058bca875578"
+      "versionId": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
+      "rotation": 0
     }
-  ]
+  ],
+  "environment": {
+    "floor": "#b6b0a4",
+    "lighting": "shared-softbox"
+  },
+  "build": {
+    "id": "b304115d-5402-42f4-aaae-c75f5874939d",
+    "key": "{\"grid\":{\"columns\":1,\"rows\":1,\"width\":80,\"depth\":60,\"gap\":2},\"cells\":[{\"x\":0,\"z\":0,\"versionId\":\"7e655b0f-2336-51a0-bb0e-06beb6576f8a\",\"rotation\":0}],\"environment\":{\"floor\":\"#b6b0a4\",\"lighting\":\"shared-softbox\"}}",
+    "digest": "dc53d4db550d5de51eea69f679c5d3ebd09c06d584faff14715393c25ee87cb1",
+    "quality": "preview",
+    "repo": "livinglikeagiraffe/livinglikeagiraffe.github.io",
+    "manifest": "studio/layouts/b304115d-5402-42f4-aaae-c75f5874939d.json"
+  }
 }

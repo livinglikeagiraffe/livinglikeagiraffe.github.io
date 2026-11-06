@@ -121,7 +121,7 @@ export async function renderRemote(version,quality,scene,mode='render',kind='mod
   const workflow=await request('/actions/workflows/render-module.yml',{optional:true});
   if(!workflow)throw Error('연결한 저장소에 render-module.yml 워크플로를 먼저 설치해야 합니다. 설정 안내를 확인해 주세요.');
   const id=crypto.randomUUID();
-  if(!['render','bake'].includes(mode))throw Error('지원하지 않는 변환 방식입니다.');
+  if(!['render','bake','hybrid'].includes(mode))throw Error('지원하지 않는 변환 방식입니다.');
   if(!['module','layout'].includes(kind))throw Error('지원하지 않는 변환 대상입니다.');
   await request('/actions/workflows/render-module.yml/dispatches',{method:'POST',body:JSON.stringify({ref:session.branch,inputs:{manifest:version.remote.manifest,source_ref:version.remote.commit,request_id:id,quality,scene,mode,kind}})});
   return {id,repo:session.repo,mode,kind,startedAt:new Date().toISOString()};
@@ -169,7 +169,7 @@ export async function renderLayout(build){
   if(build.repo!==session?.repo)throw Error('배치를 저장한 GitHub 저장소에 연결해 주세요.');
   // Persisted layout pointers intentionally have no self-referential commit SHA.
   const sha=build.commit||(await request(`/git/ref/heads/${encodePath(session.branch)}`)).object.sha;
-  return renderRemote({remote:{repo:session.repo,manifest:build.manifest,commit:sha}},build.quality,'','bake','layout');
+  return renderRemote({remote:{repo:session.repo,manifest:build.manifest,commit:sha}},build.quality,'','hybrid','layout');
 }
 export async function loadLayoutResult(build){
   if(!build||build.repo!==session?.repo)return null;

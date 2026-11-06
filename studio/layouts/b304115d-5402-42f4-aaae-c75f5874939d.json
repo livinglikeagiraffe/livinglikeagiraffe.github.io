@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "b304115d-5402-42f4-aaae-c75f5874939d",
+  "key": "{\"grid\":{\"columns\":1,\"rows\":1,\"width\":80,\"depth\":60,\"gap\":2},\"cells\":[{\"x\":0,\"z\":0,\"versionId\":\"7e655b0f-2336-51a0-bb0e-06beb6576f8a\",\"rotation\":0}],\"environment\":{\"floor\":\"#b6b0a4\",\"lighting\":\"shared-softbox\"}}",
+  "digest": "dc53d4db550d5de51eea69f679c5d3ebd09c06d584faff14715393c25ee87cb1",
+  "quality": "preview",
+  "grid": {
+    "columns": 1,
+    "rows": 1,
+    "width": 80,
+    "depth": 60,
+    "gap": 2
+  },
+  "cells": [
+    {
+      "x": 0,
+      "z": 0,
+      "versionId": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
+      "rotation": 0
+    }
+  ],
+  "environment": {
+    "floor": "#b6b0a4",
+    "lighting": "shared-softbox"
+  },
+  "sources": {
+    "7e655b0f-2336-51a0-bb0e-06beb6576f8a": {
+      "manifest": "studio/modules/a5f967f6-aaaf-574e-b3ef-d26e76c05bde/versions/7e655b0f-2336-51a0-bb0e-06beb6576f8a/manifest.json",
+      "scene": "01_Clay_Normal"
+    }
+  },
+  "createdAt": "2026-11-06T19:41:10.192Z"
+}
