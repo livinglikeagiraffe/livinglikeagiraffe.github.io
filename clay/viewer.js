@@ -47,7 +47,9 @@ export class ClayViewer{
     this.model=root;this.hybrid=Boolean(gltf.userData.studioHybrid);profile=gltf.userData.studioHybrid?.lighting||profile;
     const offset=bounds.getCenter(new THREE.Vector3()).multiplyScalar(-1);offset.y=-bounds.min.y;root.position.add(offset);bounds.translate(offset);this.bounds=bounds;
     this.rig=createLighting(profile,bounds,{mobile:this.mobile,offset:profile?offset:new THREE.Vector3()});
-    const world=profile?.world;this.ambient=new THREE.HemisphereLight(new THREE.Color().setRGB(...world?.color||[.08,.08,.08]),'#686052',world?.strength??.3);
+    const world=profile?.world,worldColor=new THREE.Color().setRGB(...world?.color||[.08,.08,.08]);
+    // Uniform world radiance contributes pi * radiance of direct irradiance.
+    this.ambient=new THREE.HemisphereLight(worldColor,worldColor,Math.PI*(world?.strength??.3));
     this.scene.add(root,this.rig,this.ambient);
     const span=Math.max(bounds.getSize(new THREE.Vector3()).length(),10);this.camera.far=span*12;
     // Continue the ground beyond the baked plane without a visible viewport edge.

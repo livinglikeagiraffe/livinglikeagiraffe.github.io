@@ -576,11 +576,11 @@
   },
   "bake": {
     "schema": 1,
-    "bakerVersion": 5,
+    "bakerVersion": 6,
     "hybridVersion": 1,
     "file": "baked.glb",
-    "bytes": 26863536,
-    "sha256": "fdba3a8d2c53e88f726f79036d4c2646f90ab06aa72226a331359e1a56f3b4ff",
+    "bytes": 35151272,
+    "sha256": "cd63302593e0249f19b996ad9dda56f852840ef7c1611fb183242b5c44113c50",
     "displayReferred": false,
     "lighting": "indirect-only",
     "encoding": "RGBM",
@@ -609,37 +609,821 @@
       },
       {
         "name": "module_0_0_indirect.png",
-        "width": 2048,
-        "height": 2048,
+        "width": 1024,
+        "height": 1024,
         "objects": 19,
         "kind": "indirect"
       },
       {
-        "name": "module_0_0_detail_albedo.png",
-        "width": 2048,
-        "height": 2048,
-        "objects": 836,
+        "name": "module_0_0_detail_p0_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 104,
         "kind": "albedo"
       },
       {
-        "name": "module_0_0_detail_normal.png",
-        "width": 2048,
-        "height": 2048,
-        "objects": 836,
+        "name": "module_0_0_detail_p0_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 104,
         "kind": "normal"
       },
       {
-        "name": "module_0_0_detail_roughness.png",
-        "width": 2048,
-        "height": 2048,
-        "objects": 836,
+        "name": "module_0_0_detail_p0_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 104,
         "kind": "roughness"
       },
       {
-        "name": "module_0_0_detail_indirect.png",
-        "width": 2048,
-        "height": 2048,
-        "objects": 836,
+        "name": "module_0_0_detail_p0_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 104,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 105,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 105,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 105,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 105,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 6,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 3,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 3,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 3,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 3,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 4,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 4,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 4,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 4,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 13,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 52,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 53,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 52,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 52,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 53,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 13,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 1,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 1,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 1,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 1,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 3,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 3,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 3,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 3,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p0_p1_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 7,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 52,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 52,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 6,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 7,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 13,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 53,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 53,
         "kind": "indirect"
       },
       {
@@ -665,12 +1449,14 @@
       },
       {
         "name": "backdrop_indirect.png",
-        "width": 2048,
-        "height": 2048,
+        "width": 1024,
+        "height": 1024,
         "objects": 1,
         "kind": "indirect"
       }
     ],
+    "coverageThreshold": 0.002,
+    "pngCompression": "lossless-adaptive",
     "triangles": 257634,
     "opaqueObjects": 855,
     "dynamicObjects": [
@@ -877,12 +1663,12 @@
       "module_0_0_V06_Festoon_bulb.054",
       "module_0_0_V06_Festoon_bulb.055"
     ],
-    "seconds": 1609.17,
+    "seconds": 726.68,
     "limitations": [
       "Static indirect illumination; rebake after layout changes",
       "Direct area lights and glass are approximated in the browser"
     ]
   },
   "mode": "hybrid",
-  "seconds": 1614.73
+  "seconds": 731.04
 }
