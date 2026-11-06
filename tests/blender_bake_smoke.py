@@ -13,7 +13,17 @@ def main():
     import numpy as np
     from mathutils import Vector
     sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'studio'))
-    from bake import bake_scene
+    from bake import bake_scene,pad_bake_images
+    # Edge expansion preserves covered colors and never wraps to the other
+    # image edge or copies an uncovered/noisy pixel into the UV gutter.
+    image=bpy.data.images.new('Padding regression',9,9,alpha=True,float_buffer=True)
+    pixels=np.zeros((9,9,4),dtype=np.float32);pixels[4,0]=(.7,.2,.1,1)
+    image.pixels.foreach_set(pixels.ravel());image.update()
+    pad_bake_images([image],radius=2)
+    result=np.empty(9*9*4,dtype=np.float32);image.pixels.foreach_get(result);result=result.reshape((9,9,4))
+    assert np.allclose(result[4,0],pixels[4,0]) and np.allclose(result[4,2],pixels[4,0])
+    assert np.all(result[:,8]==0) and np.all(result[0]==0)
+    bpy.data.images.remove(image)
     parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args(sys.argv[sys.argv.index('--')+1:]);args.output.mkdir(parents=True,exist_ok=True)
     bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)

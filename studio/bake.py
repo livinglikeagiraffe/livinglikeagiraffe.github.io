@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 
 UV_NAME = 'StudioBakeUV'
-BAKER_VERSION = 2
+BAKER_VERSION = 3
 
 
 def surface_area(obj):
@@ -105,6 +105,37 @@ def unwrap_objects(objects, resolution, detail=False):
     for obj,saved in coordinates:
         obj.data.vertices.foreach_set('co',saved);obj.data.update()
     validate_uv(objects)
+
+
+def pad_bake_images(images, radius=8, coverage=None):
+    """Extend only valid baked texels, never the baker's noisy edge extrapolation.
+
+    Share one nearest-texel map across color/albedo/normal so guidance stays
+    aligned. Alpha from a zero-margin bake is the exact raster coverage mask.
+    """
+    import numpy as np
+    width,height=images[0].size
+    pixels=np.empty(width*height*4,dtype=np.float32)
+    images[0].pixels.foreach_get(pixels)
+    valid=coverage if coverage is not None else pixels.reshape((height,width,4))[:,:,3]>.5
+    y,x=np.indices((height,width),dtype=np.int32)
+    sx=np.where(valid,x,-1);sy=np.where(valid,y,-1)
+    distance=np.where(valid,0,radius*radius+1)
+    for _ in range(radius):
+        changed=False
+        for dy,dx in ((-1,0),(1,0),(0,-1),(0,1),(-1,-1),(-1,1),(1,-1),(1,1)):
+            nx=np.roll(sx,(dy,dx),(0,1));ny=np.roll(sy,(dy,dx),(0,1))
+            candidate=(nx-x)**2+(ny-y)**2
+            take=(nx>=0)&(candidate<distance)&(candidate<=radius*radius)
+            if np.any(take):
+                sx[take]=nx[take];sy[take]=ny[take];distance[take]=candidate[take];changed=True
+        if not changed:break
+    fill=(~valid)&(distance<=radius*radius)
+    for image in images:
+        image.pixels.foreach_get(pixels)
+        data=pixels.reshape((height,width,4))
+        data[fill]=data[sy[fill],sx[fill]]
+        image.pixels.foreach_set(pixels);image.update()
 
 
 def save_denoised(image, path, source_scene, albedo=None, normal=None):
@@ -207,7 +238,9 @@ def bake_scene(scene, output, quality, whole_space=False):
     scene.cycles.use_denoising=False
     scene.render.bake.use_selected_to_active=False
     scene.render.bake.use_clear=True
-    scene.render.bake.margin=8
+    # Cycles' edge extrapolation can contaminate small bevels. Denoise the
+    # actual rasterized texels first; extend their clean colors afterward.
+    scene.render.bake.margin=0
     scene.render.bake.margin_type='EXTEND'
     scene.render.bake.use_pass_direct=True
     scene.render.bake.use_pass_indirect=True
@@ -254,7 +287,7 @@ def bake_scene(scene, output, quality, whole_space=False):
         bpy.context.view_layer.objects.active=objects[0]
         unwrap_objects(objects,resolution,name.endswith('_detail'))
         print('STUDIO_BAKE_STAGE cycles',name,resolution,samples,flush=True)
-        bpy.ops.object.bake(type='COMBINED',pass_filter={'DIRECT','INDIRECT','DIFFUSE','EMIT','COLOR'},uv_layer=UV_NAME)
+        bpy.ops.object.bake(type='COMBINED',margin=0,pass_filter={'DIRECT','INDIRECT','DIFFUSE','EMIT','COLOR'},uv_layer=UV_NAME)
         # Guidance prevents the denoiser treating real material/normal detail as
         # lighting noise. Guides use the SAME UVs and original source shaders.
         guides=[]
@@ -264,8 +297,8 @@ def bake_scene(scene, output, quality, whole_space=False):
             guide=bpy.data.images.new('Studio guide '+kind,resolution,resolution,alpha=False,float_buffer=True)
             guide.colorspace_settings.name='Non-Color'
             for material in clones.values():material.node_tree.nodes.active.image=guide
-            if kind=='DIFFUSE':bpy.ops.object.bake(type=kind,pass_filter={'COLOR'},uv_layer=UV_NAME)
-            else:bpy.ops.object.bake(type=kind,normal_space='OBJECT',uv_layer=UV_NAME)
+            if kind=='DIFFUSE':bpy.ops.object.bake(type=kind,margin=0,pass_filter={'COLOR'},uv_layer=UV_NAME)
+            else:bpy.ops.object.bake(type=kind,margin=0,normal_space='OBJECT',uv_layer=UV_NAME)
             guides.append(guide)
         scene.cycles.samples=samples
         # A normal bake encodes [-1,1] as [0,1]; OIDN expects signed normals.
@@ -280,6 +313,12 @@ def bake_scene(scene, output, quality, whole_space=False):
         save_denoised(image,path,scene,*guides)
         for guide in guides:bpy.data.images.remove(guide)
         display=bpy.data.images.load(str(path),check_existing=False);display.colorspace_settings.name='sRGB'
+        image.pixels.foreach_get(pixels.ravel())
+        coverage=pixels.reshape((resolution,resolution,4))[:,:,3]>.5
+        pad_bake_images([display],coverage=coverage)
+        # save() preserves the already applied source OCIO view; save_render()
+        # here would incorrectly apply Filmic a second time.
+        display.filepath_raw=str(path);display.file_format='PNG';display.save()
         material=bpy.data.materials.new('Studio baked '+name);material.use_nodes=True
         nodes=material.node_tree.nodes;nodes.clear();links=material.node_tree.links
         tex=nodes.new('ShaderNodeTexImage');tex.image=display;tex.interpolation='Linear'
@@ -314,5 +353,5 @@ def bake_scene(scene, output, quality, whole_space=False):
             'displayReferred':True,'viewTransform':scene.view_settings.view_transform,'look':scene.view_settings.look,
             'opaqueObjects':len(opaque),'dynamicObjects':[o.name for o in dynamic],
             'backdrop':backdrop.name if backdrop else None,'atlases':atlases,'samples':samples,'guideSamples':4,
-            'triangles':triangles,'denoise':'OpenImageDenoise with albedo and signed normal guides','seconds':round(time.monotonic()-start,2),
+            'triangles':triangles,'denoise':'OpenImageDenoise with albedo and signed normal guides','padding':'8px nearest covered texel after denoising','seconds':round(time.monotonic()-start,2),
             'limitations':['Static lighting and current frame only','Glass and transparency remain approximate PBR','Glossy view-dependent highlights are not baked','Volumes, procedural instances and non-mesh geometry require preparation']}
