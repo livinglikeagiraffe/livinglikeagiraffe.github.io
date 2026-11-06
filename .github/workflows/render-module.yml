@@ -42,7 +42,7 @@ concurrency:
 jobs:
   render:
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
         with:
@@ -131,7 +131,7 @@ jobs:
           dest.mkdir(parents=True,exist_ok=False)
           report=json.loads(pathlib.Path('result/report.json').read_text())
           atlases=[a['name'] for a in report.get('bake',{}).get('atlases',[])]
-          assert all(re.fullmatch(r'(surfaces|backdrop|module_[0-5]_[0-5])\.png',name) for name in atlases)
+          assert all(re.fullmatch(r'(backdrop|(surfaces|module_[0-5]_[0-5])(_detail)?)\.png',name) for name in atlases)
           files=['render.png','report.json']+(['baked.glb']+atlases if report.get('bake') else [])
           for name in files:
               source=pathlib.Path('result')/name

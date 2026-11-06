@@ -27,7 +27,7 @@ export class LayoutBakeUI{
     if(build&&!valid)message='배치 또는 바닥 색이 변경되었습니다. 다시 저장하면 전체 공간을 새로 베이킹합니다.';
     else if(this.job?.status==='failed')message=this.job.message||'전체 베이킹에 실패했습니다. 작업 로그를 확인한 뒤 다시 요청할 수 있습니다.';
     else if(this.job&&!['complete','failed'].includes(this.job.status))message='전체 공간 베이킹 중 · 결과는 저장한 배치에 연결됩니다. 편집을 계속할 수 있습니다.';
-    else if(ready)message=`전체 베이킹 완료 · ${build.quality==='original'?'모듈별 2K':'모듈별 1K'} · 공통 바닥과 모듈 간 그림자 적용`;
+    else if(ready){const bake=this.result.report.bake;message=`전체 베이킹 완료 · ${bake?.bakerVersion>=2?`큰 표면 2K · ${bake.samples}샘플 · 표면별 자동 분리`:build.quality==='original'?'모듈별 2K':'모듈별 1K'} · 공통 바닥과 모듈 간 그림자 적용`;}
     else if(build)message='배치 기록이 저장되었습니다. 전체 베이킹을 요청하거나 완료 후 저장된 배치를 불러오세요.';
     $('#layout-status').textContent=message;
     if(this.error)$('#layout-status').textContent=this.error;

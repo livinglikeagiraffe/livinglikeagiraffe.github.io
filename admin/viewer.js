@@ -69,7 +69,7 @@ export class StudioViewer {
     const gltf=await new GLTFLoader().parseAsync(bytes,'');gltf.scene.updateMatrixWorld(true);
     let baked=false,backdrop=false;const bounds=new THREE.Box3();
     gltf.scene.traverse(o=>{if(o.isMesh){const frozen=isTagged(o,'studioBaked');baked||=frozen;backdrop||=isTagged(o,'studioBackdrop');o.castShadow=!frozen&&!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.transmission>0);o.receiveShadow=!frozen;
-      if(frozen)for(const material of Array.isArray(o.material)?o.material:[o.material])material.toneMapped=false;
+      if(frozen)for(const material of Array.isArray(o.material)?o.material:[o.material]){material.toneMapped=false;if(material.map){material.map.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());material.map.needsUpdate=true;}}
       if(!isTagged(o,'studioBackdrop')){o.geometry.computeBoundingBox();bounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}
     }});
     if(bounds.isEmpty()||!Number.isFinite(bounds.max.length()))throw Error('모델의 크기를 읽을 수 없습니다.');

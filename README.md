@@ -94,7 +94,7 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 
 관리자에서 ‘조명·그림자 베이킹 함께 생성’을 선택하면 업로드 → 원본 PNG 렌더 → 자동 UV → Cycles Combined 베이킹 → OpenImageDenoise → 원본 OCIO 색 변환 → unlit GLB 내보내기 → 저장소 보관을 실행합니다. `studio/bake.py`는 Blender 내장 Cycles와 Khronos glTF exporter를 사용합니다. 별도 변환 서버 없이 GitHub Actions가 처리합니다.
 
-- 빠른 미리보기: 1024px 아틀라스·24샘플. 원본 설정: 2048px·64샘플. 결과는 `studio/renders/<request UUID>/`의 GLB·PNG·report.json이며 `render-index.json`이 버전에 연결합니다.
+- 표준: 큰 표면·소품 각각 2048px / 배경 1024px, 64샘플. 원본 설정: 모두 2048px, 192샘플. 면적에 따라 아틀라스를 자동 분리하고 albedo/normal 가이드로 노이즈를 제거합니다. 결과는 `studio/renders/<request UUID>/`의 GLB·PNG·report.json이며 `render-index.json`이 버전에 연결합니다.
 - 원본 GLB와 베이킹 GLB를 전환하고 결과를 다운로드할 수 있습니다. 결과 파일의 크기·SHA-256을 검사하고, 베이킹 참조를 새 검수 버전과 함께 보관합니다. 원본 렌더만 다시 요청해도 기존 베이킹 기록은 유지합니다.
 - 불투명 재질은 `KHR_materials_unlit`으로 표시해 빛과 톤 매핑을 중복 적용하지 않습니다. 투명·유리 재질은 PBR로 남습니다. 현재 프레임·고정 조명 전용이며, 시점 의존 반사·굴절과 모듈 간 새 그림자/간접광까지 같아지지는 않습니다. 구조나 조명 변경 시 다시 베이킹합니다.
 - 큰 촬영 배경은 별도 아틀라스에 굽고 단일 미리보기에서만 표시합니다. 격자에서는 배경을 제거하고 전체 씬을 한 모듈로 배치합니다.
@@ -107,5 +107,5 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 
 - 배치·회전·간격·바닥 색의 SHA-256과 원본 자산 SHA-256을 검증합니다. `studio/layouts/<id>.json`은 배치 기록, `render-index.json`의 `layouts`는 결과 연결입니다. 배치가 바뀌면 이전 결과 표시를 중단하고 재저장을 안내합니다.
 - 편집용 3D / 전체 베이킹 3D / Blender 렌더를 전환합니다. `/admin/?layout=<id>`는 특정 배치 기록을 열며 현재 저장된 배치를 덮어쓰지 않습니다. `saveLayoutSnapshot(..., {makeCurrent:false})`로 검수용 기록만 만들 수도 있습니다.
-- 최대 6개 모듈·총 1,800개 메시·150만 삼각형·48MiB GLB, 작업당 45분 제한. 각 모듈은 패킹된 Cycles 원본이 필요합니다. 1K/2K는 모듈별 해상도입니다. 유리·시점 의존 반사는 근사하며 모듈에 포함된 바닥 판과 벽은 그대로 유지합니다.
+- 최대 6개 모듈·총 1,800개 메시·150만 삼각형·48MiB GLB, 작업당 90분 제한. 각 모듈은 패킹된 Cycles 원본이 필요합니다. 큰 표면과 소품은 각각 별도 2K, 배경은 품질 설정에 따라 1K/2K입니다. 유리·시점 의존 반사는 근사하며 모듈에 포함된 바닥 판과 벽은 그대로 유지합니다.
 - 검증: `npm test`, `python3 -B tests/test_compose.py`. Blender에서는 `studio/render.py -- --manifest studio/layouts/<id>.json --output <directory> --mode bake --kind layout --quality preview`를 사용합니다.

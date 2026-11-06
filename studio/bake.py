@@ -9,6 +9,31 @@ import time
 from pathlib import Path
 
 UV_NAME = 'StudioBakeUV'
+BAKER_VERSION = 2
+
+
+def surface_area(obj):
+    """Measure evaluated world-space area, independent of object scale/names."""
+    area=0
+    for polygon in obj.data.polygons:
+        vertices=[obj.matrix_world @ obj.data.vertices[i].co for i in polygon.vertices]
+        area+=sum((vertices[i]-vertices[0]).cross(vertices[i+1]-vertices[0]).length*.5 for i in range(1,len(vertices)-1))
+    return area
+
+
+def atlas_groups(objects, whole_space, quality):
+    """Keep tiny bevel/prop islands out of large architectural surface atlases."""
+    modules={}
+    for obj in objects:modules.setdefault(obj.get('studioModule','surfaces') if whole_space else 'surfaces',[]).append(obj)
+    result=[]
+    for name,members in sorted(modules.items()):
+        areas={obj:surface_area(obj) for obj in members}
+        threshold=max(areas.values())*.02
+        large=[obj for obj in members if areas[obj]>=threshold]
+        detail=[obj for obj in members if areas[obj]<threshold]
+        result.append((name,large,2048))
+        if detail:result.append((name+'_detail',detail,2048))
+    return result
 
 
 def protect_thin_islands(mesh, minimum):
@@ -38,7 +63,51 @@ def protect_thin_islands(mesh, minimum):
                 for i in loops:uv[i].uv[axis]=center+(uv[i].uv[axis]-center)*factor
 
 
-def save_denoised(image, path, source_scene):
+def validate_uv(objects):
+    # Blender can collapse UVs when the requested island padding cannot fit.
+    # Fail before lighting instead of silently exporting a black atlas.
+    for obj in objects:
+        uv=obj.data.uv_layers[UV_NAME].data
+        if any(not math.isfinite(c) or c < -.0001 or c > 1.0001 for loop in uv for c in loop.uv):
+            raise ValueError('UV atlas overflow: '+obj.name)
+        area=0
+        for polygon in obj.data.polygons:
+            points=[uv[i].uv for i in polygon.loop_indices]
+            area+=sum(abs((points[i].x-points[0].x)*(points[i+1].y-points[0].y)-(points[i].y-points[0].y)*(points[i+1].x-points[0].x))*.5 for i in range(1,len(points)-1))
+        if area < 1e-12:raise ValueError('UV atlas collapsed: split or simplify this mesh: '+obj.name)
+
+
+def unwrap_objects(objects, resolution, detail=False):
+    import bpy
+    from mathutils import Matrix
+    from array import array
+    # UV operators measure local mesh coordinates. Account for object scale
+    # temporarily so tiny scaled spheres do not consume most of the atlas.
+    # Restore exact coordinates before Cycles evaluates procedural materials.
+    coordinates=[]
+    for obj in objects:
+        saved=array('f',[0.0])*(len(obj.data.vertices)*3)
+        obj.data.vertices.foreach_get('co',saved);coordinates.append((obj,saved))
+        scale=obj.matrix_world.to_scale()
+        obj.data.transform(Matrix.Diagonal((scale.x,scale.y,scale.z,1)))
+    bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.uv.smart_project(angle_limit=math.radians(45),island_margin=.002,area_weight=.1,correct_aspect=True,scale_to_bounds=True)
+    bpy.ops.uv.select_all(action='SELECT')
+    bpy.ops.uv.average_islands_scale()
+    bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=10/resolution)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    for _ in range(2):
+        for obj in objects:protect_thin_islands(obj.data,(6 if detail else 2)/resolution)
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.uv.select_all(action='SELECT')
+        bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=10/resolution)
+        bpy.ops.object.mode_set(mode='OBJECT')
+    for obj,saved in coordinates:
+        obj.data.vertices.foreach_set('co',saved);obj.data.update()
+    validate_uv(objects)
+
+
+def save_denoised(image, path, source_scene, albedo=None, normal=None):
     """Use Blender's bundled OpenImageDenoise, then the source OCIO transform."""
     import bpy
     post=bpy.data.scenes.new('Studio texture denoise')
@@ -58,6 +127,11 @@ def save_denoised(image, path, source_scene):
     denoise=nodes.new('CompositorNodeDenoise');denoise.use_hdr=True
     composite=nodes.new('CompositorNodeComposite')
     links.new(source.outputs['Image'],denoise.inputs['Image']);links.new(denoise.outputs['Image'],composite.inputs['Image'])
+    for label,guide in [('Albedo',albedo),('Normal',normal)]:
+        if guide:
+            node=nodes.new('CompositorNodeImage');node.image=guide
+            links.new(node.outputs['Image'],denoise.inputs[label])
+    if albedo:denoise.prefilter='ACCURATE'
     try:
         bpy.ops.render.render(scene=post.name,write_still=True)
         import struct
@@ -71,8 +145,7 @@ def save_denoised(image, path, source_scene):
 
 def bake_scene(scene, output, quality, whole_space=False):
     import bpy
-    from mathutils import Vector, Matrix
-    from array import array
+    from mathutils import Vector
     start = time.monotonic()
     meshes = [o for o in scene.objects if o.type == 'MESH' and not o.hide_render and o.visible_get()]
     limit=1800 if whole_space else 600
@@ -129,12 +202,12 @@ def bake_scene(scene, output, quality, whole_space=False):
     opaque=[o for o in meshes if o not in dynamic and o != backdrop]
     if not opaque:raise ValueError('No opaque surfaces to bake')
     size=1024 if quality=='preview' else 2048
-    samples=24 if quality=='preview' else 64
+    samples=64 if quality=='preview' else 192
     scene.cycles.samples=samples
     scene.cycles.use_denoising=False
     scene.render.bake.use_selected_to_active=False
     scene.render.bake.use_clear=True
-    scene.render.bake.margin=4 if quality=='preview' else 8
+    scene.render.bake.margin=8
     scene.render.bake.margin_type='EXTEND'
     scene.render.bake.use_pass_direct=True
     scene.render.bake.use_pass_indirect=True
@@ -146,9 +219,8 @@ def bake_scene(scene, output, quality, whole_space=False):
     scene.render.bake.view_from='ABOVE_SURFACE'
     atlases=[]
     replacements=[]
-    groups={}
-    for obj in opaque:groups.setdefault(obj.get('studioModule','surfaces') if whole_space else 'surfaces',[]).append(obj)
-    for name, objects, resolution in [(name,objects,size) for name,objects in sorted(groups.items())]+[('backdrop',[backdrop] if backdrop else [],size)]:
+    groups=atlas_groups(opaque,whole_space,quality)
+    for name, objects, resolution in groups+[('backdrop',[backdrop] if backdrop else [],size)]:
         if not objects:continue
         print('STUDIO_BAKE_STAGE unwrap',name,len(objects),flush=True)
         image=bpy.data.images.new('Studio_'+name,resolution,resolution,alpha=False,float_buffer=True)
@@ -180,35 +252,33 @@ def bake_scene(scene, output, quality, whole_space=False):
                 obj.data.materials[i]=clones[key]
             obj.select_set(True)
         bpy.context.view_layer.objects.active=objects[0]
-        # UV operators measure local mesh coordinates. Account for object scale
-        # temporarily so tiny scaled spheres do not consume most of the atlas.
-        # Restore exact coordinates before Cycles evaluates procedural materials.
-        coordinates=[]
-        for obj in objects:
-            saved=array('f',[0.0])*(len(obj.data.vertices)*3)
-            obj.data.vertices.foreach_get('co',saved);coordinates.append((obj,saved))
-            scale=obj.matrix_world.to_scale()
-            obj.data.transform(Matrix.Diagonal((scale.x,scale.y,scale.z,1)))
-        bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT')
-        bpy.ops.uv.smart_project(angle_limit=math.radians(45),island_margin=.002,area_weight=.1,correct_aspect=True,scale_to_bounds=True)
-        bpy.ops.uv.select_all(action='SELECT')
-        bpy.ops.uv.average_islands_scale()
-        bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=(6 if quality=='preview' else 12)/resolution)
-        bpy.ops.object.mode_set(mode='OBJECT')
-        for _ in range(2):
-            for obj in objects:protect_thin_islands(obj.data,6/resolution)
-            bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.uv.select_all(action='SELECT')
-            bpy.ops.uv.pack_islands(rotate=True,rotate_method='CARDINAL',shape_method='AABB',margin_method='FRACTION',margin=(6 if quality=='preview' else 12)/resolution)
-            bpy.ops.object.mode_set(mode='OBJECT')
-        for obj,saved in coordinates:
-            obj.data.vertices.foreach_set('co',saved);obj.data.update()
+        unwrap_objects(objects,resolution,name.endswith('_detail'))
         print('STUDIO_BAKE_STAGE cycles',name,resolution,samples,flush=True)
-        bpy.ops.object.bake(type='COMBINED',uv_layer=UV_NAME)
+        bpy.ops.object.bake(type='COMBINED',pass_filter={'DIRECT','INDIRECT','DIFFUSE','EMIT','COLOR'},uv_layer=UV_NAME)
+        # Guidance prevents the denoiser treating real material/normal detail as
+        # lighting noise. Guides use the SAME UVs and original source shaders.
+        guides=[]
+        scene.cycles.samples=4  # Deterministic color/normal guides need no path-traced GI samples.
+        for kind in ('DIFFUSE','NORMAL'):
+            print('STUDIO_BAKE_STAGE guide',name,kind,flush=True)
+            guide=bpy.data.images.new('Studio guide '+kind,resolution,resolution,alpha=False,float_buffer=True)
+            guide.colorspace_settings.name='Non-Color'
+            for material in clones.values():material.node_tree.nodes.active.image=guide
+            if kind=='DIFFUSE':bpy.ops.object.bake(type=kind,pass_filter={'COLOR'},uv_layer=UV_NAME)
+            else:bpy.ops.object.bake(type=kind,normal_space='OBJECT',uv_layer=UV_NAME)
+            guides.append(guide)
+        scene.cycles.samples=samples
+        # A normal bake encodes [-1,1] as [0,1]; OIDN expects signed normals.
+        import numpy as np
+        pixels=np.empty(resolution*resolution*4,dtype=np.float32)
+        guides[1].pixels.foreach_get(pixels);pixels=pixels.reshape((-1,4));pixels[:,:3]=pixels[:,:3]*2-1
+        guides[1].pixels.foreach_set(pixels.ravel());guides[1].update()
+        for material in clones.values():material.node_tree.nodes.active.image=image
         path=output/(name+'.png')
         scene.render.image_settings.file_format='PNG';scene.render.image_settings.color_mode='RGB';scene.render.image_settings.color_depth='8'
         # Apply the SOURCE OCIO view/look/exposure exactly once to the baked pixels.
-        save_denoised(image,path,scene)
+        save_denoised(image,path,scene,*guides)
+        for guide in guides:bpy.data.images.remove(guide)
         display=bpy.data.images.load(str(path),check_existing=False);display.colorspace_settings.name='sRGB'
         material=bpy.data.materials.new('Studio baked '+name);material.use_nodes=True
         nodes=material.node_tree.nodes;nodes.clear();links=material.node_tree.links
@@ -217,7 +287,8 @@ def bake_scene(scene, output, quality, whole_space=False):
         # This supported glTF exporter arrangement produces KHR_materials_unlit.
         out=nodes.new('ShaderNodeOutputMaterial');links.new(tex.outputs['Color'],out.inputs['Surface'])
         replacements.append((objects,material))
-        display.pack();atlases.append({'name':name+'.png','width':resolution,'height':resolution})
+        display.pack();atlases.append({'name':name+'.png','width':resolution,'height':resolution,'objects':len(objects)})
+        bpy.data.images.remove(image)
     # Keep every original shader in place until ALL light transport is baked.
     for objects, material in replacements:
         for obj in objects:
@@ -239,9 +310,9 @@ def bake_scene(scene, output, quality, whole_space=False):
     baked_materials=[m for m in gltf.get('materials',[]) if m['name'].startswith('Studio baked ')]
     if not baked_materials or any('KHR_materials_unlit' not in m.get('extensions',{}) for m in baked_materials):
         raise ValueError('Exporter did not produce unlit baked materials')
-    return {'schema':1,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
+    return {'schema':1,'bakerVersion':BAKER_VERSION,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
             'displayReferred':True,'viewTransform':scene.view_settings.view_transform,'look':scene.view_settings.look,
             'opaqueObjects':len(opaque),'dynamicObjects':[o.name for o in dynamic],
-            'backdrop':backdrop.name if backdrop else None,'atlases':atlases,'samples':samples,
-            'triangles':triangles,'denoise':'Blender OpenImageDenoise','seconds':round(time.monotonic()-start,2),
+            'backdrop':backdrop.name if backdrop else None,'atlases':atlases,'samples':samples,'guideSamples':4,
+            'triangles':triangles,'denoise':'OpenImageDenoise with albedo and signed normal guides','seconds':round(time.monotonic()-start,2),
             'limitations':['Static lighting and current frame only','Glass and transparency remain approximate PBR','Glossy view-dependent highlights are not baked','Volumes, procedural instances and non-mesh geometry require preparation']}
