@@ -76,11 +76,27 @@ def write_png(path,pixels,color=False):
     if color:
         rgb=data[...,:3];data[...,:3]=np.where(rgb<=.0031308,rgb*12.92,1.055*np.maximum(rgb,0)**(1/2.4)-.055)
     rgba=np.rint(np.clip(data,0,1)*255).astype(np.uint8)
-    height,width=rgba.shape[:2]
+    path.write_bytes(pack_png(rgba[::-1]))
+
+
+def pack_png(rgba):
+    """Lossless adaptive PNG filtering keeps detailed normal atlases compact."""
+    import numpy as np
+    import zlib
+    height,width=rgba.shape[:2];rows=[];previous=np.zeros(width*4,dtype=np.int16)
+    for row in rgba:
+        current=row.reshape(-1).astype(np.int16);left=np.zeros_like(current);left[4:]=current[:-4]
+        upper_left=np.zeros_like(current);upper_left[4:]=previous[:-4]
+        prediction=left+previous-upper_left
+        a=np.abs(prediction-left);b=np.abs(prediction-previous);c=np.abs(prediction-upper_left)
+        paeth=np.where((a<=b)&(a<=c),left,np.where(b<=c,previous,upper_left))
+        candidates=[current,current-left,current-previous,current-(left+previous)//2,current-paeth]
+        encoded=[np.bitwise_and(value,255).astype(np.uint8) for value in candidates]
+        scores=[int(np.minimum(value.astype(np.int16),256-value.astype(np.int16)).sum()) for value in encoded]
+        choice=min(range(5),key=lambda i:scores[i]);rows.append(bytes([choice])+encoded[choice].tobytes());previous=current
     def chunk(kind,content):return struct.pack('>I',len(content))+kind+content+struct.pack('>I',zlib.crc32(kind+content)&0xffffffff)
-    # Blender image rows start at the bottom; PNG scanlines start at the top.
-    raw=b''.join(b'\0'+row.tobytes() for row in rgba[::-1])
-    path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',width,height,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,6))+chunk(b'IEND',b''))
+    return b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>IIBBBBB',width,height,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(b''.join(rows),9))+chunk(b'IEND',b'')
+
 
 
 def dynamic_material(mat):
@@ -147,11 +163,13 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
             continue
         print('STUDIO_HYBRID unwrap',name,len(objects),resolution,flush=True)
         bpy.ops.object.select_all(action='DESELECT');clones={}
-        def new_image(label):
-            image=bpy.data.images.new(name+'_'+label,resolution,resolution,alpha=True,float_buffer=True)
+        light_resolution=min(resolution,(512 if '_detail' in name else 1024)*(2 if quality=='original' else 1))
+        def new_image(label,size=None):
+            size=size or resolution
+            image=bpy.data.images.new(name+'_'+label,size,size,alpha=True,float_buffer=True)
             image.generated_color=(0,0,0,0);image.colorspace_settings.name='Non-Color';image.alpha_mode='STRAIGHT'
             return image
-        indirect=new_image('indirect')
+        indirect=new_image('indirect',light_resolution)
         for obj in objects:
             old_uv=obj.data.uv_layers.active.name if obj.data.uv_layers.active else ''
             layer=obj.data.uv_layers.get(UV_NAME) or obj.data.uv_layers.new(name=UV_NAME)
@@ -189,7 +207,7 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
             if kind=='NORMAL':args['normal_space']=normal_space
             print('STUDIO_HYBRID bake',name,kind,passes,flush=True)
             with bake_log():bpy.ops.object.bake(**args)
-        albedo=new_image('albedo');normal=new_image('normal');roughness=new_image('roughness');guide=new_image('guide')
+        albedo=new_image('albedo');normal=new_image('normal');roughness=new_image('roughness');guide=new_image('guide',light_resolution)
         scene.cycles.samples=1
         bake('DIFFUSE',albedo,{'COLOR'})
         pixels=np.empty(resolution*resolution*4,dtype=np.float32)
@@ -197,14 +215,16 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
         if not coverage.any():raise ValueError('Empty lightmap: '+name)
         pad_bake_images([albedo],radius=3,coverage=coverage)
         albedo.pixels.foreach_get(pixels);mask=pixels.reshape((resolution,resolution,4))[:,:,3]>.5
-        missing=0
+        missing=0;significant=False
         for obj in objects:
             obj.data.calc_loop_triangles();uv=obj.data.uv_layers[UV_NAME].data
+            total_area=sum(t.area for t in obj.data.loop_triangles);missing_area=0
             for triangle in obj.data.loop_triangles:
                 point=sum((uv[i].uv for i in triangle.loops),uv[triangle.loops[0]].uv*0)/3
                 x=min(resolution-1,max(0,int(point.x*resolution)));y=min(resolution-1,max(0,int(point.y*resolution)))
-                if not mask[y,x]:missing+=1
-        if missing:
+                if not mask[y,x]:missing+=1;missing_area+=triangle.area
+            significant|=missing_area>max(total_area*.002,1e-12)
+        if significant:
             for image in (indirect,albedo,normal,roughness,guide):bpy.data.images.remove(image)
             if len(objects)<2 or name.count('_p')>=12:raise ValueError('Insufficient texels for small surfaces: '+name)
             midpoint=len(objects)//2
@@ -215,20 +235,24 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
         bake('DIFFUSE',indirect,{'INDIRECT'})
         scene.cycles.samples=1
         bake('NORMAL',normal);bake('ROUGHNESS',roughness);bake('NORMAL',guide,normal_space='OBJECT')
+        pad_bake_images([albedo,normal,roughness],radius=6,coverage=coverage)
+        pixels=np.empty(light_resolution*light_resolution*4,dtype=np.float32)
+        indirect.pixels.foreach_get(pixels);coverage=pixels.reshape((light_resolution,light_resolution,4))[:,:,3]>.5
         guide.pixels.foreach_get(pixels);pixels.reshape((-1,4))[:,:3]=pixels.reshape((-1,4))[:,:3]*2-1;guide.pixels.foreach_set(pixels)
         exr=output/(name+'_linear.exr');save_denoised(indirect,exr,scene,normal=guide,linear=True)
         clean=bpy.data.images.load(str(exr),check_existing=False);clean.colorspace_settings.name='Non-Color'
-        clean.pixels.foreach_get(pixels);rgba=pixels.reshape((resolution,resolution,4));rgba[:,:,3]=coverage
+        clean.pixels.foreach_get(pixels);rgba=pixels.reshape((light_resolution,light_resolution,4));rgba[:,:,3]=coverage
         clean.pixels.foreach_set(rgba.ravel());clean.update()
-        pad_bake_images([clean,albedo,normal,roughness],radius=3,coverage=coverage)
-        clean.pixels.foreach_get(pixels);encoded,scale=encode_rgbm(pixels.reshape((resolution,resolution,4)))
-        rgbm=new_image('rgbm');rgbm.pixels.foreach_set(encoded.ravel());rgbm.update()
+        pad_bake_images([clean],radius=4,coverage=coverage)
+        clean.pixels.foreach_get(pixels);encoded,scale=encode_rgbm(pixels.reshape((light_resolution,light_resolution,4)))
+        rgbm=new_image('rgbm',light_resolution);rgbm.pixels.foreach_set(encoded.ravel());rgbm.update()
         def save(image,suffix,color=False):
             path=output/(name+'_'+suffix+'.png')
-            values=np.empty(resolution*resolution*4,dtype=np.float32);image.pixels.foreach_get(values)
-            write_png(path,values.reshape((resolution,resolution,4)),color)
+            width,height=image.size
+            values=np.empty(width*height*4,dtype=np.float32);image.pixels.foreach_get(values)
+            write_png(path,values.reshape((height,width,4)),color)
             loaded=bpy.data.images.load(str(path),check_existing=False);loaded.colorspace_settings.name='sRGB' if color else 'Non-Color';loaded.pack()
-            atlases.append({'name':path.name,'width':resolution,'height':resolution,'objects':len(objects),'kind':suffix})
+            atlases.append({'name':path.name,'width':width,'height':height,'objects':len(objects),'kind':suffix})
             return loaded
         color_map=save(albedo,'albedo',True);normal_map=save(normal,'normal');rough_map=save(roughness,'roughness');save(rgbm,'indirect')
         material=bpy.data.materials.new('Studio hybrid '+name);material.use_nodes=True
@@ -264,7 +288,7 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
     inject_lightmaps(path,maps,lighting)
     data=path.read_bytes()
     if len(data)>48*1024**2:raise ValueError('Hybrid GLB exceeds 48 MiB')
-    return {'schema':1,'bakerVersion':5,'hybridVersion':HYBRID_VERSION,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
-            'displayReferred':False,'lighting':'indirect-only','encoding':'RGBM','samples':samples,'atlases':atlases,
+    return {'schema':1,'bakerVersion':6,'hybridVersion':HYBRID_VERSION,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
+            'displayReferred':False,'lighting':'indirect-only','encoding':'RGBM','samples':samples,'atlases':atlases,'coverageThreshold':.002,'pngCompression':'lossless-adaptive',
             'triangles':triangles,'opaqueObjects':len(opaque),'dynamicObjects':[o.name for o in dynamic],
             'seconds':round(time.monotonic()-start,2),'limitations':['Static indirect illumination; rebake after layout changes','Direct area lights and glass are approximated in the browser']}

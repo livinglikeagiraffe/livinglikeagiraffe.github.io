@@ -33,6 +33,13 @@ export class ClayViewer{
       }
     });
     if(bounds.isEmpty())throw Error('표시할 모델이 없습니다.');
+    if(this.mobile){
+      const textures=new Map();root.traverse(o=>{for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])for(const key of ['map','lightMap','normalMap','roughnessMap','metalnessMap'])if(m[key])textures.set(m[key],['normalMap','roughnessMap','metalnessMap'].includes(key)?512:1024);});
+      for(const [texture,limit] of textures){const source=texture.image;if(!source?.width||Math.max(source.width,source.height)<=limit)continue;const scale=limit/Math.max(source.width,source.height);
+        const width=Math.max(1,Math.round(source.width*scale)),height=Math.max(1,Math.round(source.height*scale));
+        try{texture.image=await createImageBitmap(source,{resizeWidth:width,resizeHeight:height,resizeQuality:'high',premultiplyAlpha:'none',colorSpaceConversion:'none'});}catch{const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d');context.drawImage(source,0,0,width,height);texture.image=canvas;}texture.needsUpdate=true;
+      }
+    }
     batchOpaque(root);
     if(this.model){this.scene.remove(this.model,this.rig,this.ambient,this.floor);this.model.traverse(o=>{o.geometry?.dispose();for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[]){for(const value of Object.values(m))if(value?.isTexture)value.dispose();m.dispose();}});this.rig.traverse(o=>{o.shadow?.map?.dispose();o.shadow?.mapPass?.dispose();});this.floor?.geometry.dispose();this.floor?.material.dispose();}
     this.model=root;this.hybrid=Boolean(gltf.userData.studioHybrid);profile=gltf.userData.studioHybrid?.lighting||profile;

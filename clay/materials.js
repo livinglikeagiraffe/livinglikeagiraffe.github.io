@@ -37,7 +37,6 @@ export function hybridPlugin(parser){return {name:'STUDIO_indirect_lightmaps',as
     if(!spec)return;
     if(spec.encoding!=='RGBM'||spec.indirectOnly!==true||!Number.isFinite(spec.range)||spec.range<=0||spec.range>1e8||!Number.isInteger(spec.texture)||spec.texCoord!==0)throw Error('지원하지 않는 간접광 텍스처입니다.');
     const texture=(await parser.getDependency('texture',spec.texture)).clone();texture.colorSpace=THREE.NoColorSpace;texture.channel=0;texture.flipY=false;texture.needsUpdate=true;
-    material.normalScale?.multiplyScalar(.35);
     material.lightMap=texture;material.lightMapIntensity=Math.PI*spec.range;material.userData.studioLightMap=spec;
     installClay(material,{lightMapRange:spec.range});
   }));

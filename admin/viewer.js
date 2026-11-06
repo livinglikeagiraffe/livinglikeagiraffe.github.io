@@ -70,7 +70,7 @@ export class StudioViewer {
     if([...(json.images||[]),...(json.buffers||[])].some(x=>x.uri&&!x.uri.startsWith('data:')))throw Error('텍스처가 내장된 GLB로 내보내 주세요. 외부 주소를 참조하는 GLB는 지원하지 않습니다.');
     const loader=new GLTFLoader();loader.register(hybridPlugin);const gltf=await loader.parseAsync(bytes,'');gltf.scene.updateMatrixWorld(true);
     let baked=false,backdrop=false;const bounds=new THREE.Box3();
-    gltf.scene.traverse(o=>{if(o.isMesh){const frozen=isTagged(o,'studioBaked');baked||=frozen;backdrop||=isTagged(o,'studioBackdrop');o.castShadow=!frozen&&!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.transmission>0);o.receiveShadow=!frozen;
+    gltf.scene.traverse(o=>{if(o.isMesh){const frozen=isTagged(o,'studioBaked');baked||=frozen;backdrop||=isTagged(o,'studioBackdrop');o.castShadow=!frozen&&!isTagged(o,'studioBackdrop')&&!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.transmission>0);o.receiveShadow=!frozen;
       if(frozen)for(const material of Array.isArray(o.material)?o.material:[o.material]){material.toneMapped=false;if(material.map){material.map.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());material.map.needsUpdate=true;}}
       if(!isTagged(o,'studioBackdrop')){o.geometry.computeBoundingBox();bounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}
     }});
@@ -132,8 +132,9 @@ export class StudioViewer {
     this.ao.kernelRadius=span*.035;this.ao.minDistance=.0001;this.ao.maxDistance=Math.min(.04,span/this.camera.far*.32);
   }
   setLook(value,{fit=false}={}){
-    this.look=normalizeLook(value);const l=this.look;this.renderer.toneMapping=({neutral:THREE.NeutralToneMapping,aces:THREE.ACESFilmicToneMapping,agx:THREE.AgXToneMapping})[l.tone];this.renderer.toneMappingExposure=2**l.exposure;
+    this.look=normalizeLook(this.asset?.hybrid?{exposure:Math.log2(.85),key:1,fill:1,texture:1,warmth:0,contrast:1,saturation:1,...value}:value);const l=this.look;this.renderer.toneMapping=({neutral:THREE.NeutralToneMapping,aces:THREE.ACESFilmicToneMapping,agx:THREE.AgXToneMapping})[l.tone];this.renderer.toneMappingExposure=2**l.exposure;
     this.scene.background=new THREE.Color(l.background);this.scene.environmentIntensity=l.ambient*.65;this.ambient.intensity=l.ambient;
+    if(this.asset?.hybrid){this.scene.environmentIntensity=1;this.ambient.color.setRGB(...this.profile?.world?.color||[.08,.08,.08]);this.ambient.groundColor.set('#686052');this.ambient.intensity=this.profile?.world?.strength??.3;}else{this.ambient.color.set('#fff7e6');this.ambient.groundColor.set('#a3a49c');}
     if(this.ground)this.ground.material.color.set(l.background);
     for(const light of this.lights||[]){light.intensity=light.userData.energy*l[light.userData.role];if(light.shadow)light.shadow.radius=this.isGrid?3:l.softness;}
     this.ao.enabled=l.contact>0&&!this.asset?.hybrid;this.ao.ssaoMaterial.uniforms.strength.value=l.contact;

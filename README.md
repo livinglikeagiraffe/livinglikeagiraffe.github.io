@@ -99,10 +99,10 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 ### 간접광 파이프라인
 
 - `studio/compose.py`: 배치 스냅샷·원본 해시 검증, 전체 씬 합성, 공통 바닥·조명 구성.
-- `studio/hybrid.py`: Cycles INDIRECT diffuse(색 제외), albedo, tangent normal, roughness를 각각 계산. 모든 아틀라스가 끝날 때까지 원본 재질을 유지합니다. UV 검증 실패 시 묶음을 이분해 재시도합니다.
+- `studio/hybrid.py`: Cycles INDIRECT diffuse(색 제외), albedo, tangent normal, roughness를 각각 계산. 모든 아틀라스가 끝날 때까지 원본 재질을 유지합니다. UV 좌표뿐 아니라 실제 색상 텍스처의 삼각형별 기록 여부를 검사하며, 누락되면 묶음을 이분해 재시도합니다.
 - 간접광은 OIDN 후 선형 RGBM으로 저장합니다. OCIO 화면용 변환을 텍스처에 넣지 않습니다. GLB 재질 extras의 `studioLightMap`이 내장 PNG·UV·범위를 참조합니다. 웹 로더가 RGBM을 복원하고 pi를 곱해 조도 입력으로 사용합니다.
 - `clay/materials.js`: PBR 재질·직접광·표면 노멀을 유지하고 작은 절차적 클레이 요철을 추가합니다. 베이킹된 간접광과 환경의 확산광을 중복 계산하지 않습니다. 면광원과 반사·굴절은 웹에서 근사합니다.
-- 표준 2K·96샘플 / 정밀 2K·256샘플. 불투명 메시를 아틀라스별로 합쳐 그리기 호출 수를 줄입니다. 유리·금속·발광 재질은 별도로 유지합니다.
+- 표준은 큰 면 2K·소품 묶음 1K·96샘플, 정밀은 2K·256샘플입니다. 한 물체 면적의 0.2% 이상이 기록되지 않으면 묶음을 다시 나눕니다. 간접광은 표준 512~1K, 정밀 1K~2K로 별도 계산합니다. PNG는 화질 변화 없이 압축합니다. 불투명 메시를 아틀라스별로 합쳐 그리기 호출 수를 줄입니다. 유리·금속·발광 재질은 별도로 유지합니다.
 - 기존 `studio/bake.py`의 Combined/unlit 결과도 이전 버전 검수용으로 계속 지원합니다.
 
 ### 버전과 공개
