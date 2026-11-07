@@ -304,7 +304,8 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
     data=path.read_bytes()
     if len(data)>48*1024**2:raise ValueError('Hybrid GLB exceeds 48 MiB')
     return {'schema':1,'bakerVersion':7,'hybridVersion':HYBRID_VERSION,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
-            'displayReferred':False,'webBake':{'surfaces':len(receivers),'atlases':len(receiver_changes),'resolution':receiver_resolution},
+            'displayReferred':False,'webBake':{'surfaces':len(receivers),'atlases':len(receiver_changes),'resolution':receiver_resolution,
+                                            'passes':['direct','indirect','diffuse','glossy'],'view':'active-camera'},
             'lighting':'static-diffuse-and-indirect' if receivers else 'indirect-only','encoding':'RGBM','samples':samples,'atlases':atlases,'coverageThreshold':.002,'pngCompression':'lossless-adaptive',
             'triangles':triangles,'opaqueObjects':len(opaque),'dynamicObjects':[o.name for o in dynamic],
             'seconds':round(time.monotonic()-start,2),'limitations':['Static indirect illumination; rebake after layout changes','Direct area lights and glass are approximated in the browser']}

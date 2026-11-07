@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {inferSelection} from '../admin/selection.js';
 import {zoomPose} from '../clay/controls.js';
-import {hybridPlugin} from '../clay/materials.js';
-import {MeshStandardMaterial,Texture,NoColorSpace} from 'three';
+import {hybridPlugin,installClay} from '../clay/materials.js';
+import {MeshBasicMaterial,MeshStandardMaterial,Texture,NoColorSpace} from 'three';
 
 test('v06 archive order cannot select a room or displacement mesh as the whole module',()=>{
  const names=['rooms/sauna/sauna_normal.glb','full/riraji_displacement.glb','rooms/sports/sports.blend','full/riraji_normal.glb','previews/detail_sports.png','previews/clay_normal_v06.png','full/riraji_full.blend'];
@@ -49,4 +49,16 @@ test('ground extension preserves original texel density and clamps every baked m
 test('whole-scene lighting keeps the shared area lights after the room lights',()=>{
  const lights=Array.from({length:12},(_,i)=>({type:'AREA',name:String(i),position:[0,5,0],direction:[0,-1,0],color:[1,1,1],energy:100,size:3}));
  assert.equal(sceneProfile({schema:1,coordinateSystem:'gltf-y-up',lights}).lights.length,12);
+});
+
+test('static diffuse receivers remain opaque through the admin and public output passes',()=>{
+ const source=new MeshBasicMaterial({map:new Texture()});
+ source.userData.studioWebBake=true;
+ for(const material of [source,source.clone()]){
+  installClay(material);
+  const shader={fragmentShader:'#include <opaque_fragment>'};
+  material.onBeforeCompile(shader);
+  assert.match(shader.fragmentShader,/outgoingLight=fromDisplay\(diffuseColor.rgb\)/);
+  assert.doesNotMatch(shader.fragmentShader,/gl_FragColor.a\s*=/);
+ }
 });

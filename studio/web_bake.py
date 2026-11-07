@@ -72,6 +72,10 @@ def bake_receivers(scene, objects, output, resolution, samples):
     scene.cycles.samples = samples
     scene.render.bake.use_selected_to_active = False
     scene.render.bake.use_clear = True
+    # Rough dielectric surfaces also reflect the area lights. Sample the broad
+    # highlight from the authored camera for marked static matte receivers.
+    previous_view = scene.render.bake.view_from
+    scene.render.bake.view_from = 'ACTIVE_CAMERA'
     for batch, group in enumerate(receiver_groups(objects)):
         bpy.ops.object.select_all(action='DESELECT')
         image = bpy.data.images.new('WebBake diffuse', resolution, resolution, alpha=True, float_buffer=True)
@@ -108,7 +112,7 @@ def bake_receivers(scene, objects, output, resolution, samples):
         bpy.context.view_layer.objects.active = group[0]
         unwrap_objects(group, resolution, padding=10)
         print('STUDIO_WEBBAKE', batch, len(group), resolution, samples, flush=True)
-        bpy.ops.object.bake(type='DIFFUSE', pass_filter={'COLOR','DIRECT','INDIRECT'},
+        bpy.ops.object.bake(type='COMBINED', pass_filter={'COLOR','DIRECT','INDIRECT','DIFFUSE','GLOSSY'},
                             uv_layer=UV_NAME, margin=8)
         with tempfile.TemporaryDirectory(dir=output) as tmp:
             path = Path(tmp) / f'web-diffuse-{batch}.png'
@@ -127,6 +131,7 @@ def bake_receivers(scene, objects, output, resolution, samples):
         # The Blender glTF exporter recognizes this as KHR_materials_unlit.
         mat.node_tree.links.new(texture.outputs['Color'], target.inputs['Surface'])
         replacements.append((group, mat))
+    scene.render.bake.view_from = previous_view
     return replacements
 
 
