@@ -13,7 +13,7 @@ async function load(record,base){
   const url=new URL(record.model,base);if(record.sha256)url.searchParams.set('sha',record.sha256);
   const r=await fetch(url);if(!r.ok)throw Error('3D 파일을 불러오지 못했습니다.');const bytes=await r.arrayBuffer();
   if(record.sha256){const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');if(hash!==record.sha256||bytes.byteLength!==record.bytes)throw Error('3D 파일 검증에 실패했습니다.');}
-  const profile=record.profile?await json(new URL(record.profile,base)):null;await viewer.load(bytes,profile);current=key;status.hidden=true;
+  const profile=record.profile?await json(new URL(record.profile,base)):null;await viewer.load(bytes,profile,{v06Floor:record===v06Source});current=key;status.hidden=true;
 }
 async function showPublished(record, base) {
   if (useOriginalScene(record)) {

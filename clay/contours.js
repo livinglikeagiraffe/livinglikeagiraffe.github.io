@@ -14,6 +14,8 @@ export class Contours {
       frameImage: {value: this.target.texture},
       pixel: {value: new THREE.Vector2()},
       phase: {value: 0},
+      contactMap: {value: null},
+      hasContactMap: {value: false},
       amplitude: {value: animate ? .95 : 0}
     };
     this.scene = new THREE.Scene();
@@ -25,6 +27,8 @@ export class Contours {
       vertexShader: `varying vec2 coord;
         void main(){coord=uv; gl_Position=vec4(position.xy,0.,1.);}`,
       fragmentShader: `uniform sampler2D frameImage;
+        uniform sampler2D contactMap;
+        uniform bool hasContactMap;
         uniform vec2 pixel;
         uniform float phase;
         uniform float amplitude;
@@ -37,7 +41,14 @@ export class Contours {
           vec2 p=coord/pixel;
           vec2 jitter=vec2(sin(.77*p.y+phase)*cos(.23*p.x-phase),
                            sin(.65*p.x-phase)*cos(.31*p.y+phase));
-          gl_FragColor=vec4(texture2D(frameImage,coord+edge*jitter*pixel*amplitude).rgb,1.);
+          vec2 sampleUv=coord+edge*jitter*pixel*amplitude;
+          vec4 lit=texture2D(frameImage,sampleUv);
+          if(hasContactMap){
+            // Negative alpha marks how much Cycles shadowing this pixel contains.
+            float baked=clamp(-lit.a,0.,1.);
+            lit.rgb*=mix(texture2D(contactMap,sampleUv).r,1.,baked);
+          }
+          gl_FragColor=vec4(lit.rgb,1.);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
         }`
@@ -54,6 +65,7 @@ export class Contours {
     this.uniforms.pixel.value.setScalar(this.renderer.getPixelRatio()).divide(size);
     this.renderer.setRenderTarget(this.target);
     this.renderer.render(scene, camera);
+    this.uniforms.hasContactMap.value = useContactShadows;
     if (useContactShadows) {
       if (!this.ao) this.ao = new SSAOPass(scene, camera, 1, 1, 16);
       const ao = this.ao;
@@ -69,7 +81,10 @@ export class Contours {
       ao.kernelRadius = 2.6;
       ao.minDistance = .03 / camera.far;
       ao.maxDistance = 5 / camera.far;
+      // Preserve scene color. Combine SSAO only on the live-lit fraction in present().
+      ao.copyMaterial.colorWrite = false;
       ao.render(this.renderer, null, this.target);
+      this.uniforms.contactMap.value = ao.blurRenderTarget.texture;
     }
     this.renderer.setRenderTarget(null);
     this.ready = true;

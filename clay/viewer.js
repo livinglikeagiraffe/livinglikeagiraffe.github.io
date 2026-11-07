@@ -7,6 +7,7 @@ import {createLighting} from './lighting.js';
 import {batchOpaque} from './batch.js';
 
 import {addGroundShadow} from './ground-shadow.js';
+import {applyV06FloorLighting} from './floor-light.js';
 import {Contours} from './contours.js';
 export class ClayViewer{
   constructor(host,{compare=false}={}){
@@ -35,7 +36,7 @@ export class ClayViewer{
       if(this.contours && this.model) this.contours.capture(this.scene,camera,!this.hybrid);
       else this.renderer.render(this.scene,camera);});}
   resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();if(this.bounds){const zoom=this.controls.goalZoom,target=this.controls.goal.clone();this.controls.configure(this.bounds);this.controls.goalZoom=zoom;this.controls.goal.copy(target);this.controls.start();}this.draw();}
-  async load(bytes,profile){
+  async load(bytes,profile,{v06Floor=false}={}){
     const ticket=this.ticket=Symbol(),loader=new GLTFLoader();loader.register(hybridPlugin);
     const gltf=await loader.parseAsync(bytes,'');if(this.ticket!==ticket)return;
     const root=gltf.scene;root.updateMatrixWorld(true);const bounds=new THREE.Box3();
@@ -58,6 +59,10 @@ export class ClayViewer{
       try{texture.image=await createImageBitmap(source,{resizeWidth:width,resizeHeight:height,resizeQuality:'high',premultiplyAlpha:'none',colorSpaceConversion:'none'});}catch{const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d');context.drawImage(source,0,0,width,height);texture.image=canvas;}texture.needsUpdate=true;
     }
     const retained=new Set([...textures.keys()].map(t=>t.image));for(const source of before)if(!retained.has(source))source?.close?.();
+    const floorLighting = v06Floor ? await applyV06FloorLighting(root) : null;
+    if (this.ticket!==ticket) { floorLighting?.dispose(); return; }
+    this.floorLighting?.dispose();
+    this.floorLighting = floorLighting;
     batchOpaque(root);
     if(this.model){this.scene.remove(this.model,this.rig,this.ambient,this.floor);this.model.traverse(o=>{o.geometry?.dispose();for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[]){for(const value of Object.values(m))if(value?.isTexture)value.dispose();m.dispose();}});this.rig.traverse(o=>{o.shadow?.map?.dispose();o.shadow?.mapPass?.dispose();});this.floor?.geometry.dispose();this.floor?.material.dispose();}
     this.model=root;this.hybrid=Boolean(gltf.userData.studioHybrid);profile=gltf.userData.studioHybrid?.lighting||profile;
@@ -102,5 +107,5 @@ export class ClayViewer{
     root.traverse(o=>{if(o.isMesh&&o.userData.studioBackdrop){extendGround(o);this.floor.visible=false;}});
     this.controls.configure(bounds);this.draw();return gltf;
   }
-  dispose(){document.removeEventListener('visibilitychange',this.resume);this.contours?.dispose();this.observer.disconnect();this.controls.dispose();cancelAnimationFrame(this.frame);this.environment.dispose();this.renderer.dispose();}
+  dispose(){this.floorLighting?.dispose();document.removeEventListener('visibilitychange',this.resume);this.contours?.dispose();this.observer.disconnect();this.controls.dispose();cancelAnimationFrame(this.frame);this.environment.dispose();this.renderer.dispose();}
 }
