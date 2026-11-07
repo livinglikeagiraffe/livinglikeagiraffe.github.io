@@ -1,5 +1,6 @@
 import { readFile, writeFile, mkdir, copyFile, readdir, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
+import {v06Source} from '../clay/source-v06.js';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
@@ -42,6 +43,7 @@ for(const file of ['index.html','style.css','main.js','bootstrap.js','credits.ht
 await directory('v2');
 await directory('admin');
 await directory('clay');
+await copy(path.join('clay',v06Source.model));
 // Keep the admin module graph on one release when Pages/CDN caches old scripts.
 const adminFiles=[...copied].filter(file=>/^(admin|clay)\//.test(file)&&/\.(js|css|html)$/.test(file)).sort();
 const adminHash=createHash('sha256');

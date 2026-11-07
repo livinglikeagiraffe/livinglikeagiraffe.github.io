@@ -2,7 +2,7 @@ import {Vector2,Vector3,Plane,Raycaster,MathUtils} from 'three';
 
 export function zoomPose(base,t){
   const z=MathUtils.clamp(t,0,1);
-  return {distance:base*MathUtils.lerp(1.1,1.18,z),elevation:MathUtils.degToRad(MathUtils.lerp(37,31,z)),zoom:MathUtils.lerp(1.65,.8,z)};
+  return {distance:base*MathUtils.lerp(1.1,1.18,z),elevation:MathUtils.degToRad(MathUtils.lerp(37,31,z)),zoom:MathUtils.lerp(1.65,.8,z)+1.65*Math.pow(1-z,6)};
 }
 
 // A bounded ground-plane pan with a small, coupled height change on zoom.

@@ -1,19 +1,24 @@
 import * as THREE from 'three';
 
-export function installClay(material,{lightMapRange=0,strength=.14}={}){
+export function installClay(material,{lightMapRange=0,strength=.42}={}){
   if(!material.isMeshStandardMaterial||material.transmission>0||material.metalness>.1)return;
   material.roughness=Math.max(.78,material.roughness);material.envMapIntensity=.2;
   material.userData.clayStrength={value:strength};
   material.onBeforeCompile=shader=>{
     shader.uniforms.clayStrength=material.userData.clayStrength;
     shader.vertexShader='varying vec3 vClayPosition;\n'+shader.vertexShader;
-    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvClayPosition = position;');
+    shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvClayPosition = (modelMatrix * vec4(transformed, 1.)).xyz;');
     shader.fragmentShader=`varying vec3 vClayPosition; uniform float clayStrength;
 float clayHash(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}
 float clayNoise(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(clayHash(i),clayHash(i+vec3(1,0,0)),f.x),mix(clayHash(i+vec3(0,1,0)),clayHash(i+vec3(1,1,0)),f.x),f.y),mix(mix(clayHash(i+vec3(0,0,1)),clayHash(i+vec3(1,0,1)),f.x),mix(clayHash(i+vec3(0,1,1)),clayHash(i+vec3(1,1,1)),f.x),f.y),f.z);}
 `+shader.fragmentShader;
     shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
-float clayHeight=(clayNoise(vClayPosition*5.)*.7+clayNoise(vClayPosition*17.)*.3)*clayStrength*.045;
+float footprint=max(length(dFdx(vClayPosition)),length(dFdy(vClayPosition)));
+float pores=1.-smoothstep(.018,.09,footprint);
+float folds=clayNoise(vClayPosition*1.6);
+float grain=clayNoise(vClayPosition*7.+folds);
+float clayHeight=clayStrength*(.095*folds+.027*grain*pores);
+diffuseColor.rgb*=1.+clayStrength*((folds-.5)*.085+(grain-.5)*.045*pores);
 vec3 clayDx=dFdx(-vViewPosition),clayDy=dFdy(-vViewPosition);
 vec3 clayR1=cross(clayDy,normal),clayR2=cross(normal,clayDx);
 float clayDet=dot(clayDx,clayR1);
@@ -23,7 +28,7 @@ if(abs(clayDet)>1e-9)normal=normalize(abs(clayDet)*normal-sign(clayDet)*(dFdx(cl
       shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_maps>',chunk);
     }
   };
-  material.customProgramCacheKey=()=>`studio-clay-1:${Boolean(lightMapRange)}`;material.needsUpdate=true;
+  material.customProgramCacheKey=()=>`studio-clay-2:${Boolean(lightMapRange)}`;material.needsUpdate=true;
 }
 
 export function hybridPlugin(parser){return {name:'STUDIO_indirect_lightmaps',async afterRoot(gltf){
