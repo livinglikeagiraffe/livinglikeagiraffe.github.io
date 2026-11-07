@@ -2,9 +2,9 @@
   "schema": 1,
   "layoutId": "b304115d-5402-42f4-aaae-c75f5874939d",
   "digest": "dc53d4db550d5de51eea69f679c5d3ebd09c06d584faff14715393c25ee87cb1",
-  "renderId": "159788df-e0af-5a63-b095-b6681595f040",
-  "model": "../studio/renders/159788df-e0af-5a63-b095-b6681595f040/baked.glb",
-  "preview": "studio/renders/159788df-e0af-5a63-b095-b6681595f040/render.png",
-  "sha256": "cd63302593e0249f19b996ad9dda56f852840ef7c1611fb183242b5c44113c50",
-  "bytes": 35151272
+  "renderId": "dcdc23a4-eb75-42dc-8101-82847268e79e",
+  "model": "../studio/renders/dcdc23a4-eb75-42dc-8101-82847268e79e/baked.glb",
+  "preview": "../studio/renders/dcdc23a4-eb75-42dc-8101-82847268e79e/render.png",
+  "sha256": "1d9a0683ce4e54c382ada3df81ba9d65bfdaa3b8fd60ac83c245af6bb66abdb9",
+  "bytes": 33822420
 }

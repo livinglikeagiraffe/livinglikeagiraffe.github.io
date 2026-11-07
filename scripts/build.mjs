@@ -1,6 +1,5 @@
 import { readFile, writeFile, mkdir, copyFile, readdir, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
-import {v06Source} from '../clay/source-v06.js';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 
@@ -42,8 +41,10 @@ async function directory(folder){
 for(const file of ['index.html','style.css','main.js','bootstrap.js','credits.html','ASSETS.md','node_modules/three/LICENSE'])await copy(file);
 await directory('v2');
 await directory('admin');
-await directory('clay');
-await copy(path.join('clay',v06Source.model));
+for (const file of ['index.html','style.css','app.js','v06.json','assets/reference.png',
+                    'assets/profile.json','assets/v06-lighting-comparison.jpg']) {
+ await copy(path.join('clay',file));
+}
 // Keep the admin module graph on one release when Pages/CDN caches old scripts.
 const adminFiles=[...copied].filter(file=>/^(admin|clay)\//.test(file)&&/\.(js|css|html)$/.test(file)).sort();
 const adminHash=createHash('sha256');
@@ -59,11 +60,17 @@ await copy('node_modules/fflate/LICENSE');
 const published=JSON.parse(await readFile(path.join(root,'studio/public-scene.json'),'utf8'));
 if(!/^studio\/renders\/[0-9a-f-]{36}\/baked\.glb$/.test(published.model))throw Error('Invalid public scene path');
 await copy('studio/public-scene.json');await copy(published.model);
+await writeFile(path.join(out,'clay/default.json'),JSON.stringify({...published,
+ model:'../'+published.model,preview:'../'+published.preview}));
+const comparison=JSON.parse(await readFile(path.join(root,'clay/v06.json'),'utf8'));
+if(!/^studio\/renders\/[0-9a-f-]{36}\/baked\.glb$/.test(comparison.model))throw Error('Invalid v06 comparison path');
+await copy(comparison.model);
 // Trusted worker sources are downloadable for repository setup.
 await copy('studio/render.py');
 await copy('studio/bake.py');
 await copy('studio/compose.py');
 await copy('studio/hybrid.py');
+await copy('studio/web_bake.py');
 await copy('studio/save_result.py');
 await mkdir(path.join(out,'admin/setup'),{recursive:true});
 await copyFile(path.join(root,'.github/workflows/render-module.yml'),path.join(out,'admin/setup/render-module.yml'));
