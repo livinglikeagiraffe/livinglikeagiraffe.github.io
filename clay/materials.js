@@ -1,6 +1,34 @@
 import * as THREE from 'three';
 
+// Convert the artist's display-referred Filmic result back to the working
+// space of our ACES output pass. Applying ACES to the PNG a second time would
+// change both the hue of the spill and the contrast of the shadows.
+export const inverseToneMapping = `
+vec3 fromDisplay(vec3 rgb) {
+  const mat3 inputMatrix = mat3(.59719,.076,.02840, .35458,.90834,.13383, .04823,.01566,.83777);
+  const mat3 outputMatrix = mat3(1.60475,-.10208,-.00327, -.53108,1.10813,-.07276, -.07367,-.00605,1.07602);
+  vec3 f = clamp(inverse(outputMatrix)*rgb, 0., .995);
+  vec3 a = 1.-.983729*f;
+  vec3 b = .0245786-.432951*f;
+  vec3 c = -.000090537-.238081*f;
+  vec3 linear = (-b+sqrt(b*b-4.*a*c))/(2.*a);
+  return max(inverse(inputMatrix)*linear, 0.)*(.6/.85);
+}
+`;
+
 export function installClay(material,{lightMapRange=0,strength=.42}={}){
+  if (material.userData.studioWebBake) {
+    // The atlas already contains source color, diffuse transport and OCIO display rendering.
+    material.onBeforeCompile = shader => {
+      shader.fragmentShader = inverseToneMapping + shader.fragmentShader.replace('#include <opaque_fragment>',
+        `outgoingLight=fromDisplay(diffuseColor.rgb);
+#include <opaque_fragment>
+gl_FragColor.a=-1.;`);
+    };
+    material.customProgramCacheKey = () => 'studio-web-bake-display-1';
+    material.needsUpdate = true;
+    return;
+  }
   if(!material.isMeshStandardMaterial||material.transmission>0||material.metalness>.1)return;
   material.roughness=Math.max(.78,material.roughness);material.envMapIntensity=.2;
   material.userData.clayStrength={value:strength};
@@ -64,5 +92,5 @@ export function extendGround(mesh){
     for(const chunk of ['map_fragment','roughnessmap_fragment','metalnessmap_fragment'])shader.fragmentShader=shader.fragmentShader.replace('#include <'+chunk+'>',THREE.ShaderChunk[chunk]);
     shader.fragmentShader='uniform vec2 floorUvMin; uniform vec2 floorUvMax;\n'+shader.fragmentShader.replace(/texture2D\( (map|normalMap|roughnessMap|metalnessMap|lightMap), ([^)]+) \)/g,'texture2D( $1, clamp( $2, floorUvMin, floorUvMax ) )');
   };
-  material.customProgramCacheKey=()=> 'studio-clay-ground-2';material.needsUpdate=true;mesh.castShadow=false;
+  material.customProgramCacheKey=()=> 'studio-clay-ground-3:'+Boolean(material.userData.studioWebBake);material.needsUpdate=true;mesh.castShadow=false;
 }

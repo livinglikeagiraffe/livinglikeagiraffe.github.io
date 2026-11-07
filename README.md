@@ -107,6 +107,8 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 
 ### 버전과 공개
 
+Cycles 원본에서 `WebBake` 컬렉션에 고정 무광 표면을 표시하면, 저장한 전체 배치의 직접광·간접광·그림자를 그 표면과 공용 바닥의 텍스처에 기록합니다. 다른 오브젝트도 빛을 가리고 반사합니다. `RoomLights`는 모듈 인스턴스를 따라가고, 공용 광원은 배치 순서상 첫 `StudioLights` 세트를 한 번 사용합니다. 두 광원 컬렉션 중 하나만 있어도 미지정 광원은 방 광원으로 처리합니다. 어느 광원 컬렉션도 없는 원본에는 기존 크기 기반 분류를 적용합니다. v06 원본은 검증된 파일 해시로 같은 역할을 복원합니다. 워커 보고서의 `roles`와 `bake.webBake`에서 인식 결과를 확인할 수 있습니다.
+
 GitHub Actions `render-module.yml`이 `mode=hybrid`, `kind=layout`으로 실행됩니다. `studio/layouts/<id>.json`은 고정 배치, `studio/renders/<request>/`는 결과입니다. `studio/save_result.py`는 결과 SHA-256을 검사하고 **현재 배치와 ID·digest가 일치하는 성공 결과만** `studio/public-scene.json`에 연결합니다. 오래된 작업이 늦게 끝나도 최신 배치를 덮어쓰지 않습니다. 저장 충돌 시 최신 브랜치에서 공개 조건을 다시 검사합니다.
 
 `/clay/`는 현재 저장소의 공개 포인터를 읽고 GLB 해시를 검증합니다. 새 배치가 계산 중이면 이전 완료 결과를 유지합니다. 원본 .blend는 저장소에 보관하고 Pages 산출물에는 넣지 않습니다. 소스 변경 시 Pages를 배포하며, 이후 배치 베이킹 결과는 별도 Pages 재배포 없이 반영됩니다. 저장소가 공개이므로 방문자가 토큰 없이 결과를 읽습니다.

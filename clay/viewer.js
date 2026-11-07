@@ -75,11 +75,16 @@ export class ClayViewer{
         const factor = red && light.name.includes('wall wash') ? .26 : red ? .49 : .58;
         return {...light,energy:light.energy * factor};
       })};
-      if (this.compare) {
-        this.referenceCamera=gltf.cameras.find(camera=>camera.name==='Quarter_Camera').clone();
-        this.referenceCamera.position.add(offset);
-        this.referenceCamera.updateMatrixWorld();
-      }
+
+    }
+    if (this.compare) {
+      const authored = gltf.cameras[0];
+      if (!authored) throw Error('비교용 카메라가 없습니다.');
+      this.referenceCamera = authored.clone();
+      authored.matrixWorld.decompose(this.referenceCamera.position, this.referenceCamera.quaternion, this.referenceCamera.scale);
+      this.referenceCamera.scale.set(1, 1, 1);
+      this.referenceCamera.position.add(offset);
+      this.referenceCamera.updateMatrixWorld();
     }
     this.scene.environmentIntensity=this.hybrid ? .25 : .11;
     this.rig=createLighting(profile,bounds,{mobile:this.mobile,offset:profile?offset:new THREE.Vector3()});

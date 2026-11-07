@@ -44,13 +44,14 @@ def validate_snapshot(path):
 
 def compose_scene(path):
     import bpy
+    from web_bake import read_roles
     from mathutils import Vector, Matrix
     snapshot,sources=validate_snapshot(path)
     common=bpy.data.scenes.new('Whole space')
     common.render.engine='CYCLES';common.cycles.samples=64
     common.render.resolution_x=1600;common.render.resolution_y=1200;common.render.resolution_percentage=100
     common.render.film_transparent=False
-    templates={};first=None
+    templates={};first=None;rig_source=None;role_reports={}
     def bounds(objects):
         points=[o.matrix_world@Vector(v) for o in objects for v in o.bound_box]
         return Vector(tuple(min(p[k] for p in points) for k in range(3))),Vector(tuple(max(p[k] for p in points) for k in range(3)))
@@ -70,6 +71,7 @@ def compose_scene(path):
             raise ValueError('Make external linked libraries local before whole-space baking')
         # Appending a scene may keep its dependent IDs linked to that source.
         # Localize them before copying or baking, without changing the source file.
+        roles, declared = read_roles(scene, source['manifest'])
         bpy.ops.object.make_local(type='ALL')
         meshes=[o for o in scene.objects if o.type=='MESH' and not o.hide_render and o.visible_get()]
         if not meshes or len(meshes)>4000:raise ValueError('Source supports 1–4000 visible meshes')
@@ -80,6 +82,8 @@ def compose_scene(path):
             evaluated=obj.evaluated_get(deps)
             copy=obj.copy();copy.data=bpy.data.meshes.new_from_object(evaluated,preserve_all_data_layers=True,depsgraph=deps)
             matrix=evaluated.matrix_world.copy();copy.parent=None;copy.constraints.clear();copy.animation_data_clear();copy.modifiers.clear();copy.matrix_world=matrix
+            if obj in roles['WebBake']:
+                copy['studioWebBake'] = True
             frozen.append(copy)
         backdrop=max(frozen,key=lambda o:o.dimensions.x*o.dimensions.y)
         others=[o for o in frozen if o!=backdrop];low,high=bounds(others or frozen);span=max(high.x-low.x,high.y-low.y,1)
@@ -88,9 +92,22 @@ def compose_scene(path):
         low,high=bounds(frozen)
         lights=[o for o in scene.objects if o.type=='LIGHT' and not o.hide_render]
         studio_lights=[o for o in lights if o.data.type in {'AREA','SUN'} and (o.data.type=='SUN' or o.data.size>span*.2)]
+        authored_lights = bool(declared & {'RoomLights', 'StudioLights'})
+        if authored_lights:
+            studio_lights = [o for o in lights if o in roles['StudioLights']]
         local=[o for o in lights if o not in studio_lights]
+        role_reports[version] = {'collections': sorted(declared),
+                                 'receivers': sum(bool(o.get('studioWebBake')) for o in frozen),
+                                 'roomLights': [o.name for o in local],
+                                 'studioLights': [o.name for o in studio_lights]}
+        rig = {'scene':scene,'low':low,'high':high,'span':span,'lights':studio_lights,
+               'authored':authored_lights, 'version':version}
+        if rig_source is None and 'StudioLights' in declared:
+            rig_source = rig
+        if first is None:
+            first = rig
         templates[version]={'meshes':frozen,'low':low,'high':high,'local':local,'scene':scene}
-        if first is None:first={'scene':scene,'low':low,'high':high,'span':span,'lights':studio_lights}
+    rig_source = rig_source or first
     source=first['scene']
     common.world=source.world.copy() if source.world else bpy.data.worlds.new('Shared world')
     for prop in ('view_transform','look','exposure','gamma'):
@@ -103,6 +120,8 @@ def compose_scene(path):
         x=(cell['x']-(g['columns']-1)/2)*(g['width']+g['gap'])
         y=-(cell['z']-(g['rows']-1)/2)*(g['depth']+g['gap'])
         matrix=Matrix.Translation((x,y,0))@Matrix.Rotation(math.radians(cell['rotation']),4,'Z')@Matrix.Scale(scale,4)@Matrix.Translation((-center.x,-center.y,-low.z))
+        if len(snapshot['cells']) == 1:
+            single_transform = matrix.copy()
         group=f"module_{cell['x']}_{cell['z']}"
         for original in template['meshes']+template['local']:
             obj=original.copy();world=original.matrix_world.copy();obj.parent=None;obj.constraints.clear();obj.animation_data_clear();obj.matrix_world=matrix@world
@@ -113,20 +132,30 @@ def compose_scene(path):
     bpy.context.window.scene=common;bpy.context.view_layer.update()
     module_meshes=[o for o in common.objects if o.type=='MESH'];low,high=bounds(module_meshes)
     width=g['columns']*g['width']+(g['columns']-1)*g['gap'];depth=g['rows']*g['depth']+(g['rows']-1)*g['gap'];span=max(width,depth,high.z,1)
-    ratio=span/first['span'];source_center=(first['low']+first['high'])*.5
-    for original in first['lights']:
+    ratio=span/rig_source['span'];source_center=(rig_source['low']+rig_source['high'])*.5
+    if len(placements) == 1 and rig_source['authored']:
+        ratio = placements[0]['scale']
+    for original in rig_source['lights']:
         light=original.copy();light.data=original.data.copy();matrix=original.matrix_world.copy();light.parent=None;light.constraints.clear();light.animation_data_clear()
-        matrix.translation=(matrix.translation-Vector((source_center.x,source_center.y,first['low'].z)))*ratio
+        matrix.translation=(matrix.translation-Vector((source_center.x,source_center.y,rig_source['low'].z)))*ratio
         light.matrix_world=matrix
-        if light.data.type=='AREA':light.data.size*=ratio;light.data.size_y*=ratio;light.data.energy*=ratio*ratio
+        if light.data.type != 'SUN':
+            light.data.energy *= ratio * ratio
+        if light.data.type == 'AREA':
+            light.data.size *= ratio
+            light.data.size_y *= ratio
+        elif light.data.type in {'POINT', 'SPOT'}:
+            light.data.shadow_soft_size *= ratio
         common.collection.objects.link(light)
-    if not first['lights']:
+    if not rig_source['lights'] and not rig_source['authored']:
         for i,(position,energy,size) in enumerate([((.35,-.3,.9),7,.65),((-.5,.2,.65),4,.5)]):
             light=bpy.data.objects.new('Shared softbox '+str(i),bpy.data.lights.new('Shared softbox '+str(i),'AREA'))
             light.location=Vector(position)*span;light.rotation_euler=(-light.location).to_track_quat('-Z','Y').to_euler();light.data.energy=span*span*energy;light.data.size=span*size;common.collection.objects.link(light)
     # One continuous floor. No per-cell plinths or independent shadow catchers.
     mesh=bpy.data.meshes.new('Continuous floor');radius=span*2.5;mesh.from_pydata([(-radius,-radius,-.035),(radius,-radius,-.035),(radius,radius,-.035),(-radius,radius,-.035)],[],[(0,1,2,3)]);mesh.update()
     floor=bpy.data.objects.new('Shared floor',mesh);floor['studioBackdrop']=True;floor['studioKeepBackdrop']=True;common.collection.objects.link(floor)
+    if any(report['receivers'] for report in role_reports.values()):
+        floor['studioWebBake'] = True
     mat=bpy.data.materials.new('Shared floor material');mat.use_nodes=True
     color=snapshot['environment']['floor'];srgb=[int(color[i:i+2],16)/255 for i in (1,3,5)];linear=[v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in srgb]
     shader=mat.node_tree.nodes.get('Principled BSDF');shader.inputs['Base Color'].default_value=(*linear,1);shader.inputs['Roughness'].default_value=.9;mesh.materials.append(mat)
@@ -137,5 +166,15 @@ def compose_scene(path):
     inverse=camera.rotation_euler.to_matrix().transposed()
     points=[inverse@Vector((x,y,z)) for x in (-width/2,width/2) for y in (-depth/2,depth/2) for z in (0,high.z)]
     camera.data.ortho_scale=max(max(p.x for p in points)-min(p.x for p in points),(max(p.y for p in points)-min(p.y for p in points))*4/3)*1.22
+    if len(placements) == 1 and role_reports[first['version']]['receivers'] and source.camera:
+        # Keep source PNG framing after grid recentering, rotation and uniform scaling.
+        camera.data = source.camera.data.copy()
+        camera.matrix_world = single_transform @ source.camera.matrix_world
+        camera.scale = (1, 1, 1)
+        camera.data.ortho_scale *= placements[0]['scale']
+        common.render.resolution_x = source.render.resolution_x
+        common.render.resolution_y = source.render.resolution_y
+        common.render.pixel_aspect_x = source.render.pixel_aspect_x
+        common.render.pixel_aspect_y = source.render.pixel_aspect_y
     bpy.context.view_layer.update()
-    return common,{'schema':1,'id':snapshot['id'],'moduleId':'layout'}, {'layoutId':snapshot['id'],'layoutDigest':snapshot['digest'],'layout':{k:snapshot[k] for k in ('grid','cells','environment')},'placements':placements,'sharedFloor':floor.name,'sharedLights':[o.name for o in common.objects if o.type=='LIGHT' and not o.get('studioModule')]}
+    return common,{'schema':1,'id':snapshot['id'],'moduleId':'layout'}, {'layoutId':snapshot['id'],'layoutDigest':snapshot['digest'],'layout':{k:snapshot[k] for k in ('grid','cells','environment')},'placements':placements,'roles':role_reports,'studioLightSource':rig_source['version'],'sharedFloor':floor.name,'sharedLights':[o.name for o in common.objects if o.type=='LIGHT' and not o.get('studioModule')]}

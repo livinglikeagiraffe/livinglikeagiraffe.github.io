@@ -143,14 +143,18 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
         z=max((backdrop.matrix_world@Vector(c)).z for c in backdrop.bound_box);center=(low+high)*.5;radius=span*1.25
         inverse=backdrop.matrix_world.inverted();material=backdrop.data.materials[0]
         plane=bpy.data.meshes.new('Hybrid floor');plane.from_pydata([inverse@Vector((center.x+x*radius,center.y+y*radius,z)) for x,y in [(-1,-1),(1,-1),(1,1),(-1,1)]],[],[(0,1,2,3)]);plane.materials.append(material);plane.update();backdrop.data=plane
-    dynamic=[o for o in meshes if any(dynamic_material(m) for m in o.data.materials)]
-    opaque=[o for o in meshes if o not in dynamic and o!=backdrop]
-    if not opaque:raise ValueError('No opaque surfaces to bake')
+    from web_bake import bake_receivers, apply_receivers
+    receivers = [o for o in meshes if o.get('studioWebBake')]
+    dynamic=[o for o in meshes if o not in receivers and any(dynamic_material(m) for m in o.data.materials)]
+    opaque=[o for o in meshes if o not in dynamic and o not in receivers and o!=backdrop]
+    if not opaque and not receivers:raise ValueError('No opaque surfaces to bake')
     samples=samples_override or (96 if quality=='preview' else 256)
     scene.cycles.samples=samples;scene.cycles.use_denoising=False
     scene.render.bake.use_selected_to_active=False;scene.render.bake.use_clear=True;scene.render.bake.margin=0
     scene.render.bake.margin_type='EXTEND';scene.render.bake.view_from='ABOVE_SURFACE'
-    groups=atlas_groups(opaque,whole_space,quality)+([('backdrop',[backdrop],2048)] if backdrop else [])
+    receiver_resolution = resolution_override or (1024 if quality == 'preview' else 2048)
+    receiver_changes = bake_receivers(scene, receivers, output, receiver_resolution, samples)
+    groups=atlas_groups(opaque,whole_space,quality)+([('backdrop',[backdrop],2048)] if backdrop and backdrop not in receivers else [])
     atlases=[];replacements=[];maps={}
     cursor=0
     while cursor<len(groups):
@@ -269,6 +273,7 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
         for image in (indirect,albedo,normal,roughness,guide,clean,rgbm):bpy.data.images.remove(image)
         exr.unlink(missing_ok=True)
     # Replace only after ALL atlases saw every neighboring original material.
+    apply_receivers(receiver_changes)
     for objects,material in replacements:
         bpy.ops.object.select_all(action='DESELECT')
         for obj in objects:
@@ -288,7 +293,8 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
     inject_lightmaps(path,maps,lighting)
     data=path.read_bytes()
     if len(data)>48*1024**2:raise ValueError('Hybrid GLB exceeds 48 MiB')
-    return {'schema':1,'bakerVersion':6,'hybridVersion':HYBRID_VERSION,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
-            'displayReferred':False,'lighting':'indirect-only','encoding':'RGBM','samples':samples,'atlases':atlases,'coverageThreshold':.002,'pngCompression':'lossless-adaptive',
+    return {'schema':1,'bakerVersion':7,'hybridVersion':HYBRID_VERSION,'file':'baked.glb','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
+            'displayReferred':False,'webBake':{'surfaces':len(receivers),'atlases':len(receiver_changes),'resolution':receiver_resolution},
+            'lighting':'static-diffuse-and-indirect' if receivers else 'indirect-only','encoding':'RGBM','samples':samples,'atlases':atlases,'coverageThreshold':.002,'pngCompression':'lossless-adaptive',
             'triangles':triangles,'opaqueObjects':len(opaque),'dynamicObjects':[o.name for o in dynamic],
             'seconds':round(time.monotonic()-start,2),'limitations':['Static indirect illumination; rebake after layout changes','Direct area lights and glass are approximated in the browser']}

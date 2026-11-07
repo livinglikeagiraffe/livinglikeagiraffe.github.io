@@ -1,27 +1,12 @@
 import * as THREE from 'three';
 import {GLTFLoader} from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
-import {installClay} from './materials.js';
+import {installClay, inverseToneMapping} from './materials.js';
 
 const floorNames = new Set([
   'Supporters_Floor', 'Sports_Floor', 'Vintage_Floor', 'Sauna_Floor',
   'V06_Cinema_zone', 'V06_Threshold_stone'
 ]);
 
-// Convert the artist's display-referred Filmic result back to the working
-// space of our ACES output pass. Applying ACES to the PNG a second time would
-// change both the hue of the spill and the contrast of the shadows.
-const inverseToneMapping = `
-vec3 fromDisplay(vec3 rgb) {
-  const mat3 inputMatrix = mat3(.59719,.076,.02840, .35458,.90834,.13383, .04823,.01566,.83777);
-  const mat3 outputMatrix = mat3(1.60475,-.10208,-.00327, -.53108,1.10813,-.07276, -.07367,-.00605,1.07602);
-  vec3 f = clamp(inverse(outputMatrix)*rgb, 0., .995);
-  vec3 a = 1.-.983729*f;
-  vec3 b = .0245786-.432951*f;
-  vec3 c = -.000090537-.238081*f;
-  vec3 linear = (-b+sqrt(b*b-4.*a*c))/(2.*a);
-  return max(inverse(inputMatrix)*linear, 0.)*(.6/.85);
-}
-`;
 const floorShader = `${inverseToneMapping}
 uniform sampler2D v06Floor;
 varying vec3 floorPlan;

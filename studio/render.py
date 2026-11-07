@@ -104,6 +104,7 @@ def main():
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     args.output.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
     layout_report={}
     if args.kind=='layout':
         if args.mode not in ('bake','hybrid'):raise ValueError('Whole-space jobs require baking')
@@ -117,6 +118,12 @@ def main():
         if name not in bpy.data.scenes:
             raise ValueError('Scene not found: ' + name)
         scene = bpy.data.scenes[name]
+        from web_bake import read_roles
+        roles, declared = read_roles(scene, manifest)
+        for obj in roles['WebBake']:
+            if obj.type == 'MESH':
+                obj['studioWebBake'] = True
+        layout_report['roles'] = {role: sorted(o.name for o in roles[role]) for role in declared}
     bpy.context.window.scene = scene
     if not scene.camera:
         raise ValueError('The selected scene has no active camera')
