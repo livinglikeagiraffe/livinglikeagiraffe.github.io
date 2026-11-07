@@ -154,7 +154,17 @@ def bake_scene(scene,output,quality,whole_space=False,resolution_override=None,s
     scene.render.bake.margin_type='EXTEND';scene.render.bake.view_from='ABOVE_SURFACE'
     receiver_resolution = resolution_override or (1024 if quality == 'preview' else 2048)
     receiver_changes = bake_receivers(scene, receivers, output, receiver_resolution, samples)
-    groups=atlas_groups(opaque,whole_space,quality)+([('backdrop',[backdrop],2048)] if backdrop and backdrop not in receivers else [])
+    # Receiver floors still establish module scale. Removing them from the area
+    # comparison would promote chairs and hangers to architectural 2K atlases.
+    receiver_set = set(receivers)
+    groups = []
+    scale_reference = opaque + [obj for obj in receivers if obj != backdrop]
+    for name, members, resolution in atlas_groups(scale_reference, whole_space, quality):
+        pending = [obj for obj in members if obj not in receiver_set]
+        if pending:
+            groups.append((name, pending, resolution))
+    if backdrop and backdrop not in receiver_set:
+        groups.append(('backdrop', [backdrop], 2048))
     atlases=[];replacements=[];maps={}
     cursor=0
     while cursor<len(groups):

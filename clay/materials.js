@@ -22,8 +22,7 @@ export function installClay(material,{lightMapRange=0,strength=.42}={}){
     material.onBeforeCompile = shader => {
       shader.fragmentShader = inverseToneMapping + shader.fragmentShader.replace('#include <opaque_fragment>',
         `outgoingLight=fromDisplay(diffuseColor.rgb);
-#include <opaque_fragment>
-gl_FragColor.a=-1.;`);
+#include <opaque_fragment>`);
     };
     material.customProgramCacheKey = () => 'studio-web-bake-display-1';
     material.needsUpdate = true;
