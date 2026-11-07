@@ -1,0 +1,1488 @@
+{
+  "schema": 1,
+  "versionId": "b304115d-5402-42f4-aaae-c75f5874939d",
+  "moduleId": "layout",
+  "blenderVersion": "3.6.23",
+  "scene": "Whole space",
+  "scenes": [
+    "01_Clay_Normal",
+    "Scene",
+    "Whole space"
+  ],
+  "camera": "Whole space camera",
+  "objects": 1071,
+  "materials": 43,
+  "lights": [
+    {
+      "name": "module_0_0_Prayer_warm_lamp",
+      "type": "AREA",
+      "energy": 48.0,
+      "position": [
+        -34.185001373291016,
+        -20.315000534057617,
+        1.100000023841858
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "module_0_0_Prayer_warm_lamp.001",
+      "type": "AREA",
+      "energy": 48.0,
+      "position": [
+        -34.185001373291016,
+        -4.315000534057617,
+        1.100000023841858
+      ],
+      "color": [
+        1.0,
+        0.5400000214576721,
+        0.20000000298023224
+      ]
+    },
+    {
+      "name": "module_0_0_Club red wall wash",
+      "type": "AREA",
+      "energy": 1500.0,
+      "position": [
+        -32.685001373291016,
+        22.284997940063477,
+        1.2000000476837158
+      ],
+      "color": [
+        1.0,
+        0.0020000000949949026,
+        0.00800000037997961
+      ]
+    },
+    {
+      "name": "module_0_0_Club red wall wash.001",
+      "type": "AREA",
+      "energy": 1500.0,
+      "position": [
+        -26.685001373291016,
+        22.284997940063477,
+        1.2000000476837158
+      ],
+      "color": [
+        1.0,
+        0.0020000000949949026,
+        0.00800000037997961
+      ]
+    },
+    {
+      "name": "module_0_0_Club red wall wash.002",
+      "type": "AREA",
+      "energy": 1500.0,
+      "position": [
+        -20.685001373291016,
+        22.284997940063477,
+        1.2000000476837158
+      ],
+      "color": [
+        1.0,
+        0.0020000000949949026,
+        0.00800000037997961
+      ]
+    },
+    {
+      "name": "module_0_0_Club red wall wash.003",
+      "type": "AREA",
+      "energy": 1500.0,
+      "position": [
+        -14.685001373291016,
+        22.284997940063477,
+        1.2000000476837158
+      ],
+      "color": [
+        1.0,
+        0.0020000000949949026,
+        0.00800000037997961
+      ]
+    },
+    {
+      "name": "module_0_0_Club red overhead spot",
+      "type": "SPOT",
+      "energy": 5000.0,
+      "position": [
+        -30.685001373291016,
+        12.684999465942383,
+        6.199999809265137
+      ],
+      "color": [
+        1.0,
+        0.004000000189989805,
+        0.009999999776482582
+      ]
+    },
+    {
+      "name": "module_0_0_Club red overhead spot.001",
+      "type": "SPOT",
+      "energy": 5000.0,
+      "position": [
+        -23.685001373291016,
+        12.684999465942383,
+        6.199999809265137
+      ],
+      "color": [
+        1.0,
+        0.004000000189989805,
+        0.009999999776482582
+      ]
+    },
+    {
+      "name": "module_0_0_Club red overhead spot.002",
+      "type": "SPOT",
+      "energy": 5000.0,
+      "position": [
+        -16.685001373291016,
+        12.684999465942383,
+        6.199999809265137
+      ],
+      "color": [
+        1.0,
+        0.004000000189989805,
+        0.009999999776482582
+      ]
+    },
+    {
+      "name": "module_0_0_Club red room fill",
+      "type": "AREA",
+      "energy": 15000.0,
+      "position": [
+        -23.685001373291016,
+        12.684999465942383,
+        8.199999809265137
+      ],
+      "color": [
+        1.0,
+        0.0020000000949949026,
+        0.00800000037997961
+      ]
+    },
+    {
+      "name": "Large_softbox.001",
+      "type": "AREA",
+      "energy": 18400.0,
+      "position": [
+        -11.685001373291016,
+        -36.31500244140625,
+        25.700000762939453
+      ],
+      "color": [
+        1.0,
+        0.8999999761581421,
+        0.7699999809265137
+      ]
+    },
+    {
+      "name": "Fill.001",
+      "type": "AREA",
+      "energy": 13600.0,
+      "position": [
+        -27.685001373291016,
+        23.684999465942383,
+        21.200000762939453
+      ],
+      "color": [
+        0.8199999928474426,
+        0.8899999856948853,
+        1.0
+      ]
+    }
+  ],
+  "missingFiles": [],
+  "original": {
+    "engine": "CYCLES",
+    "width": 1500,
+    "height": 1200,
+    "percentage": 100,
+    "samples": 64,
+    "viewTransform": "Filmic",
+    "look": "Medium High Contrast",
+    "exposure": 0.0,
+    "gamma": 1.0
+  },
+  "quality": "preview",
+  "webScene": {
+    "schema": 1,
+    "coordinateSystem": "gltf-y-up",
+    "source": "Whole space",
+    "camera": {
+      "name": "Whole space camera",
+      "type": "ORTHO",
+      "position": [
+        84.31500244140625,
+        116.19999694824219,
+        132.31500244140625
+      ],
+      "quaternion": [
+        -0.2943236529827118,
+        0.2757418155670166,
+        0.08911401033401489,
+        0.9107133150100708
+      ],
+      "orthoScale": 112.0,
+      "aspect": 1.25,
+      "fov": 3.096957207544956,
+      "shift": [
+        0.0,
+        0.0
+      ]
+    },
+    "lights": [
+      {
+        "name": "module_0_0_Prayer_warm_lamp",
+        "type": "AREA",
+        "position": [
+          -34.185001373291016,
+          1.100000023841858,
+          20.315000534057617
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.5400000214576721,
+          0.20000000298023224
+        ],
+        "energy": 48.0,
+        "size": 0.699999988079071,
+        "angle": 0
+      },
+      {
+        "name": "module_0_0_Prayer_warm_lamp.001",
+        "type": "AREA",
+        "position": [
+          -34.185001373291016,
+          1.100000023841858,
+          4.315000534057617
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.5400000214576721,
+          0.20000000298023224
+        ],
+        "energy": 48.0,
+        "size": 0.699999988079071,
+        "angle": 0
+      },
+      {
+        "name": "module_0_0_Club red wall wash",
+        "type": "AREA",
+        "position": [
+          -32.685001373291016,
+          1.2000000476837158,
+          -22.284997940063477
+        ],
+        "direction": [
+          0.0,
+          0.9738411903381348,
+          -0.22722980380058289
+        ],
+        "color": [
+          1.0,
+          0.0020000000949949026,
+          0.00800000037997961
+        ],
+        "energy": 1500.0,
+        "size": 3.0,
+        "angle": 0
+      },
+      {
+        "name": "module_0_0_Club red wall wash.001",
+        "type": "AREA",
+        "position": [
+          -26.685001373291016,
+          1.2000000476837158,
+          -22.284997940063477
+        ],
+        "direction": [
+          0.0,
+          0.9738411903381348,
+          -0.22722980380058289
+        ],
+        "color": [
+          1.0,
+          0.0020000000949949026,
+          0.00800000037997961
+        ],
+        "energy": 1500.0,
+        "size": 3.0,
+        "angle": 0
+      },
+      {
+        "name": "module_0_0_Club red wall wash.002",
+        "type": "AREA",
+        "position": [
+          -20.685001373291016,
+          1.2000000476837158,
+          -22.284997940063477
+        ],
+        "direction": [
+          0.0,
+          0.9738411903381348,
+          -0.22722980380058289
+        ],
+        "color": [
+          1.0,
+          0.0020000000949949026,
+          0.00800000037997961
+        ],
+        "energy": 1500.0,
+        "size": 3.0,
+        "angle": 0
+      },
+      {
+        "name": "module_0_0_Club red wall wash.003",
+        "type": "AREA",
+        "position": [
+          -14.685001373291016,
+          1.2000000476837158,
+          -22.284997940063477
+        ],
+        "direction": [
+          0.0,
+          0.9738411903381348,
+          -0.22722980380058289
+        ],
+        "color": [
+          1.0,
+          0.0020000000949949026,
+          0.00800000037997961
+        ],
+        "energy": 1500.0,
+        "size": 3.0,
+        "angle": 0
+      },
+      {
+        "name": "module_0_0_Club red overhead spot",
+        "type": "SPOT",
+        "position": [
+          -30.685001373291016,
+          6.199999809265137,
+          -12.684999465942383
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.004000000189989805,
+          0.009999999776482582
+        ],
+        "energy": 5000.0,
+        "size": 0,
+        "angle": 1.1344640254974365
+      },
+      {
+        "name": "module_0_0_Club red overhead spot.001",
+        "type": "SPOT",
+        "position": [
+          -23.685001373291016,
+          6.199999809265137,
+          -12.684999465942383
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.004000000189989805,
+          0.009999999776482582
+        ],
+        "energy": 5000.0,
+        "size": 0,
+        "angle": 1.1344640254974365
+      },
+      {
+        "name": "module_0_0_Club red overhead spot.002",
+        "type": "SPOT",
+        "position": [
+          -16.685001373291016,
+          6.199999809265137,
+          -12.684999465942383
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.004000000189989805,
+          0.009999999776482582
+        ],
+        "energy": 5000.0,
+        "size": 0,
+        "angle": 1.1344640254974365
+      },
+      {
+        "name": "module_0_0_Club red room fill",
+        "type": "AREA",
+        "position": [
+          -23.685001373291016,
+          8.199999809265137,
+          -12.684999465942383
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.0020000000949949026,
+          0.00800000037997961
+        ],
+        "energy": 15000.0,
+        "size": 15.0,
+        "angle": 0
+      },
+      {
+        "name": "Large_softbox.001",
+        "type": "AREA",
+        "position": [
+          -11.685001373291016,
+          25.700000762939453,
+          36.31500244140625
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          1.0,
+          0.8999999761581421,
+          0.7699999809265137
+        ],
+        "energy": 18400.0,
+        "size": 24.0,
+        "angle": 0
+      },
+      {
+        "name": "Fill.001",
+        "type": "AREA",
+        "position": [
+          -27.685001373291016,
+          21.200000762939453,
+          -23.684999465942383
+        ],
+        "direction": [
+          0.0,
+          -0.9999999403953552,
+          0.0
+        ],
+        "color": [
+          0.8199999928474426,
+          0.8899999856948853,
+          1.0
+        ],
+        "energy": 13600.0,
+        "size": 20.0,
+        "angle": 0
+      }
+    ],
+    "world": {
+      "color": [
+        0.05087608844041824,
+        0.05087608844041824,
+        0.05087608844041824
+      ],
+      "strength": 1.0
+    },
+    "view": {
+      "transform": "Filmic",
+      "look": "Medium High Contrast",
+      "exposure": 0.0,
+      "gamma": 1.0
+    }
+  },
+  "layoutId": "b304115d-5402-42f4-aaae-c75f5874939d",
+  "layoutDigest": "dc53d4db550d5de51eea69f679c5d3ebd09c06d584faff14715393c25ee87cb1",
+  "layout": {
+    "grid": {
+      "columns": 1,
+      "rows": 1,
+      "width": 80,
+      "depth": 60,
+      "gap": 2
+    },
+    "cells": [
+      {
+        "x": 0,
+        "z": 0,
+        "versionId": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
+        "rotation": 0
+      }
+    ],
+    "environment": {
+      "floor": "#b6b0a4",
+      "lighting": "shared-softbox"
+    }
+  },
+  "placements": [
+    {
+      "x": 0,
+      "z": 0,
+      "versionId": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
+      "rotation": 0,
+      "scale": 1,
+      "position": [
+        0.0,
+        0,
+        0.0
+      ],
+      "sourceBounds": [
+        [
+          -0.6299999952316284,
+          0.0,
+          -0.20000000298023224
+        ],
+        [
+          72.0,
+          48.630001068115234,
+          6.800000190734863
+        ]
+      ]
+    }
+  ],
+  "roles": {
+    "7e655b0f-2336-51a0-bb0e-06beb6576f8a": {
+      "collections": [
+        "RoomLights",
+        "StudioLights",
+        "WebBake"
+      ],
+      "receivers": 33,
+      "roomLights": [
+        "Prayer_warm_lamp",
+        "Prayer_warm_lamp.001",
+        "Club red wall wash",
+        "Club red wall wash.001",
+        "Club red wall wash.002",
+        "Club red wall wash.003",
+        "Club red overhead spot",
+        "Club red overhead spot.001",
+        "Club red overhead spot.002",
+        "Club red room fill"
+      ],
+      "studioLights": [
+        "Large_softbox",
+        "Fill"
+      ]
+    }
+  },
+  "studioLightSource": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
+  "sharedFloor": "Shared floor",
+  "sharedLights": [
+    "Large_softbox.001",
+    "Fill.001"
+  ],
+  "rendered": {
+    "width": 795,
+    "height": 636,
+    "samples": 24
+  },
+  "bake": {
+    "schema": 1,
+    "bakerVersion": 7,
+    "hybridVersion": 1,
+    "file": "baked.glb",
+    "bytes": 33822420,
+    "sha256": "1d9a0683ce4e54c382ada3df81ba9d65bfdaa3b8fd60ac83c245af6bb66abdb9",
+    "displayReferred": false,
+    "webBake": {
+      "surfaces": 34,
+      "atlases": 6,
+      "resolution": 1024,
+      "passes": [
+        "direct",
+        "indirect",
+        "diffuse",
+        "glossy"
+      ],
+      "view": "active-camera"
+    },
+    "lighting": "static-diffuse-and-indirect",
+    "encoding": "RGBM",
+    "samples": 96,
+    "atlases": [
+      {
+        "name": "module_0_0_albedo.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 8,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_normal.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 8,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_roughness.png",
+        "width": 2048,
+        "height": 2048,
+        "objects": 8,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_indirect.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 8,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 50,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 50,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 50,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 50,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 51,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 102,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 102,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 102,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 102,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 12,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 12,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 12,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 12,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 6,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 6,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 7,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 7,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 25,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 25,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 26,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 26,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p0_p1_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 51,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 25,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 25,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p0_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 51,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 51,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 51,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 102,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 102,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 102,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 102,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 25,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 25,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p0_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 13,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 13,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p0_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 13,
+        "kind": "indirect"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p1_albedo.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "albedo"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p1_normal.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "normal"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p1_roughness.png",
+        "width": 1024,
+        "height": 1024,
+        "objects": 51,
+        "kind": "roughness"
+      },
+      {
+        "name": "module_0_0_detail_p1_p1_p1_p1_indirect.png",
+        "width": 512,
+        "height": 512,
+        "objects": 51,
+        "kind": "indirect"
+      }
+    ],
+    "coverageThreshold": 0.002,
+    "pngCompression": "lossless-adaptive",
+    "triangles": 257634,
+    "opaqueObjects": 822,
+    "dynamicObjects": [
+      "module_0_0_Projector_Lens.001",
+      "module_0_0_Showcase_End_Glass.004",
+      "module_0_0_Showcase_End_Glass.005",
+      "module_0_0_Showcase_Side_Glass.004",
+      "module_0_0_Showcase_Side_Glass.005",
+      "module_0_0_Showcase_Top_Glass.002",
+      "module_0_0_Showcase_End_Glass.006",
+      "module_0_0_Showcase_End_Glass.007",
+      "module_0_0_Showcase_Side_Glass.006",
+      "module_0_0_Showcase_Side_Glass.007",
+      "module_0_0_Showcase_Top_Glass.003",
+      "module_0_0_Sauna_Red_Uplight.004",
+      "module_0_0_Sauna_Red_Uplight.005",
+      "module_0_0_Sauna_Red_Uplight.006",
+      "module_0_0_Sauna_Red_Uplight.007",
+      "module_0_0_Sauna_Red_Bench_Light.001",
+      "module_0_0_Sauna_Overhead_Red_Fixture.003",
+      "module_0_0_Sauna_Overhead_Red_Fixture.004",
+      "module_0_0_Sauna_Overhead_Red_Fixture.005",
+      "module_0_0_V06_Sauna_wall_lantern_base.004",
+      "module_0_0_V06_Sauna_wall_lantern_glow.004",
+      "module_0_0_V06_Sauna_wall_lantern_top.004",
+      "module_0_0_V06_Sauna_wall_lantern_frame.016",
+      "module_0_0_V06_Sauna_wall_lantern_frame.017",
+      "module_0_0_V06_Sauna_wall_lantern_frame.018",
+      "module_0_0_V06_Sauna_wall_lantern_frame.019",
+      "module_0_0_V06_Sauna_wall_lantern_base.005",
+      "module_0_0_V06_Sauna_wall_lantern_glow.005",
+      "module_0_0_V06_Sauna_wall_lantern_top.005",
+      "module_0_0_V06_Sauna_wall_lantern_frame.020",
+      "module_0_0_V06_Sauna_wall_lantern_frame.021",
+      "module_0_0_V06_Sauna_wall_lantern_frame.022",
+      "module_0_0_V06_Sauna_wall_lantern_frame.023",
+      "module_0_0_V06_Sauna_wall_lantern_base.006",
+      "module_0_0_V06_Sauna_wall_lantern_glow.006",
+      "module_0_0_V06_Sauna_wall_lantern_top.006",
+      "module_0_0_V06_Sauna_wall_lantern_frame.024",
+      "module_0_0_V06_Sauna_wall_lantern_frame.025",
+      "module_0_0_V06_Sauna_wall_lantern_frame.026",
+      "module_0_0_V06_Sauna_wall_lantern_frame.027",
+      "module_0_0_V06_Sauna_wall_lantern_base.007",
+      "module_0_0_V06_Sauna_wall_lantern_glow.007",
+      "module_0_0_V06_Sauna_wall_lantern_top.007",
+      "module_0_0_V06_Sauna_wall_lantern_frame.028",
+      "module_0_0_V06_Sauna_wall_lantern_frame.029",
+      "module_0_0_V06_Sauna_wall_lantern_frame.030",
+      "module_0_0_V06_Sauna_wall_lantern_frame.031",
+      "module_0_0_V06_Bucket_rim.003",
+      "module_0_0_V06_Bucket_rim.004",
+      "module_0_0_V06_Bucket_rim.005",
+      "module_0_0_V06_DJ_platter.002",
+      "module_0_0_V06_DJ_platter.003",
+      "module_0_0_V06_Candle_flame.004",
+      "module_0_0_V06_Candle_flame.005",
+      "module_0_0_V06_Candle_flame.006",
+      "module_0_0_V06_Candle_flame.007",
+      "module_0_0_V06_Prayer_floor_lantern_base.004",
+      "module_0_0_V06_Prayer_floor_lantern_glow.004",
+      "module_0_0_V06_Prayer_floor_lantern_top.004",
+      "module_0_0_V06_Prayer_floor_lantern_frame.016",
+      "module_0_0_V06_Prayer_floor_lantern_frame.017",
+      "module_0_0_V06_Prayer_floor_lantern_frame.018",
+      "module_0_0_V06_Prayer_floor_lantern_frame.019",
+      "module_0_0_V06_Prayer_floor_lantern_base.005",
+      "module_0_0_V06_Prayer_floor_lantern_glow.005",
+      "module_0_0_V06_Prayer_floor_lantern_top.005",
+      "module_0_0_V06_Prayer_floor_lantern_frame.020",
+      "module_0_0_V06_Prayer_floor_lantern_frame.021",
+      "module_0_0_V06_Prayer_floor_lantern_frame.022",
+      "module_0_0_V06_Prayer_floor_lantern_frame.023",
+      "module_0_0_V06_Prayer_floor_lantern_base.006",
+      "module_0_0_V06_Prayer_floor_lantern_glow.006",
+      "module_0_0_V06_Prayer_floor_lantern_top.006",
+      "module_0_0_V06_Prayer_floor_lantern_frame.024",
+      "module_0_0_V06_Prayer_floor_lantern_frame.025",
+      "module_0_0_V06_Prayer_floor_lantern_frame.026",
+      "module_0_0_V06_Prayer_floor_lantern_frame.027",
+      "module_0_0_V06_Prayer_floor_lantern_base.007",
+      "module_0_0_V06_Prayer_floor_lantern_glow.007",
+      "module_0_0_V06_Prayer_floor_lantern_top.007",
+      "module_0_0_V06_Prayer_floor_lantern_frame.028",
+      "module_0_0_V06_Prayer_floor_lantern_frame.029",
+      "module_0_0_V06_Prayer_floor_lantern_frame.030",
+      "module_0_0_V06_Prayer_floor_lantern_frame.031",
+      "module_0_0_V06_Donation_box.001",
+      "module_0_0_V06_Giving_sign_post.002",
+      "module_0_0_V06_Giving_sign_post.003",
+      "module_0_0_V06_Clothing_rail_post.008",
+      "module_0_0_V06_Clothing_rail_post.009",
+      "module_0_0_V06_Clothing_rail.004",
+      "module_0_0_V06_Hanger_hook.048",
+      "module_0_0_V06_Hanger_hook.049",
+      "module_0_0_V06_Hanger_hook.050",
+      "module_0_0_V06_Hanger_hook.051",
+      "module_0_0_V06_Hanger_hook.052",
+      "module_0_0_V06_Hanger_hook.053",
+      "module_0_0_V06_Hanger_hook.054",
+      "module_0_0_V06_Hanger_hook.055",
+      "module_0_0_V06_Hanger_hook.056",
+      "module_0_0_V06_Hanger_hook.057",
+      "module_0_0_V06_Hanger_hook.058",
+      "module_0_0_V06_Hanger_hook.059",
+      "module_0_0_V06_Clothing_rail_post.010",
+      "module_0_0_V06_Clothing_rail_post.011",
+      "module_0_0_V06_Clothing_rail.005",
+      "module_0_0_V06_Hanger_hook.060",
+      "module_0_0_V06_Hanger_hook.061",
+      "module_0_0_V06_Hanger_hook.062",
+      "module_0_0_V06_Hanger_hook.063",
+      "module_0_0_V06_Hanger_hook.064",
+      "module_0_0_V06_Hanger_hook.065",
+      "module_0_0_V06_Hanger_hook.066",
+      "module_0_0_V06_Hanger_hook.067",
+      "module_0_0_V06_Hanger_hook.068",
+      "module_0_0_V06_Hanger_hook.069",
+      "module_0_0_V06_Hanger_hook.070",
+      "module_0_0_V06_Hanger_hook.071",
+      "module_0_0_V06_Clothing_rail_post.012",
+      "module_0_0_V06_Clothing_rail_post.013",
+      "module_0_0_V06_Clothing_rail.006",
+      "module_0_0_V06_Hanger_hook.072",
+      "module_0_0_V06_Hanger_hook.073",
+      "module_0_0_V06_Hanger_hook.074",
+      "module_0_0_V06_Hanger_hook.075",
+      "module_0_0_V06_Hanger_hook.076",
+      "module_0_0_V06_Hanger_hook.077",
+      "module_0_0_V06_Hanger_hook.078",
+      "module_0_0_V06_Hanger_hook.079",
+      "module_0_0_V06_Hanger_hook.080",
+      "module_0_0_V06_Hanger_hook.081",
+      "module_0_0_V06_Hanger_hook.082",
+      "module_0_0_V06_Hanger_hook.083",
+      "module_0_0_V06_Clothing_rail_post.014",
+      "module_0_0_V06_Clothing_rail_post.015",
+      "module_0_0_V06_Clothing_rail.007",
+      "module_0_0_V06_Hanger_hook.084",
+      "module_0_0_V06_Hanger_hook.085",
+      "module_0_0_V06_Hanger_hook.086",
+      "module_0_0_V06_Hanger_hook.087",
+      "module_0_0_V06_Hanger_hook.088",
+      "module_0_0_V06_Hanger_hook.089",
+      "module_0_0_V06_Hanger_hook.090",
+      "module_0_0_V06_Hanger_hook.091",
+      "module_0_0_V06_Hanger_hook.092",
+      "module_0_0_V06_Hanger_hook.093",
+      "module_0_0_V06_Hanger_hook.094",
+      "module_0_0_V06_Hanger_hook.095",
+      "module_0_0_V06_Display_bracelet.012",
+      "module_0_0_V06_Display_bracelet.013",
+      "module_0_0_V06_Display_bracelet.014",
+      "module_0_0_V06_Display_bracelet.015",
+      "module_0_0_V06_Display_bracelet.016",
+      "module_0_0_V06_Display_bracelet.017",
+      "module_0_0_V06_Display_bracelet.018",
+      "module_0_0_V06_Display_bracelet.019",
+      "module_0_0_V06_Display_bracelet.020",
+      "module_0_0_V06_Display_bracelet.021",
+      "module_0_0_V06_Display_bracelet.022",
+      "module_0_0_V06_Display_bracelet.023",
+      "module_0_0_V06_Cinema_screen_content.001",
+      "module_0_0_V06_Treadmill_handle.004",
+      "module_0_0_V06_Treadmill_display.004",
+      "module_0_0_V06_Treadmill_handle.005",
+      "module_0_0_V06_Treadmill_display.005",
+      "module_0_0_V06_Treadmill_handle.006",
+      "module_0_0_V06_Treadmill_display.006",
+      "module_0_0_V06_Treadmill_handle.007",
+      "module_0_0_V06_Treadmill_display.007",
+      "module_0_0_V06_Equipment_cart.002",
+      "module_0_0_V06_Cart_bar.004",
+      "module_0_0_V06_Cart_bar.005",
+      "module_0_0_V06_Equipment_cart.003",
+      "module_0_0_V06_Cart_bar.006",
+      "module_0_0_V06_Cart_bar.007",
+      "module_0_0_V06_Festoon_bulb.028",
+      "module_0_0_V06_Festoon_bulb.029",
+      "module_0_0_V06_Festoon_bulb.030",
+      "module_0_0_V06_Festoon_bulb.031",
+      "module_0_0_V06_Festoon_bulb.032",
+      "module_0_0_V06_Festoon_bulb.033",
+      "module_0_0_V06_Festoon_bulb.034",
+      "module_0_0_V06_Festoon_bulb.035",
+      "module_0_0_V06_Festoon_bulb.036",
+      "module_0_0_V06_Festoon_bulb.037",
+      "module_0_0_V06_Festoon_bulb.038",
+      "module_0_0_V06_Festoon_bulb.039",
+      "module_0_0_V06_Festoon_bulb.040",
+      "module_0_0_V06_Festoon_bulb.041",
+      "module_0_0_V06_Festoon_bulb.042",
+      "module_0_0_V06_Festoon_bulb.043",
+      "module_0_0_V06_Festoon_bulb.044",
+      "module_0_0_V06_Festoon_bulb.045",
+      "module_0_0_V06_Festoon_bulb.046",
+      "module_0_0_V06_Festoon_bulb.047",
+      "module_0_0_V06_Festoon_bulb.048",
+      "module_0_0_V06_Festoon_bulb.049",
+      "module_0_0_V06_Festoon_bulb.050",
+      "module_0_0_V06_Festoon_bulb.051",
+      "module_0_0_V06_Festoon_bulb.052",
+      "module_0_0_V06_Festoon_bulb.053",
+      "module_0_0_V06_Festoon_bulb.054",
+      "module_0_0_V06_Festoon_bulb.055"
+    ],
+    "seconds": 3023.99,
+    "limitations": [
+      "Static indirect illumination; rebake after layout changes",
+      "Direct area lights and glass are approximated in the browser"
+    ]
+  },
+  "mode": "hybrid",
+  "seconds": 3040.33
+}
