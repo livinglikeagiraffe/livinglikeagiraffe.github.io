@@ -25,7 +25,14 @@ async function init(){
   const show=()=>{const view=spec.views.find(v=>v.id===select.value);host.classList.remove('explore');reference.hidden=false;host.style.aspectRatio=`${view.width}/${view.height}`;reference.style.aspectRatio=host.style.aspectRatio;reference.querySelector('img').src=new URL(view.reference,base);viewer.canvas.style.pointerEvents='none';viewer.canvas.tabIndex=-1;viewer.setView(view);document.querySelector('#label').textContent='웹 3D / Blender';};
   select.onchange=()=>{status.hidden=true;show();};select.value=params.get('view')||'authored';show();
   document.querySelector('#explore').onclick=()=>{status.hidden=true;host.classList.add('explore');reference.hidden=true;viewer.canvas.style.pointerEvents='auto';viewer.canvas.tabIndex=0;viewer.reset();document.querySelector('#label').textContent='실제 3D';};
-  document.querySelector('#download').onclick=()=>{viewer.draw();viewer.canvas.toBlob(blob=>{if(!blob)return;const a=document.createElement('a');a.download='web-'+select.value+'.png';a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});};
+  document.querySelector('#download').onclick=()=>{
+    status.hidden=false;status.textContent='캡처 저장 중…';
+    try{viewer.draw();const capture=document.createElement('canvas');capture.width=viewer.canvas.width;capture.height=viewer.canvas.height;capture.getContext('2d').drawImage(viewer.canvas,0,0);
+    const png=capture.toDataURL('image/png'),name='web-'+(viewer.fixed?select.value:'explore')+'.png';
+    const bytes=Uint8Array.from(atob(png.split(',')[1]),c=>c.charCodeAt(0));
+    const a=document.createElement('a');a.download='web-capture.zip';a.href=URL.createObjectURL(new Blob([zipSync({[name]:bytes})],{type:'application/zip'}));a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);status.textContent='캡처 ZIP 저장';}
+    catch(error){status.textContent='캡처 실패: '+error.message;}
+  };
   document.querySelector('#validate').onclick=async()=>{
     const button=document.querySelector('#validate');button.disabled=true;status.hidden=false;
     try{

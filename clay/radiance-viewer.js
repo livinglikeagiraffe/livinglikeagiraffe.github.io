@@ -65,7 +65,7 @@ export class RadianceViewer {
   pose(){if(!this.profile)return;const p=domainPose(this.profile.domain,this.navigation.zoom,this.navigation.pan,EXPLORATION);this.camera.position.copy(p.position);this.camera.up.set(0,1,0);this.camera.lookAt(p.target);this.camera.zoom=p.zoom;this.camera.updateMatrixWorld();this.resize();}
   setView(record){cancelAnimationFrame(this.frame);this.frame=0;this.fixed=true;this.navigation.end(false);this.camera=cameraFromRecord(record.camera||record);this.resize();}
   resize(){if(!this.camera||!this.host.clientWidth||!this.host.clientHeight)return;
-    const w=this.host.clientWidth,h=this.host.clientHeight;if(this.width!==w||this.height!==h){this.renderer.setSize(w,h);this.width=w;this.height=h;}
+    const w=this.host.clientWidth,h=this.host.clientHeight,size=this.renderer.getSize(this.renderSize??=new THREE.Vector2());if(size.x!==w||size.y!==h)this.renderer.setSize(w,h);
     if(!this.fixed){const aspect=w/h,record=this.authored;
       if(this.camera.isOrthographicCamera){const half=record.orthoScale/Math.max(record.aspect,1)/2*Math.max(1,record.aspect/aspect);Object.assign(this.camera,{left:-half*aspect,right:half*aspect,top:half,bottom:-half});}
       else {this.camera.aspect=aspect;this.camera.fov=THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(record.fov/2)*Math.max(1,record.aspect/aspect)));}
