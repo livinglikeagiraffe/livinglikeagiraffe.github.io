@@ -82,6 +82,18 @@ class RadiancePublicationTests(unittest.TestCase):
         self.assertEqual(json.loads((self.root/'studio/radiance-scene.json').read_text())['parts'],parts)
         (self.result/parts[1]['name']).write_bytes(b'fake')
         with self.assertRaisesRegex(ValueError,'part checksum'):self.save()
+    def test_new_contract_publishes_only_after_all_fifteen_views_pass(self):
+        from camera_contract import EXPLORATION,VIEW_IDS
+        domain={'exploration':EXPLORATION};self.report['bake']['domain']=domain
+        self.validation['views']=[{'view':name,'passed':True} for name in VIEW_IDS]
+        for name in VIEW_IDS:
+            for prefix in ('reference-','web-'):(self.result/(prefix+name+'.png')).write_bytes(b'png')
+        (self.result/'report.json').write_text(json.dumps(self.report))
+        (self.result/'views.json').write_text(json.dumps({'schema':1,'domain':domain,'views':[{'reference':'reference-'+name+'.png'} for name in VIEW_IDS]}))
+        self.validation['views'][-1]['passed']=False;self.save()
+        self.assertFalse((self.root/'studio/radiance-scene.json').exists())
+        self.validation['views'][-1]['passed']=True;self.save()
+        self.assertTrue((self.root/'studio/radiance-scene.json').exists())
     def test_new_contract_rejects_missing_corner_views(self):
         from camera_contract import EXPLORATION
         domain={'exploration':EXPLORATION}

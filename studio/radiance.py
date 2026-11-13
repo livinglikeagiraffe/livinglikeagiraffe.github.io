@@ -70,6 +70,8 @@ def read_reuse(root, domain, grid, repaired):
     data=(root/'baked.glb').read_bytes();report=json.loads((root/'report.json').read_text())
     if hashlib.sha256(data).hexdigest()!=report['bake']['sha256']:raise ValueError('Reuse GLB checksum mismatch')
     n=struct.unpack_from('<I',data,12)[0];doc=json.loads(data[20:20+n]);blob=data[28+n:]
+    if any(v.get('extensions',{}).get('EXT_meshopt_compression') for v in doc['bufferViews']) or any(im.get('mimeType')!='image/png' for im in doc['images']):
+        raise ValueError('Reuse requires the original uncompressed worker output, not an optimized publication.')
     profile=doc['extras']['studioRadiance'];old=profile['domain']
     same_domain=all(old[k]==domain[k] for k in ('azimuthRange','elevationRange'))
     prior_repairs=set(report['bake'].get('normalRepairs',[]))

@@ -15,8 +15,8 @@ def save_result(root,result,request,source_ref,url):
     pattern=r'(backdrop|(surfaces|module_[0-5]_[0-5])(_detail)?)(_p[01]){0,12}(_(albedo|normal|roughness|indirect|diffuse|view(?:[0-9]|1[0-4])))?\.png'
     if any(not re.fullmatch(pattern,name) for name in atlases):raise ValueError('Invalid atlas path')
     parts=report.get('bake',{}).get('parts')
-    if parts:
-        if len(parts)>16 or any(p['name']!=f'baked-part-{i:03d}.bin' or not 0<p['bytes']<=16*1024**2 or not re.fullmatch(r'[0-9a-f]{64}',p['sha256']) for i,p in enumerate(parts)) or sum(p['bytes'] for p in parts)!=report['bake']['bytes']:raise ValueError('Invalid model parts')
+    if parts is not None:
+        if not isinstance(parts,list) or not 1<=len(parts)<=16 or any(p['name']!=f'baked-part-{i:03d}.bin' or not 0<p['bytes']<=16*1024**2 or not re.fullmatch(r'[0-9a-f]{64}',p['sha256']) for i,p in enumerate(parts)) or sum(p['bytes'] for p in parts)!=report['bake']['bytes']:raise ValueError('Invalid model parts')
     names=['render.png','report.json']+(([p['name'] for p in parts] if parts else ['baked.glb'])+atlases if report.get('bake') else [])
     radiance=report.get('bake',{}).get('radianceVersion')==1
     validation=None
