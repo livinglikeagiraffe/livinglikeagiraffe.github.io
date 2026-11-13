@@ -151,6 +151,16 @@ Blender: `blender --background --factory-startup --disable-autoexec --python-exi
 | low | 2.137 | 0.9686 | 7.321 |
 | heldout | 1.927 | 0.9683 | 6.519 |
 
-문·의자·운동장 확대 비교는 `studio/radiance-v06/comparison-details.jpg`, 제작자 PNG 비교는 `comparison-original.jpg`, 원시 측정값은 `validation.json`과 `comparison-regions.json`에 있습니다. 최종 GLB는 75.18MiB·257,644 삼각형입니다. 57개 표면 묶음 중 방향 변화가 민감한 2개 묶음에만 5방향 반사를 사용합니다. 모바일 실제 기기의 메모리·속도는 아직 검증하지 않았습니다.
+문·의자·운동장 확대 비교는 `studio/radiance-v06/comparison-details.jpg`, 제작자 PNG 비교는 `comparison-original.jpg`, 원시 측정값은 `validation.json`과 `comparison-regions.json`에 있습니다. 최종 GLB는 무손실 최적화 후 51.58MiB(기존 75.18MiB 대비 31.4% 감소)·257,644 삼각형입니다. 57개 표면 묶음 중 방향 변화가 민감한 2개 묶음에만 5방향 반사를 사용합니다. 모바일 실제 기기의 메모리·속도는 아직 검증하지 않았습니다.
 
 기존 홈페이지·/v2/·기존 공개 공간 포인터와 원본 .blend는 변경하지 않았습니다. 자동 업로드/배치 워크플로는 생성한 회전·스케일·역방향 면 테스트 씬의 실제 Blender 계산 및 WebGL 비교로 검증했고, v06의 최초 검증 결과는 로컬 워커 실행 결과로 저장했습니다.
+
+### 탐색 조작과 GLB 최적화 (2026-11-14)
+
+`clay/navigation.js`는 원형 커서, 드래그 후 감쇠 관성, 프레임 속도에 독립적인 보간을 제공합니다. 최초 시점은 8도 더 내려다보며 좌우 이동에 최대 ±10도 방향 변화를 더합니다. 기존 줌 배율·높이 변화량은 유지합니다. reduced-motion 설정에서는 관성을 생략합니다.
+
+`node scripts/optimize-glb.mjs input.glb output.glb`는 원본을 보존하고 PNG를 lossless WebP, 지오메트리를 Meshopt로 인코딩합니다. 정점·삼각형·UV의 손실 압축이나 재질 삭제를 하지 않으며, 각 데이터의 디코딩 결과를 검증합니다. RGBM의 투명 픽셀 아래 RGB는 무의미하므로 최종 조명값으로 비교합니다. 표준 PBR 외 텍스처를 참조하는 `studioRadiance` 인덱스도 보존합니다.
+
+관리자 자동 베이킹은 `scripts/optimize-result.mjs`로 최적화한 뒤 실제 WebGL 6시점 검증을 수행합니다. 원본 `.blend`와 이전 결과는 유지하며, 작업 artifact에도 `baked-source.glb`를 보관합니다. v06의 6개 고정 비교 시점은 최적화 전후 **모든 렌더 픽셀이 동일**했습니다. 이는 압축에 의한 변화가 없다는 뜻이며 Blender와 완전히 같다는 뜻은 아닙니다.
+
+탐색 카메라의 새 높이·좌우 각도는 기존 방향별 반사 캐시를 보간/클램프합니다. 확산광·그림자는 그대로 유지되지만, 새 각도에 대한 반사 정확도는 재베이킹으로 확장 검증하지 않았습니다. 고정 비교 시점과 검증 기준은 변경하지 않습니다.

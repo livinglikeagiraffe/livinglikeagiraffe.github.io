@@ -19,13 +19,13 @@
       "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/42012716854"
     },
     "7e655b0f-2336-51a0-bb0e-06beb6576f8a": {
-      "id": "3b0e9db7-852c-40f9-89bf-a178767b95b8",
+      "id": "dee774db-497a-41be-815d-d38ef0dda039",
       "status": "complete",
       "quality": "preview",
       "scene": "01_Clay_Normal",
       "mode": "radiance",
       "sourceCommit": "05aeb1da4a814563170b0f70e416229dcaaf19d6",
-      "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/blob/main/studio/renders/3b0e9db7-852c-40f9-89bf-a178767b95b8/report.json",
+      "url": "https://livinglikeagiraffe.github.io/clay/lab.html",
       "validation": {
         "schema": 1,
         "method": "RGB MAE/p95 and 8x8 luminance SSIM; same cameras and pixel sizes",
@@ -98,7 +98,7 @@
             "passed": true
           }
         ],
-        "modelSha256": "445b7c8d226f3fc4b919cf96aed531cb0fd9baa46525cacf8e71832e4a11cbb3"
+        "modelSha256": "2ce78c11be2353cf5105b3eb98eb49c710c6e367fcbbd06cc17209c0b4276f2c"
       }
     }
   },
@@ -113,13 +113,13 @@
       "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/42012716854"
     },
     "7e655b0f-2336-51a0-bb0e-06beb6576f8a": {
-      "id": "3b0e9db7-852c-40f9-89bf-a178767b95b8",
+      "id": "dee774db-497a-41be-815d-d38ef0dda039",
       "status": "complete",
       "quality": "preview",
       "scene": "01_Clay_Normal",
       "mode": "radiance",
       "sourceCommit": "05aeb1da4a814563170b0f70e416229dcaaf19d6",
-      "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/blob/main/studio/renders/3b0e9db7-852c-40f9-89bf-a178767b95b8/report.json",
+      "url": "https://livinglikeagiraffe.github.io/clay/lab.html",
       "validation": {
         "schema": 1,
         "method": "RGB MAE/p95 and 8x8 luminance SSIM; same cameras and pixel sizes",
@@ -192,7 +192,7 @@
             "passed": true
           }
         ],
-        "modelSha256": "445b7c8d226f3fc4b919cf96aed531cb0fd9baa46525cacf8e71832e4a11cbb3"
+        "modelSha256": "2ce78c11be2353cf5105b3eb98eb49c710c6e367fcbbd06cc17209c0b4276f2c"
       }
     }
   },

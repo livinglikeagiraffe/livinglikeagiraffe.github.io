@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+import {MeshoptDecoder} from '../node_modules/three/examples/jsm/libs/meshopt_decoder.module.js';
 import {OrbitControls} from '../node_modules/three/examples/jsm/controls/OrbitControls.js';
 import {RectAreaLightUniformsLib} from '../node_modules/three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import {RoomEnvironment} from '../node_modules/three/examples/jsm/environments/RoomEnvironment.js';
@@ -70,7 +71,7 @@ export class StudioViewer {
     const bytes=await file.blob.arrayBuffer(),view=new DataView(bytes);if(bytes.byteLength<20||view.getUint32(0,true)!==0x46546c67||view.getUint32(4,true)!==2)throw Error('유효한 glTF 2.0 GLB 파일이 아닙니다.');
     const json=JSON.parse(new TextDecoder().decode(bytes.slice(20,20+view.getUint32(12,true))));
     if([...(json.images||[]),...(json.buffers||[])].some(x=>x.uri&&!x.uri.startsWith('data:')))throw Error('텍스처가 내장된 GLB로 내보내 주세요. 외부 주소를 참조하는 GLB는 지원하지 않습니다.');
-    const loader=new GLTFLoader();loader.register(hybridPlugin);const gltf=await loader.parseAsync(bytes,'');gltf.scene.updateMatrixWorld(true);
+    const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);loader.register(hybridPlugin);const gltf=await loader.parseAsync(bytes,'');gltf.scene.updateMatrixWorld(true);
     let baked=false,backdrop=false;const bounds=new THREE.Box3();
     gltf.scene.traverse(o=>{if(o.isMesh){const frozen=isTagged(o,'studioBaked');baked||=frozen;backdrop||=isTagged(o,'studioBackdrop');o.castShadow=!frozen&&!isTagged(o,'studioBackdrop')&&!(Array.isArray(o.material)?o.material:[o.material]).some(m=>m.transmission>0);o.receiveShadow=!frozen;
       if(frozen)for(const material of Array.isArray(o.material)?o.material:[o.material]){material.toneMapped=false;if(material.map){material.map.anisotropy=Math.min(8,this.renderer.capabilities.getMaxAnisotropy());material.map.needsUpdate=true;}}

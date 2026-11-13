@@ -102,6 +102,7 @@ jobs:
         run: |
           cd worker
           npm ci
+          node scripts/optimize-result.mjs "$RESULT"
           npm install --no-save --package-lock=false playwright@1.56.1
           npx playwright install --with-deps chromium
           mkdir -p .source-assets
@@ -122,6 +123,7 @@ jobs:
             ${{ runner.temp }}/render-output/failure.json
             ${{ runner.temp }}/render-output/validation.json
             ${{ runner.temp }}/render-output/baked.glb
+            ${{ runner.temp }}/render-output/baked-source.glb
           if-no-files-found: error
           retention-days: 3
   save:

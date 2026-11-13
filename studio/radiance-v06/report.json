@@ -595,9 +595,9 @@
     "radianceVersion": 1,
     "bakerVersion": 10,
     "file": "baked.glb",
-    "bytes": 78826704,
+    "bytes": 54083000,
     "coverageThreshold": 0.002,
-    "sha256": "445b7c8d226f3fc4b919cf96aed531cb0fd9baa46525cacf8e71832e4a11cbb3",
+    "sha256": "2ce78c11be2353cf5105b3eb98eb49c710c6e367fcbbd06cc17209c0b4276f2c",
     "samples": 128,
     "triangles": 257644,
     "atlases": [
@@ -2279,7 +2279,18 @@
       "Bounded directional approximation; sharp reflections/transmission require denser sampling",
       "No volumes or arbitrary compositor effects",
       "Camera must remain inside declared domain"
-    ]
+    ],
+    "optimization": {
+      "schema": 1,
+      "method": "lossless WebP + exact Meshopt",
+      "sourceBytes": 78826704,
+      "sourceSha256": "445b7c8d226f3fc4b919cf96aed531cb0fd9baa46525cacf8e71832e4a11cbb3",
+      "images": 233,
+      "geometryViews": 171,
+      "verified": true,
+      "bytes": 54083000,
+      "sha256": "2ce78c11be2353cf5105b3eb98eb49c710c6e367fcbbd06cc17209c0b4276f2c"
+    }
   },
   "mode": "radiance",
   "seconds": 582.44,
