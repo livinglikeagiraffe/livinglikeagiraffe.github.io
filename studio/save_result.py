@@ -11,7 +11,7 @@ def save_result(root,result,request,source_ref,url):
     request=str(uuid.UUID(request));dest=root/'studio/renders'/request
     report=json.loads((result/'report.json').read_text())
     atlases=[a['name'] for a in report.get('bake',{}).get('atlases',[])]
-    pattern=r'(backdrop|(surfaces|module_[0-5]_[0-5])(_detail)?)(_p[01]){0,12}(_(albedo|normal|roughness|indirect|diffuse|view[0-8]))?\.png'
+    pattern=r'(backdrop|(surfaces|module_[0-5]_[0-5])(_detail)?)(_p[01]){0,12}(_(albedo|normal|roughness|indirect|diffuse|view(?:[0-9]|1[0-4])))?\.png'
     if any(not re.fullmatch(pattern,name) for name in atlases):raise ValueError('Invalid atlas path')
     names=['render.png','report.json']+(['baked.glb']+atlases if report.get('bake') else [])
     radiance=report.get('bake',{}).get('radianceVersion')==1
