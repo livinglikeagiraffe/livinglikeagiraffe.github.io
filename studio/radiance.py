@@ -29,12 +29,18 @@ def preflight(scene):
         errors.append('An active perspective or orthographic camera is required.')
     if scene.render.film_transparent:
         errors.append('Transparent film is not supported; use an opaque world/background.')
+    if scene.camera and scene.camera.data.dof.use_dof:
+        errors.append('Depth of field requires a matching web lens implementation; disable it for this export.')
+    if scene.render.use_motion_blur:
+        errors.append('Motion blur is not supported by a static surface cache.')
     for obj in scene.objects:
         if obj.hide_render:
             continue
+        if obj.type in {'MESH','CURVE','FONT','SURFACE'} and not obj.visible_get():
+            errors.append('Make render surfaces visible in the active view layer before export: '+obj.name)
         if obj.type in {'VOLUME', 'HAIR', 'POINTCLOUD', 'META'}:
             errors.append('Unsupported geometry: ' + obj.name + ' (' + obj.type + ')')
-        if getattr(obj,'is_shadow_catcher',False) or getattr(obj,'is_holdout',False):
+        if obj.type in {'MESH','CURVE','FONT','SURFACE'} and (getattr(obj,'is_shadow_catcher',False) or getattr(obj,'is_holdout',False)):
             errors.append('Shadow catcher/holdout requires compositing: ' + obj.name)
         if obj.type=='MESH' and not getattr(obj,'visible_camera',True):
             errors.append('Camera-invisible geometry needs an explicit transport-only export role: '+obj.name)

@@ -22,6 +22,8 @@ export class LayoutBakeUI{
     for(const b of document.querySelectorAll('[data-layout-view]')){b.classList.toggle('active',b.dataset.layoutView===this.mode);b.disabled=b.dataset.layoutView!=='edit'&&!ready;}
     $('#retry-layout').hidden=!build||!valid;$('#retry-layout').disabled=this.working||!github.connection()?.authenticated||Boolean(this.job&&!['complete','failed'].includes(this.job.status));
     $('#layout-result-download').hidden=!ready;
+    $('#layout-compare').hidden=!(ready&&this.result.report.bake?.radianceVersion);
+    if(ready)$('#layout-compare').href='../clay/lab.html?render='+encodeURIComponent(this.result.bake.id);
     $('#layout-log').hidden=!this.job?.url;if(this.job?.url)$('#layout-log').href=this.job.url;
     let message='';
     if(build&&!valid)message='변경됨 · 저장 필요';

@@ -1,9 +1,10 @@
 """Small real Cycles fixture: indirect spill, occlusion, and directional highlights."""
 import json
+import hashlib
 from pathlib import Path
 import sys
 import bpy
-from mathutils import Vector
+from mathutils import Vector,Matrix
 
 root=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(root/'studio'))
@@ -24,7 +25,41 @@ scene.objects['Light'].data.type='AREA';scene.objects['Light'].data.size=3;scene
 camera=scene.camera;camera.data.type='ORTHO';camera.data.ortho_scale=9;camera.location=(6,-8,6)
 camera.rotation_euler=(Vector((0,0,.7))-camera.location).to_track_quat('-Z','Y').to_euler()
 bpy.context.view_layer.update()
-assert preflight(scene)['supported']
+audit=preflight(scene)
+assert audit['supported'],audit
+camera.data.dof.use_dof=True
+assert not preflight(scene)['supported']
+camera.data.dof.use_dof=False
+# Exercise the same manifest/layout boundary used by admin uploads. A rotated,
+# uniformly scaled single module must retain the source camera, floor and light.
+from compose import compose_scene
+import math
+for name,objects in [('WebBake',[cube,plane]),('StudioLights',[scene.objects['Light']]),('RoomLights',[])]:
+    collection=bpy.data.collections.new(name);scene.collection.children.link(collection)
+    for obj in objects:collection.objects.link(obj)
+fixture=root/'.source-assets/radiance-compose';fixture.mkdir(parents=True,exist_ok=True)
+module='11111111-1111-4111-8111-111111111111';version='22222222-2222-4222-8222-222222222222';layout='33333333-3333-4333-8333-333333333333'
+manifest_path=fixture/f'studio/modules/{module}/versions/{version}/manifest.json'
+files=manifest_path.parent/'files';files.mkdir(parents=True,exist_ok=True)
+blend=files/'source.blend'
+bpy.ops.wm.save_as_mainfile(filepath=str(blend),compress=True,copy=True)
+binary=blend.read_bytes();manifest={'schema':1,'id':version,'moduleId':module,'blend':'source.blend','assets':[{'name':'source.blend','bytes':len(binary),'sha256':hashlib.sha256(binary).hexdigest()}]}
+manifest_path.write_text(json.dumps(manifest))
+recipe={'grid':{'columns':1,'rows':1,'width':2,'depth':2,'gap':0},'cells':[{'x':0,'z':0,'rotation':90,'versionId':version}],'environment':{'floor':'#ffffff','lighting':'shared-softbox'}}
+key=json.dumps(recipe,separators=(',',':'));snapshot={'schema':1,'id':layout,'key':key,'digest':hashlib.sha256(key.encode()).hexdigest(),'quality':'preview',**recipe,'sources':{version:{'manifest':str(manifest_path.relative_to(fixture)),'scene':scene.name}}}
+snapshot_path=fixture/f'studio/layouts/{layout}.json';snapshot_path.parent.mkdir(parents=True,exist_ok=True);snapshot_path.write_text(json.dumps(snapshot))
+source_light=scene.objects['Light'];original_camera=camera.matrix_world.copy();original_light=source_light.matrix_world.copy();original_energy=source_light.data.energy
+composed,_,metadata=compose_scene(snapshot_path,strict=True)
+transform=Matrix.Rotation(math.pi/2,4,'Z')@Matrix.Scale(.96,4)
+assert (composed.camera.location-(transform@original_camera).translation).length<1e-4
+shared=composed.objects[metadata['sharedLights'][0]]
+assert (shared.location-(transform@original_light).translation).length<1e-4
+assert abs(shared.data.energy-original_energy*.96**2)<.01
+assert abs(composed.camera.data.ortho_scale-9*.96)<1e-4
+floor=composed.objects[metadata['sharedFloor']]
+assert floor.data.materials[0].node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value[0]<.5
+bpy.context.window.scene=scene
+print('RADIANCE_COMPOSITION_PASS',flush=True)
 output=root/'.source-assets/radiance-smoke';output.mkdir(parents=True,exist_ok=True)
 report=bake_scene(scene,output,'preview',resolution_override=128,samples_override=16)
 assert report['radianceVersion']==1 and report['directionSamples']==9

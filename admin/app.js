@@ -56,7 +56,7 @@ async function selectVersion(version){
   updateBakeControls();
   if(asset)$('#model-info').textContent=`${asset.size.x.toFixed(1)} × ${asset.size.z.toFixed(1)}m · ${Math.round(asset.triangles).toLocaleString()} triangles`;
   updateImage();listVersions();$('#module-target').value=versions.some(v=>v.moduleId===version.moduleId)?version.moduleId:'';updateButtons();
-  $('#render-status').textContent=version.job?.status==='complete'?'완료':version.remote?'저장됨':'미저장';
+  $('#render-status').textContent=version.job?.status==='complete'?(version.job.validation?.passed===false?'품질 검증 미달':'완료'):version.remote?'저장됨':'미저장';
   if(version.job&&!['complete','failed'].includes(version.job.status)&&github.connection())pollRender();
 }
 function updateLookControls(){
@@ -193,7 +193,7 @@ async function pollRender(){
     const result=await github.renderStatus(job);if(current?.id!==id)return;current.job={...job,...result};delete current.job.blob;delete current.job.bakedBlob;delete current.job.bake;if(result.blob)current.renderBlob=result.blob;
     if(result.bakedBlob){current.bake=result.bake;current.bakedBlob=result.bakedBlob;current.previewMode='baked';}
     if(result.report?.webScene){viewer.applySource(result.report.webScene);updateLookControls();}
-    $('#render-status').textContent=({queued:'대기 중',in_progress:job.mode!=='render'?'렌더 · 간접광 베이킹 중…':'Blender 렌더 중…',complete:result.bake?'완료 · 간접광 적용':'렌더 완료',failed:result.message})[result.status]||'준비 중…';
+    $('#render-status').textContent=({queued:'대기 중',in_progress:job.mode!=='render'?'렌더 · 조명 베이킹 중…':'Blender 렌더 중…',complete:result.validation?.passed===false?'품질 검증 미달':result.bake?'완료 · 조명 적용':'렌더 완료',failed:result.message})[result.status]||'준비 중…';
     await storage.saveVersion(current);updateImage();updateButtons();if(!['complete','failed'].includes(result.status))renderTimer=setTimeout(pollRender,10000);else{versions=await storage.get('versions');listVersions();if(result.status==='complete'){if(result.bakedBlob)await selectVersion(current);imageMode='render';document.querySelectorAll('[data-image]').forEach(b=>b.classList.toggle('active',b.dataset.image==='render'));updateImage();}}
   }catch(e){$('#render-status').textContent=`상태 확인 중단: ${e.message} GitHub를 다시 연결하면 이어서 확인합니다.`;updateButtons();}
 }
