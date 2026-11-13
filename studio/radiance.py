@@ -82,7 +82,7 @@ def read_reuse(root, domain, grid, repaired):
             q=node.get('rotation',[0,0,0,1]);local=Matrix.Translation(node.get('translation',[0,0,0]))@Quaternion((q[3],*q[:3])).to_matrix().to_4x4()@Matrix.Diagonal((*node.get('scale',[1,1,1]),1))
         matrix=parent@local;m=np.array(matrix)
         for primitive in doc['meshes'][node['mesh']]['primitives'] if 'mesh' in node else []:
-            attrs=primitive['attributes'];points=accessor(attrs['POSITION'])@m[:3,:3].T+m[:3,3];uv=accessor(attrs['TEXCOORD_0'])
+            attrs=primitive['attributes'];points=np.einsum('ij,kj->ik',accessor(attrs['POSITION']),m[:3,:3])+m[:3,3];uv=accessor(attrs['TEXCOORD_0'])
             material=doc['materials'][primitive['material']]['name']
             geometry.setdefault(material,[]).append(np.concatenate([points,uv],axis=1))
         for child in node.get('children',[]):visit(child,matrix)
@@ -90,7 +90,9 @@ def read_reuse(root, domain, grid, repaired):
     def canonical(rows):
         # Source hash is already exact; tolerate only export float precision.
         rows=np.array(rows,dtype=np.float32);rows[:,:3]=np.round(rows[:,:3],4);rows[:,3:]=np.round(rows[:,3:],5)
-        return np.unique(rows,axis=0)
+        # UVs identify packed surface vertices. Sorting by world position first
+        # can permute equal-position seam vertices after glTF float rounding.
+        return np.unique(rows[:,[3,4,0,1,2]],axis=0)
     geometry={name:canonical(np.concatenate(parts)) for name,parts in geometry.items()}
     materials={m['name']:m.get('extras',{}).get('studioRadiance') for m in doc['materials']}
     def reuse(name,objects,output,desired):
