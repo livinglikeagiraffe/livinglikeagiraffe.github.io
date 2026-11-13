@@ -18,9 +18,9 @@ async function init(){
   await viewer.load(bytes);
   const labels={authored:'원본 시점',left:'왼쪽',right:'오른쪽',near:'근접',low:'낮은 시점',heldout:'중간 시점'};
   for(const view of spec.views){const option=document.createElement('option');option.value=view.id;option.textContent=labels[view.id]||view.id;select.append(option);}
-  const show=()=>{const view=spec.views.find(v=>v.id===select.value);host.classList.remove('explore');reference.hidden=false;host.style.aspectRatio=`${view.width}/${view.height}`;reference.style.aspectRatio=host.style.aspectRatio;reference.querySelector('img').src=new URL(view.reference,base);viewer.setView(view);document.querySelector('#label').textContent='웹 3D / Blender';};
+  const show=()=>{const view=spec.views.find(v=>v.id===select.value);host.classList.remove('explore');reference.hidden=false;host.style.aspectRatio=`${view.width}/${view.height}`;reference.style.aspectRatio=host.style.aspectRatio;reference.querySelector('img').src=new URL(view.reference,base);viewer.canvas.style.pointerEvents='none';viewer.canvas.tabIndex=-1;viewer.setView(view);document.querySelector('#label').textContent='웹 3D / Blender';};
   select.onchange=()=>{status.hidden=true;show();};select.value=params.get('view')||'authored';show();
-  document.querySelector('#explore').onclick=()=>{host.classList.add('explore');reference.hidden=true;viewer.reset();document.querySelector('#label').textContent='실제 3D';};
+  document.querySelector('#explore').onclick=()=>{status.hidden=true;host.classList.add('explore');reference.hidden=true;viewer.canvas.style.pointerEvents='auto';viewer.canvas.tabIndex=0;viewer.reset();document.querySelector('#label').textContent='실제 3D';};
   document.querySelector('#download').onclick=()=>{viewer.draw();const a=document.createElement('a');a.download='web-'+select.value+'.png';a.href=viewer.canvas.toDataURL();a.click();};
   document.querySelector('#validate').onclick=async()=>{
     const button=document.querySelector('#validate');button.disabled=true;status.hidden=false;

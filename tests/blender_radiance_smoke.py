@@ -4,6 +4,7 @@ import hashlib
 from pathlib import Path
 import sys
 import bpy
+import bmesh
 from mathutils import Vector,Matrix
 
 root=Path(__file__).resolve().parents[1]
@@ -24,6 +25,9 @@ plane.data.materials[0].node_tree.nodes.get('Principled BSDF').inputs['Base Colo
 scene.objects['Light'].data.type='AREA';scene.objects['Light'].data.size=3;scene.objects['Light'].data.energy=800
 camera=scene.camera;camera.data.type='ORTHO';camera.data.ortho_scale=9;camera.location=(6,-8,6)
 camera.rotation_euler=(Vector((0,0,.7))-camera.location).to_track_quat('-Z','Y').to_euler()
+# Regression: camera renders a reversed closed mesh normally while bake rays
+# would enter its interior and produce black surfaces without normalization.
+bm=bmesh.new();bm.from_mesh(cube.data);bmesh.ops.reverse_faces(bm,faces=list(bm.faces));bm.to_mesh(cube.data);bm.free();cube.data.update()
 bpy.context.view_layer.update()
 audit=preflight(scene)
 assert audit['supported'],audit
@@ -62,6 +66,7 @@ bpy.context.window.scene=scene
 print('RADIANCE_COMPOSITION_PASS',flush=True)
 output=root/'.source-assets/radiance-smoke';output.mkdir(parents=True,exist_ok=True)
 report=bake_scene(scene,output,'preview',resolution_override=128,samples_override=16)
-assert report['radianceVersion']==1 and report['directionSamples']==9
+assert report['radianceVersion']==1 and report['directionSamples']==3
+assert 'Cube' in report['normalRepairs']
 (output/'report.json').write_text(json.dumps(report,indent=2))
 print('RADIANCE_SMOKE_PASS',flush=True)

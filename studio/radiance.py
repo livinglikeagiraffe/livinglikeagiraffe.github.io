@@ -17,6 +17,74 @@ from hybrid import bake_log, encode_rgbm, write_png
 VERSION = 1
 
 
+def uncovered_surfaces(objects, image):
+    import numpy as np
+    pixels=np.empty(image.size[0]*image.size[1]*4,dtype=np.float32)
+    image.pixels.foreach_get(pixels)
+    coverage=pixels.reshape(image.size[1],image.size[0],4)[:,:,3]>.5
+    pad_bake_images([image],radius=3,coverage=coverage)
+    image.pixels.foreach_get(pixels)
+    mask=pixels.reshape(image.size[1],image.size[0],4)[:,:,3]>.5
+    missing=[]
+    for obj in objects:
+        obj.data.calc_loop_triangles();uv=obj.data.uv_layers[UV_NAME].data
+        total=sum(t.area for t in obj.data.loop_triangles);lost=0
+        for triangle in obj.data.loop_triangles:
+            point=sum((uv[i].uv for i in triangle.loops),uv[triangle.loops[0]].uv*0)/3
+            x=min(image.size[0]-1,max(0,int(point.x*image.size[0])));y=min(image.size[1]-1,max(0,int(point.y*image.size[1])))
+            if not mask[y,x]:lost+=triangle.area
+        if lost>max(total*.002,1e-12):missing.append(obj.name)
+    return missing
+
+
+def read_reuse(root, domain, grid, repaired):
+    """Reuse only verified files and byte-equivalent source geometry/UV pairs.
+
+    render.py additionally requires the same source manifest, scene and quality.
+    A fresh one-sample coverage bake still runs for every reused atlas.
+    """
+    import numpy as np
+    data=(root/'baked.glb').read_bytes();report=json.loads((root/'report.json').read_text())
+    if hashlib.sha256(data).hexdigest()!=report['bake']['sha256']:raise ValueError('Reuse GLB checksum mismatch')
+    n=struct.unpack_from('<I',data,12)[0];doc=json.loads(data[20:20+n]);blob=data[28+n:]
+    old=doc['extras']['studioRadiance']['domain']
+    same_directions=doc['extras']['studioRadiance']['grid']==grid and all(old[k]==domain[k] for k in ('azimuthRange','elevationRange'))
+    def accessor(index):
+        a=doc['accessors'][index];v=doc['bufferViews'][a['bufferView']]
+        return np.ndarray((a['count'],{'VEC2':2,'VEC3':3}[a['type']]),dtype='<f4',buffer=blob,offset=v.get('byteOffset',0)+a.get('byteOffset',0),strides=(v.get('byteStride',{'VEC2':8,'VEC3':12}[a['type']]),4))
+    geometry={}
+    for node in doc['nodes']:
+        if 'mesh' not in node:continue
+        primitives=doc['meshes'][node['mesh']]['primitives']
+        if len(primitives)!=1:continue
+        p=primitives[0]
+        geometry[node['name']]=np.unique(np.round(np.concatenate([accessor(p['attributes']['POSITION']),accessor(p['attributes']['TEXCOORD_0'])],axis=1),5),axis=0)
+    materials={m['name']:m.get('extras',{}).get('studioRadiance') for m in doc['materials']}
+    def reuse(name,objects,output):
+        if any(obj.name in repaired for obj in objects):return None
+        info=materials.get('Radiance '+name)
+        if not info:return None
+        for obj in objects:
+            uv=obj.data.uv_layers[UV_NAME].data
+            pairs=[]
+            for loop in obj.data.loops:
+                p=obj.data.vertices[loop.vertex_index].co;t=uv[loop.index].uv
+                pairs.append((p.x,p.z,-p.y,t.x,1-t.y))
+            current=np.unique(np.round(np.array(pairs,dtype=np.float32),5),axis=0)
+            previous=geometry.get(obj.name)
+            if previous is None or current.shape!=previous.shape or not np.allclose(current,previous,rtol=0,atol=2e-5):
+                print('RADIANCE_REUSE_UV_MISMATCH',name,obj.name,flush=True);return None
+        maps={}
+        for suffix,item in [('diffuse',info['diffuse'])]+([('view'+str(i),v) for i,v in enumerate(info['views'])] if same_directions else []):
+            image=doc['images'][doc['textures'][item['texture']]['source']];view=doc['bufferViews'][image['bufferView']]
+            encoded=blob[view.get('byteOffset',0):view.get('byteOffset',0)+view['byteLength']]
+            path=output/(name+'_'+suffix+'.png');path.write_bytes(encoded)
+            maps[suffix]={'path':path,'range':item['range']}
+        entries=[a for a in report['bake']['atlases'] if a['name'] in {name+'_'+s+'.png' for s in maps}]
+        return {'diffuse':maps['diffuse'],'views':[maps['view'+str(i)] for i in range(grid[0]*grid[1])] if same_directions else []},entries
+    return reuse
+
+
 def preflight(scene):
     """Fail closed on features this static surface representation cannot preserve."""
     import bpy
@@ -100,12 +168,15 @@ def camera_domain(scene, objects):
     elevation = math.asin(out.z)
     up = camera.matrix_world.to_quaternion() @ Vector((0,1,0))
     # The public rig never orbits. The azimuth interval covers perspective rays.
-    return {'azimuth': azimuth, 'elevation': elevation,
+    domain = {'azimuth': azimuth, 'elevation': elevation,
             'azimuthRange': [azimuth-math.radians(30), azimuth+math.radians(30)],
             'elevationRange': [max(-1.56, elevation-math.radians(24)), min(1.56, elevation+math.radians(18))],
             'tilt': min(math.radians(10),max(0,elevation-.08)), 'pan': .22, 'zoomMax': 2.2,
             'span': max(high.x-low.x, high.y-low.y, 1), 'distance': distance,
             'target': [target.x, target.z, -target.y], 'up':[up.x,up.z,-up.y], 'projection': camera.data.type}
+    if camera.data.type=='ORTHO':
+        domain['elevationRange']=[elevation-max(domain['tilt'],.01),elevation]
+    return domain
 
 
 def render_views(scene, output, domain, samples=64):
@@ -257,7 +328,7 @@ def embed(path, material_maps, metadata, lut):
     path.write_bytes(struct.pack('<4sII',b'glTF',2,28+len(encoded)+len(blob))+struct.pack('<I4s',len(encoded),b'JSON')+encoded+struct.pack('<I4s',len(blob),b'BIN\0')+blob)
 
 
-def bake_scene(scene, output, quality, whole_space=False, resolution_override=None, samples_override=None):
+def bake_scene(scene, output, quality, whole_space=False, resolution_override=None, samples_override=None,reuse_root=None):
     import bpy
     import numpy as np
     from mathutils import Vector
@@ -301,6 +372,20 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
     domain = camera_domain(scene, [o for o in meshes if o!=backdrop] or meshes)
     source = web_scene(scene)
     render_views(scene, output, domain, samples=16 if resolution_override else 64)
+    # Cycles face-forwards normals for camera rays, but bake rays start along the
+    # authored outward normal. Closed inside-out meshes otherwise bake black.
+    # References above deliberately retain the unmodified author geometry.
+    import bmesh
+    repaired=[]
+    for obj in meshes:
+        bm=bmesh.new();bm.from_mesh(obj.data)
+        if bm.faces and all(e.is_manifold for e in bm.edges) and bm.calc_volume(signed=True)<-1e-8:
+            bmesh.ops.reverse_faces(bm,faces=list(bm.faces));bm.to_mesh(obj.data);obj.data.update()
+            repaired.append(obj.name)
+        bm.free()
+    grid=[1,3] if scene.camera.data.type=='ORTHO' else [3,3]
+    reuse=read_reuse(reuse_root,domain,grid,set(repaired)) if reuse_root else None
+    print('RADIANCE_NORMAL_REPAIRS',repaired,flush=True)
     lut = make_lut(scene, output)
     # Preserve full geometry for all bounce/occlusion paths. No source backfaces are removed.
     groups = atlas_groups([o for o in meshes if o!=backdrop], whole_space, quality)
@@ -315,11 +400,17 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
     source_matrix = scene.camera.matrix_world.copy()
     source_type = scene.camera.data.type
     maps, replacements, atlases = {}, [], []
+    source_uvs={obj:obj.data.uv_layers.active.name if obj.data.uv_layers.active else '' for obj in meshes}
+    def replace_later(name,objects,cache_maps):
+        mat=bpy.data.materials.new('Radiance '+name);mat.use_nodes=True;mat.node_tree.nodes.clear()
+        emit=mat.node_tree.nodes.new('ShaderNodeEmission');out=mat.node_tree.nodes.new('ShaderNodeOutputMaterial')
+        mat.node_tree.links.new(emit.outputs[0],out.inputs['Surface'])
+        maps[mat.name]=cache_maps;replacements.append((objects,mat))
     cursor = 0
     while cursor < len(groups):
         name, objects, _ = groups[cursor]
         cursor += 1
-        resolution = resolution_override or (2048 if name=='backdrop' else 1024 if quality=='preview' else 2048)
+        resolution = resolution_override or (1024 if '_detail' in name and quality=='preview' else 2048)
         if len(objects)>96 or (sum(len(o.data.polygons) for o in objects)>50000 and len(objects)>1):
             mid = len(objects)//2
             groups[cursor:cursor] = [(name+'_p0',objects[:mid],resolution),(name+'_p1',objects[mid:],resolution)]
@@ -333,7 +424,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             return image
         target = new_image(name,resolution)
         for obj in objects:
-            old_uv = obj.data.uv_layers.active.name if obj.data.uv_layers.active else ''
+            old_uv = source_uvs[obj]
             layer = obj.data.uv_layers.get(UV_NAME) or obj.data.uv_layers.new(name=UV_NAME)
             obj.data.uv_layers.active = layer
             if old_uv:
@@ -374,6 +465,24 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             mid = len(objects)//2
             groups[cursor:cursor] = [(name+'_p0',objects[:mid],resolution),(name+'_p1',objects[mid:],resolution)]
             continue
+        # Verify actual raster coverage, not merely legal UV coordinates. Blender
+        # can leave large faces unrecorded when an atlas is densely packed.
+        probe=new_image(name+' coverage',resolution)
+        for mat in clones.values():mat.node_tree.nodes.active.image=probe
+        scene.cycles.samples=1
+        with bake_log():bpy.ops.object.bake(type='DIFFUSE',pass_filter={'COLOR'},uv_layer=UV_NAME,margin=0)
+        missing=uncovered_surfaces(objects,probe);bpy.data.images.remove(probe)
+        if missing:
+            bpy.data.images.remove(target)
+            if len(objects)<2 or name.count('_p')>=12:raise ValueError('Unrecorded surface: '+', '.join(missing))
+            mid=len(objects)//2;groups[cursor:cursor]=[(name+'_p0',objects[:mid],resolution),(name+'_p1',objects[mid:],resolution)]
+            print('RADIANCE_SPLIT_UNCOVERED',name,missing,flush=True)
+            continue
+        cached=reuse(name,objects,output) if reuse else None
+        if cached and cached[0]['views']:
+            replace_later(name,objects,cached[0]);atlases.extend(cached[1]);bpy.data.images.remove(target)
+            print('RADIANCE_REUSE',name,flush=True)
+            continue
         def bake(image, passes):
             for mat in clones.values():
                 mat.node_tree.nodes.active.image = image
@@ -407,31 +516,34 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             linear.unlink()
             atlases.append({'name':path.name,'width':encoded.shape[1],'height':encoded.shape[0],'kind':suffix,'objects':len(objects)})
             return {'path':path,'range':scale}
-        print('RADIANCE_DIFFUSE',name,len(objects),resolution,flush=True)
-        scene.camera.matrix_world = source_matrix.copy()
-        bake(target,{'COLOR','DIRECT','INDIRECT','DIFFUSE','EMIT'})
-        guides=[]
-        for kind in ('DIFFUSE','NORMAL'):
-            guide=new_image(name+' guide '+kind,resolution)
-            for mat in clones.values():mat.node_tree.nodes.active.image=guide
-            scene.cycles.samples=1
-            with bake_log():
-                if kind=='DIFFUSE':bpy.ops.object.bake(type=kind,pass_filter={'COLOR'},uv_layer=UV_NAME,margin=0)
-                else:bpy.ops.object.bake(type=kind,normal_space='OBJECT',uv_layer=UV_NAME,margin=0)
-            guides.append(guide)
-        normal_pixels=np.empty(resolution*resolution*4,dtype=np.float32)
-        guides[1].pixels.foreach_get(normal_pixels)
-        normal_pixels.reshape(-1,4)[:,:3]=normal_pixels.reshape(-1,4)[:,:3]*2-1
-        guides[1].pixels.foreach_set(normal_pixels)
-        diffuse = save(target,'diffuse',*guides)
-        for guide in guides:bpy.data.images.remove(guide)
+        if cached:
+            diffuse=cached[0]['diffuse'];atlases.extend(cached[1]);print('RADIANCE_REUSE_DIFFUSE',name,flush=True)
+        else:
+            print('RADIANCE_DIFFUSE',name,len(objects),resolution,flush=True)
+            scene.camera.matrix_world = source_matrix.copy()
+            bake(target,{'COLOR','DIRECT','INDIRECT','DIFFUSE','EMIT'})
+            guides=[]
+            for kind in ('DIFFUSE','NORMAL'):
+                guide=new_image(name+' guide '+kind,resolution)
+                for mat in clones.values():mat.node_tree.nodes.active.image=guide
+                scene.cycles.samples=1
+                with bake_log():
+                    if kind=='DIFFUSE':bpy.ops.object.bake(type=kind,pass_filter={'COLOR'},uv_layer=UV_NAME,margin=0)
+                    else:bpy.ops.object.bake(type=kind,normal_space='OBJECT',uv_layer=UV_NAME,margin=0)
+                guides.append(guide)
+            normal_pixels=np.empty(resolution*resolution*4,dtype=np.float32)
+            guides[1].pixels.foreach_get(normal_pixels)
+            normal_pixels.reshape(-1,4)[:,:3]=normal_pixels.reshape(-1,4)[:,:3]*2-1
+            guides[1].pixels.foreach_set(normal_pixels)
+            diffuse = save(target,'diffuse',*guides)
+            for guide in guides:bpy.data.images.remove(guide)
         bpy.data.images.remove(target)
         views = []
         size = resolution_override or min(resolution,512 if quality=='preview' else 1024)
         glossy = new_image(name+' glossy',size)
-        for e in range(3):
-            for a in range(3):
-                az = domain['azimuthRange'][0]+a/2*(domain['azimuthRange'][1]-domain['azimuthRange'][0])
+        for e in range(grid[1]):
+            for a in range(grid[0]):
+                az = domain['azimuth'] if grid[0]==1 else domain['azimuthRange'][0]+a/2*(domain['azimuthRange'][1]-domain['azimuthRange'][0])
                 el = domain['elevationRange'][0]+e/2*(domain['elevationRange'][1]-domain['elevationRange'][0])
                 direction = Vector((math.sin(az)*math.cos(el),-math.cos(az)*math.cos(el),math.sin(el)))
                 # Bake rays are effectively parallel. Runtime evaluates directions per fragment.
@@ -440,19 +552,12 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
                 scene.camera.rotation_euler = (-direction).to_track_quat('-Z','Y').to_euler()
                 bpy.context.view_layer.update()
                 bake(glossy,{'COLOR','DIRECT','INDIRECT','GLOSSY','TRANSMISSION'})
-                views.append(save(glossy,'view'+str(e*3+a)))
-                print('RADIANCE_VIEW',name,e*3+a,flush=True)
+                views.append(save(glossy,'view'+str(e*grid[0]+a)))
+                print('RADIANCE_VIEW',name,e*grid[0]+a,flush=True)
         bpy.data.images.remove(glossy)
         scene.camera.matrix_world = source_matrix.copy()
         scene.camera.data.type = source_type
-        mat = bpy.data.materials.new('Radiance '+name)
-        mat.use_nodes = True
-        mat.node_tree.nodes.clear()
-        emit = mat.node_tree.nodes.new('ShaderNodeEmission')
-        out = mat.node_tree.nodes.new('ShaderNodeOutputMaterial')
-        mat.node_tree.links.new(emit.outputs[0],out.inputs['Surface'])
-        maps[mat.name] = {'diffuse':diffuse,'views':views}
-        replacements.append((objects,mat))
+        replace_later(name,objects,{'diffuse':diffuse,'views':views})
     for objects,mat in replacements:
         bpy.ops.object.select_all(action='DESELECT')
         for obj in objects:
@@ -478,13 +583,13 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
     path = output/'baked.glb'
     bpy.ops.export_scene.gltf(filepath=str(path),export_format='GLB',use_selection=True,use_active_scene=True,export_cameras=True,
                              export_lights=False,export_extras=True,export_animations=False,export_materials='EXPORT')
-    embed(path,maps,{'schema':VERSION,'domain':domain,'lighting':source,'grid':[3,3],
+    embed(path,maps,{'schema':VERSION,'domain':domain,'lighting':source,'grid':grid,
                     'warnings':audit['warnings'],'static':True},lut)
     data = path.read_bytes()
     if len(data)>48*1024**2:
         raise ValueError('Radiance GLB exceeds 48 MiB; split the scene or reduce atlas resolution.')
-    return {'schema':1,'radianceVersion':VERSION,'bakerVersion':8,'file':'baked.glb','bytes':len(data),
+    return {'schema':1,'radianceVersion':VERSION,'bakerVersion':9,'file':'baked.glb','bytes':len(data),'coverageThreshold':.002,
             'sha256':hashlib.sha256(data).hexdigest(),'samples':samples,'triangles':triangles,'atlases':atlases,
-            'compatibility':audit,'domain':domain,'directionSamples':9,'seconds':round(time.monotonic()-start,2),
-            'limitations':['Static current frame','3x3 directional approximation; sharp reflections/transmission require denser sampling',
+            'compatibility':audit,'domain':domain,'directionSamples':grid[0]*grid[1],'normalRepairs':repaired,'seconds':round(time.monotonic()-start,2),
+            'limitations':['Static current frame','Bounded directional approximation; sharp reflections/transmission require denser sampling',
                            'No volumes or arbitrary compositor effects','Camera must remain inside declared domain']}

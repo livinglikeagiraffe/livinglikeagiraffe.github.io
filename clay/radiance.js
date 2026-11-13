@@ -3,7 +3,7 @@ import {mergeGeometries} from '../node_modules/three/examples/jsm/utils/BufferGe
 
 export function validateRadiance(spec) {
   const finite = a => Array.isArray(a) && a.every(Number.isFinite);
-  if (spec?.schema!==1 || spec.grid?.join(',')!=='3,3' || !finite(spec.domain?.azimuthRange) || !finite(spec.domain?.elevationRange) ||
+  if (spec?.schema!==1 || !['1,3','3,3'].includes(spec.grid?.join(',')) || !finite(spec.domain?.azimuthRange) || !finite(spec.domain?.elevationRange) ||
       spec.domain.azimuthRange.length!==2 || spec.domain.elevationRange.length!==2 || spec.domain.azimuthRange[0]>=spec.domain.azimuthRange[1] ||
       spec.domain.elevationRange[0]>=spec.domain.elevationRange[1] || !Number.isInteger(spec.displayTexture) || spec.displayTexture<0 || spec.display?.size!==64)
     throw Error('지원하지 않는 방향별 조명 데이터입니다.');
@@ -20,6 +20,7 @@ export function radiancePlugin(parser) {
     const spec=parser.json.extras?.studioRadiance;
     if(!spec)return;
     validateRadiance(spec);
+    const columns=spec.grid[0],viewCount=columns*spec.grid[1];
     const getTexture=async index=>{
       if(!Number.isInteger(index)||index<0||index>=parser.json.textures.length)throw Error('잘못된 조명 텍스처입니다.');
       const t=(await parser.getDependency('texture',index)).clone();
@@ -30,7 +31,7 @@ export function radiancePlugin(parser) {
     for(let index=0;index<originals.length;index++){
       const info=parser.json.materials[index]?.extras?.studioRadiance;
       if(!info)continue;
-      if(info.schema!==1||info.views?.length!==9)throw Error('방향별 조명 샘플이 누락되었습니다.');
+      if(info.schema!==1||info.views?.length!==viewCount)throw Error('방향별 조명 샘플이 누락되었습니다.');
       const maps=[info.diffuse,...info.views];
       if(maps.some(m=>!Number.isFinite(m.range)||m.range<=0||m.range>1e8))throw Error('잘못된 조명 범위입니다.');
       const textures=await Promise.all(maps.map(m=>getTexture(m.texture)));
@@ -38,7 +39,7 @@ export function radiancePlugin(parser) {
         diffuseSize:{value:new THREE.Vector2(textures[0].image.width,textures[0].image.height)},
         radianceDirection:{value:new THREE.Vector3()},radianceEye:{value:new THREE.Vector3()},radianceOrtho:{value:true},
         azimuthRange:{value:new THREE.Vector2(...spec.domain.azimuthRange)},elevationRange:{value:new THREE.Vector2(...spec.domain.elevationRange)}};
-      for(let i=0;i<9;i++){uniforms['cache'+i]={value:textures[i+1]};uniforms['range'+i]={value:info.views[i].range};uniforms['size'+i]={value:new THREE.Vector2(textures[i+1].image.width,textures[i+1].image.height)};}
+      for(let i=0;i<viewCount;i++){uniforms['cache'+i]={value:textures[i+1]};uniforms['range'+i]={value:info.views[i].range};uniforms['size'+i]={value:new THREE.Vector2(textures[i+1].image.width,textures[i+1].image.height)};}
       const material=new THREE.ShaderMaterial({uniforms,side:THREE.DoubleSide,toneMapped:false,
         vertexShader:`varying vec2 cacheUV; varying vec3 cachePosition;
           void main(){cacheUV=uv;cachePosition=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
@@ -47,7 +48,7 @@ export function radiancePlugin(parser) {
           uniform sampler2D diffuseCache; uniform float diffuseRange;uniform vec2 diffuseSize;
           uniform vec3 radianceDirection,radianceEye; uniform bool radianceOrtho;
           uniform vec2 azimuthRange,elevationRange;
-          ${Array.from({length:9},(_,i)=>`uniform sampler2D cache${i}; uniform float range${i}; uniform vec2 size${i};`).join('\n')}
+          ${Array.from({length:viewCount},(_,i)=>`uniform sampler2D cache${i}; uniform float range${i}; uniform vec2 size${i};`).join('\n')}
           vec3 texel(sampler2D tex,vec2 p,float range){vec4 v=texture2D(tex,p);return v.rgb*v.a*range;}
           vec3 decode(sampler2D tex,float range,vec2 size){
             vec2 p=clamp(cacheUV,vec2(0.),vec2(1.))*size-.5,f=fract(p),a=(floor(p)+.5)/size,b=a+1./size;
@@ -58,10 +59,10 @@ export function radiancePlugin(parser) {
             float az=atan(direction.x,direction.z);
             float center=(azimuthRange.x+azimuthRange.y)*.5;
             az=center+atan(sin(az-center),cos(az-center));
-            vec2 p=clamp(vec2((az-azimuthRange.x)/(azimuthRange.y-azimuthRange.x),
+            vec2 p=clamp(vec2(${columns===1?'0.':'(az-azimuthRange.x)/(azimuthRange.y-azimuthRange.x)'},
                       (asin(clamp(direction.y,-1.,1.))-elevationRange.x)/(elevationRange.y-elevationRange.x)),0.,1.)*2.;
             vec3 light=decode(diffuseCache,diffuseRange,diffuseSize);
-            ${Array.from({length:9},(_,i)=>`{float weight=max(0.,1.-abs(p.x-${(i%3).toFixed(1)}))*max(0.,1.-abs(p.y-${Math.floor(i/3).toFixed(1)}));if(weight>0.)light+=decode(cache${i},range${i},size${i})*weight;}`).join('\n')}
+            ${Array.from({length:viewCount},(_,i)=>`{float weight=max(0.,1.-abs(p.x-${(i%columns).toFixed(1)}))*max(0.,1.-abs(p.y-${Math.floor(i/columns).toFixed(1)}));if(weight>0.)light+=decode(cache${i},range${i},size${i})*weight;}`).join('\n')}
             gl_FragColor=vec4(light,1.);
           }`});
       material.name=originals[index].name;material.userData.studioRadiance=true;
@@ -133,7 +134,7 @@ export function radiancePlugin(parser) {
 export class RadianceOutput {
   constructor(renderer,profile){
     this.renderer=renderer;
-    if(!renderer.extensions.has('EXT_color_buffer_float')||renderer.capabilities.maxTextures<10||renderer.capabilities.maxTextureSize<4096)
+    if(!renderer.extensions.has('EXT_color_buffer_float')||renderer.capabilities.maxTextures<profile.grid[0]*profile.grid[1]+1||renderer.capabilities.maxTextureSize<4096)
       throw Error('이 기기는 원본 조명 정밀도를 지원하지 않습니다. 데스크톱 브라우저에서 열어 주세요.');
     this.target=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:Math.min(4,renderer.capabilities.maxSamples)});
     this.scene=new THREE.Scene();this.camera=new THREE.Camera();

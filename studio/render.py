@@ -102,6 +102,7 @@ def main():
     parser.add_argument('--inspect-only', action='store_true')
     parser.add_argument('--mode', choices=['render', 'bake', 'hybrid', 'radiance'], default='hybrid')
     parser.add_argument('--kind', choices=['module','layout'], default='module')
+    parser.add_argument('--reuse-radiance',type=Path)
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     args.output.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
@@ -163,6 +164,17 @@ def main():
                          for o in scene.objects if o.type == 'LIGHT'],
               'missingFiles': missing, 'original': original, 'quality': args.quality,
               'webScene': web_scene(scene), **layout_report}
+    signature=hashlib.sha256(args.manifest.read_bytes())
+    if args.kind=='layout':
+        from compose import validate_snapshot
+        _,sources=validate_snapshot(args.manifest.resolve())
+        for version in sorted(sources):
+            signature.update(version.encode());signature.update(sources[version]['blend'].read_bytes())
+    report['sourceSignature']=signature.hexdigest()
+    if args.reuse_radiance:
+        previous=json.loads((args.reuse_radiance/'report.json').read_text())
+        if args.mode!='radiance' or any(previous.get(k)!=report.get(k) for k in ('sourceSignature','scene','quality')):
+            raise ValueError('Reuse requires the exact same source manifest, scene and quality')
     if not args.inspect_only:
         if scene.render.engine != 'CYCLES':
             raise ValueError('This worker supports Cycles scenes; no renderer substitution is performed.')
@@ -197,7 +209,8 @@ def main():
                 from hybrid import bake_scene
             else:
                 from bake import bake_scene
-            report['bake'] = bake_scene(scene, args.output.resolve(), args.quality,whole_space=args.kind=='layout')
+            options={'reuse_root':args.reuse_radiance.resolve()} if args.reuse_radiance else {}
+            report['bake'] = bake_scene(scene, args.output.resolve(), args.quality,whole_space=args.kind=='layout',**options)
     report['mode'] = args.mode
     report['seconds'] = round(time.monotonic() - start, 2)
     (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
