@@ -33,6 +33,12 @@ export async function validateViews(viewer,spec,base,onProgress=()=>{}){
       context.drawImage(viewer.canvas,0,0);
       const actual=context.getImageData(0,0,canvas.width,canvas.height).data;
       const result={view:view.id,width:canvas.width,height:canvas.height,...comparePixels(actual,expected,canvas.width,canvas.height)};
+      result.reflectionRegions=(view.reflectionRegions||[]).map(region=>{
+        const {x,y,width,height}=region;
+        if(![x,y,width,height].every(Number.isInteger)||x<0||y<0||width<1||height<1||x+width>canvas.width||y+height>canvas.height)throw Error('잘못된 반사 비교 영역');
+        const crop=data=>{const pixels=new Uint8ClampedArray(width*height*4);for(let row=0;row<height;row++)pixels.set(data.subarray(((y+row)*canvas.width+x)*4,((y+row)*canvas.width+x+width)*4),row*width*4);return pixels;};
+        return {...region,...comparePixels(crop(actual),crop(expected),width,height)};
+      });
       results.push(result);captures.push({id:view.id,png:canvas.toDataURL('image/png')});reference.close();onProgress(result);
       await new Promise(resolve=>requestAnimationFrame(resolve));
     }

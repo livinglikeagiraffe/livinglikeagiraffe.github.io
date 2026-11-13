@@ -223,6 +223,23 @@ def camera_domain(scene, objects):
     return set_ranges(domain,corners)
 
 
+def reflection_regions(scene, width, height):
+    """Project visible reflective object bounds for focused comparison, not only whole-frame scores."""
+    from bpy_extras.object_utils import world_to_camera_view
+    from mathutils import Vector
+    boxes=[]
+    for obj in scene.objects:
+        if obj.type!='MESH' or obj.hide_render or not obj.visible_get() or not dense_reflections([obj]):continue
+        points=[world_to_camera_view(scene,scene.camera,obj.matrix_world@Vector(c)) for c in obj.bound_box]
+        if any(p.z<=0 for p in points):continue
+        x=max(0,int(min(p.x for p in points)*width));y=max(0,int((1-max(p.y for p in points))*height))
+        right=min(width,math.ceil(max(p.x for p in points)*width));bottom=min(height,math.ceil((1-min(p.y for p in points))*height))
+        if right-x<8 or bottom-y<8:continue
+        box={'name':obj.name,'x':x,'y':y,'width':right-x,'height':bottom-y}
+        if not any(all(b[k]==box[k] for k in ('x','y','width','height')) for b in boxes):boxes.append(box)
+    return sorted(boxes,key=lambda b:b['width']*b['height'],reverse=True)[:12]
+
+
 def render_views(scene, output, domain, samples=64):
     import bpy
     from mathutils import Vector,Matrix
@@ -257,7 +274,8 @@ def render_views(scene, output, domain, samples=64):
             views.append({'id': name, 'reference': 'reference-'+name+'.png', 'camera': web_scene(scene)['camera'],
                           'width': int(scene.render.resolution_x*scene.render.resolution_percentage/100),
                           'height': int(scene.render.resolution_y*scene.render.resolution_percentage/100),
-                          'pan': [x, y], 'zoom': zoom})
+                          'pan': [x, y], 'zoom': zoom,
+                          'reflectionRegions':reflection_regions(scene,int(scene.render.resolution_x*scene.render.resolution_percentage/100),int(scene.render.resolution_y*scene.render.resolution_percentage/100))})
             print('RADIANCE_REFERENCE', name, flush=True)
     finally:
         camera.matrix_world = matrix
