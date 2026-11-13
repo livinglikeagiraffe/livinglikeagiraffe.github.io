@@ -1,4 +1,5 @@
 import {RadianceViewer} from './radiance-viewer.js';
+import {downloadModel,downloadLabel} from './download.js';
 import {validateViews} from './validation.js';
 import {zipSync,strToU8} from '../node_modules/fflate/esm/browser.js';
 const params=new URLSearchParams(location.search),host=document.querySelector('#world'),reference=document.querySelector('#reference'),select=document.querySelector('#view'),status=document.querySelector('#status');
@@ -11,10 +12,13 @@ if(params.has('render')){
 }
 const viewer=new RadianceViewer(host);
 async function init(){
-  const [model,response]=await Promise.all([fetch(new URL('baked.glb',base)),fetch(new URL('views.json',base))]);
-  if(!model.ok||!response.ok)throw Error('검증 결과가 아직 준비되지 않았습니다.');
-  const spec=await response.json(),bytes=await model.arrayBuffer();
+  const [metadata,response]=await Promise.all([fetch(new URL('report.json',base)),fetch(new URL('views.json',base))]);
+  if(!metadata.ok||!response.ok)throw Error('검증 결과가 아직 준비되지 않았습니다.');
+  const report=await metadata.json(),spec=await response.json();
+  const bytes=await downloadModel(new URL('baked.glb',base),{bytes:report.bake.bytes,onProgress:(n,total)=>status.textContent=downloadLabel(n,total)});
   const modelSha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
+  if(modelSha256!==report.bake.sha256)throw Error('공간 파일 검증에 실패했습니다.');
+  status.textContent='공간을 준비하는 중…';
   await viewer.load(bytes);
   const labels={authored:'원본 시점',left:'왼쪽',right:'오른쪽',near:'근접',low:'낮은 시점',heldout:'중간 시점'};
   for(const view of spec.views){const option=document.createElement('option');option.value=view.id;option.textContent=labels[view.id]||view.id;select.append(option);}
