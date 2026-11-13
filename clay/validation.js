@@ -25,7 +25,8 @@ export async function validateViews(viewer,spec,base,onProgress=()=>{}){
   try{
     viewer.renderer.setPixelRatio(1);
     for(const view of spec.views){
-      const reference=await createImageBitmap(await (await fetch(new URL(view.reference,base))).blob());
+      const referenceURL=new URL(view.reference,base);if(spec.revision)referenceURL.searchParams.set('v',spec.revision);
+      const reference=await createImageBitmap(await (await fetch(referenceURL)).blob());
       const canvas=document.createElement('canvas');canvas.width=reference.width;canvas.height=reference.height;
       const context=canvas.getContext('2d',{willReadFrequently:true});context.drawImage(reference,0,0);
       const expected=context.getImageData(0,0,canvas.width,canvas.height).data;

@@ -7,10 +7,11 @@ let viewer;
 async function load(){
   let record;
   try{const r=await fetch(new URL('studio/radiance-scene.json',base),{cache:'no-store'});if(!r.ok)throw Error();record=await r.json();}
-  catch{const r=await fetch('../studio/radiance-v06/manifest.json');if(!r.ok)throw Error('검증된 공간이 아직 없습니다.');record=await r.json();}
+  catch{const r=await fetch('../studio/radiance-v06/manifest.json',{cache:'no-store'});if(!r.ok)throw Error('검증된 공간이 아직 없습니다.');record=await r.json();}
   if(!/^studio\/(renders\/[0-9a-f-]{36}|radiance-v06)\/baked\.glb$/.test(record.model)||!/^[0-9a-f]{64}$/.test(record.sha256)||!(record.bytes>0&&record.bytes<=(record.parts?256:96)*1024**2))throw Error('잘못된 공간 정보입니다.');
   const modelBase=record.model.startsWith('studio/radiance-v06')?new URL('../',location.href):base;
-  const bytes=await downloadModel(new URL(record.model,modelBase),{bytes:record.bytes,parts:record.parts,onProgress:(n,total)=>status.textContent=downloadLabel(n,total)});
+  const modelURL=new URL(record.model,modelBase);modelURL.searchParams.set('v',record.sha256);
+  const bytes=await downloadModel(modelURL,{bytes:record.bytes,parts:record.parts,onProgress:(n,total)=>status.textContent=downloadLabel(n,total)});
   status.textContent='공간을 준비하는 중…';
   const sha=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');
   if(bytes.byteLength!==record.bytes||sha!==record.sha256)throw Error('공간 파일 검증에 실패했습니다.');
