@@ -26,3 +26,12 @@ test('pixel validation rejects lighting changes and accepts identical renders',(
  for(let i=0;i<actual.length;i+=4){actual[i]+=30;actual[i+1]+=30;actual[i+2]+=30;}
  const changed=comparePixels(actual,reference,16,16);assert.equal(changed.mae,30);assert.equal(changed.p95,30);assert.equal(changed.passed,false);
 });
+
+test('new camera contracts reject reflection caches that omit the exploration angles',()=>{
+ const d={...domain,exploration:{version:1,elevationLift:.14,yaw:.17},azimuthRange:[.53,.87],elevationRange:[.67,.84]};
+ const spec={schema:1,grid:[3,5],domain:d,displayTexture:0,display:{size:64}};
+ assert.doesNotThrow(()=>validateRadiance(spec));
+ assert.throws(()=>validateRadiance({...spec,grid:[1,5]}),/탐색 범위/);
+ assert.throws(()=>validateRadiance({...spec,domain:{...d,elevationRange:[.5,.7]}}),/탐색 범위/);
+ assert.throws(()=>validateRadiance({...spec,domain:{...d,azimuthRange:[.6,.8]}}),/탐색 범위/);
+});
