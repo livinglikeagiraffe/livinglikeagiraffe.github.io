@@ -23,3 +23,13 @@ test('truncated, oversized and wrong-range responses fail before model parsing',
     await assert.rejects(downloadModel('model',{bytes:31,chunkSize:7,retries:0,fetcher:async()=>new Response(data,{status:206,headers:{'Content-Range':range}})}));
   }
 });
+
+test('large model parts reconstruct losslessly and reject corrupt parts before parsing',async()=>{
+ const {createHash}=await import('node:crypto');const blocks=[new Uint8Array([1,2,3]),new Uint8Array([4,5])];
+ const parts=blocks.map((b,i)=>({name:`baked-part-00${i}.bin`,bytes:b.length,sha256:createHash('sha256').update(b).digest('hex')}));
+ const fetcher=async url=>new Response(blocks[Number(new URL(url).pathname.match(/00(\d)/)[1])],{status:200});
+ const result=await downloadModel('https://example.test/baked.glb?ref=commit',{bytes:5,parts,fetcher});
+ assert.deepEqual([...new Uint8Array(result)],[1,2,3,4,5]);
+ await assert.rejects(downloadModel('https://example.test/baked.glb',{bytes:5,parts:[{...parts[0],sha256:'0'.repeat(64)},parts[1]],fetcher}),/검증/);
+ await assert.rejects(downloadModel('https://example.test/baked.glb',{bytes:5,parts:[{...parts[0],name:'../secret'},parts[1]],fetcher}),/분할/);
+});

@@ -1,7 +1,19 @@
 // Bounded range requests survive slow connections without restarting the whole GLB.
 // Callers verify SHA-256 before parsing. No geometry or texture data is changed.
-export async function downloadModel(url,{bytes,headers={},onProgress=()=>{},fetcher=fetch,chunkSize=2*1024**2,concurrency=4,retries=2}={}){
-  if(!Number.isSafeInteger(bytes)||bytes<=0||bytes>96*1024**2)throw Error('잘못된 공간 파일 크기입니다.');
+export async function downloadModel(url,{bytes,headers={},onProgress=()=>{},fetcher=fetch,chunkSize=2*1024**2,concurrency=4,retries=2,parts}={}){
+  if(!Number.isSafeInteger(bytes)||bytes<=0||bytes>(parts?256:96)*1024**2)throw Error('잘못된 공간 파일 크기입니다.');
+  if(parts){
+    if(!Array.isArray(parts)||!parts.length||parts.length>16||parts.some((p,i)=>p.name!==`baked-part-${String(i).padStart(3,'0')}.bin`||!Number.isSafeInteger(p.bytes)||p.bytes<=0||p.bytes>16*1024**2||!/^[0-9a-f]{64}$/.test(p.sha256))||parts.reduce((n,p)=>n+p.bytes,0)!==bytes)throw Error('잘못된 공간 분할 파일입니다.');
+    const result=new Uint8Array(bytes);let offset=0;
+    for(const p of parts){
+      const address=new URL(p.name,url);address.search=new URL(url).search;
+      const data=await downloadModel(address,{bytes:p.bytes,headers,fetcher,chunkSize,concurrency,retries,onProgress:n=>onProgress(offset+n,bytes)});
+      const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',data)),v=>v.toString(16).padStart(2,'0')).join('');
+      if(hash!==p.sha256)throw Error('공간 분할 파일 검증에 실패했습니다.');
+      result.set(new Uint8Array(data),offset);offset+=p.bytes;
+    }
+    return result.buffer;
+  }
   const output=new Uint8Array(bytes),controller=new AbortController(),received=new Map();
   const progress=()=>onProgress([...received.values()].reduce((a,b)=>a+b,0),bytes);
   async function part(start,end,first=false){

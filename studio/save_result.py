@@ -14,7 +14,10 @@ def save_result(root,result,request,source_ref,url):
     atlases=[a['name'] for a in report.get('bake',{}).get('atlases',[])]
     pattern=r'(backdrop|(surfaces|module_[0-5]_[0-5])(_detail)?)(_p[01]){0,12}(_(albedo|normal|roughness|indirect|diffuse|view(?:[0-9]|1[0-4])))?\.png'
     if any(not re.fullmatch(pattern,name) for name in atlases):raise ValueError('Invalid atlas path')
-    names=['render.png','report.json']+(['baked.glb']+atlases if report.get('bake') else [])
+    parts=report.get('bake',{}).get('parts')
+    if parts:
+        if len(parts)>16 or any(p['name']!=f'baked-part-{i:03d}.bin' or not 0<p['bytes']<=16*1024**2 or not re.fullmatch(r'[0-9a-f]{64}',p['sha256']) for i,p in enumerate(parts)) or sum(p['bytes'] for p in parts)!=report['bake']['bytes']:raise ValueError('Invalid model parts')
+    names=['render.png','report.json']+(([p['name'] for p in parts] if parts else ['baked.glb'])+atlases if report.get('bake') else [])
     radiance=report.get('bake',{}).get('radianceVersion')==1
     validation=None
     if radiance:
@@ -42,6 +45,12 @@ def save_result(root,result,request,source_ref,url):
         if not source.is_file() or source.is_symlink() or source.stat().st_size>limit:raise ValueError('Invalid result file')
     if report.get('bake'):
         binary=(result/'baked.glb').read_bytes()
+        if len(binary)>(256 if parts else 96)*1024**2:raise ValueError('GLB exceeds size limit')
+        offset=0
+        for p in parts or []:
+            chunk=(result/p['name']).read_bytes()
+            if chunk!=binary[offset:offset+p['bytes']] or hashlib.sha256(chunk).hexdigest()!=p['sha256']:raise ValueError('Model part checksum mismatch')
+            offset+=p['bytes']
         if len(binary)!=report['bake']['bytes'] or hashlib.sha256(binary).hexdigest()!=report['bake']['sha256']:raise ValueError('GLB checksum mismatch')
     dest.mkdir(parents=True,exist_ok=True)
     for name in names:shutil.copyfile(result/name,dest/name)
@@ -61,6 +70,7 @@ def save_result(root,result,request,source_ref,url):
             public={'schema':1,'layoutId':report['layoutId'],'digest':report['layoutDigest'],'renderId':request,
                     'model':f'studio/renders/{request}/baked.glb','preview':f'studio/renders/{request}/render.png',
                     'sha256':report['bake']['sha256'],'bytes':report['bake']['bytes']}
+            if parts:public['parts']=parts
             if radiance:
                 public['views']=f'studio/renders/{request}/views.json'
             (root/('studio/radiance-scene.json' if radiance else 'studio/public-scene.json')).write_text(json.dumps(public,indent=2))

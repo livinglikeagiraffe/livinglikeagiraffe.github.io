@@ -70,6 +70,18 @@ class RadiancePublicationTests(unittest.TestCase):
     def test_reference_path_traversal_is_rejected(self):
         (self.result/'views.json').write_text(json.dumps({'schema':1,'views':[{'reference':'../../secret'}]*6}))
         with self.assertRaisesRegex(ValueError,'reference'):self.save()
+    def test_chunked_model_is_verified_and_published_without_large_glb(self):
+        chunks=[b'fix',b'ture'];parts=[]
+        for i,data in enumerate(chunks):
+            name=f'baked-part-{i:03d}.bin';(self.result/name).write_bytes(data)
+            parts.append({'name':name,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()})
+        self.report['bake']['parts']=parts
+        (self.result/'report.json').write_text(json.dumps(self.report));self.save()
+        dest=self.root/'studio/renders'/self.id
+        self.assertFalse((dest/'baked.glb').exists());self.assertEqual((dest/parts[1]['name']).read_bytes(),b'ture')
+        self.assertEqual(json.loads((self.root/'studio/radiance-scene.json').read_text())['parts'],parts)
+        (self.result/parts[1]['name']).write_bytes(b'fake')
+        with self.assertRaisesRegex(ValueError,'part checksum'):self.save()
     def test_new_contract_rejects_missing_corner_views(self):
         from camera_contract import EXPLORATION
         domain={'exploration':EXPLORATION}

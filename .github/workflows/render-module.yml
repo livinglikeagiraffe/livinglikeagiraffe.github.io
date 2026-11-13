@@ -133,6 +133,7 @@ jobs:
             ${{ runner.temp }}/render-output/validation.json
             ${{ runner.temp }}/render-output/baked.glb
             ${{ runner.temp }}/render-output/baked-source.glb
+            ${{ runner.temp }}/render-output/baked-part-*.bin
           if-no-files-found: error
           retention-days: 3
   save:

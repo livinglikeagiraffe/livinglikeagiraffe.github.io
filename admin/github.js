@@ -24,10 +24,10 @@ export async function browsePublic(repo){
   session={repo,token:''};
   try{const info=await request('');session.branch=info.default_branch;session.private=false;return connection();}catch(e){session=null;throw e;}
 }
-async function rawFile(path,ref,bytes){
+async function rawFile(path,ref,bytes,parts){
   const url=session.private?`${API}/repos/${session.repo}/contents/${encodePath(path)}?ref=${ref}`:`https://raw.githubusercontent.com/${session.repo}/${ref}/${encodePath(path)}`;
   const headers=session.private?{Authorization:`Bearer ${session.token}`,Accept:'application/vnd.github.raw+json'}:{};
-  if(bytes)return new Blob([await downloadModel(url,{bytes,headers})]);
+  if(bytes)return new Blob([await downloadModel(url,{bytes,headers,parts})]);
   const response=await fetch(url,{headers});
   if(!response.ok)throw Error(`파일을 읽지 못했습니다: ${path}`);
   return response.blob();
@@ -106,9 +106,9 @@ export async function refreshRender(version){
   return attachBake(updated,index,session.branch);
 }
 async function bakedFile(record,ref){
-  const limit=record?.report?.radianceVersion===1?96*1024**2:MAX_FILE;
+  const limit=record?.report?.radianceVersion===1?(record.report.parts?256:96)*1024**2:MAX_FILE;
   if(!record?.report||record.report.file!=='baked.glb'||!Number.isSafeInteger(record.report.bytes)||record.report.bytes<=0||record.report.bytes>limit||!/^[0-9a-f]{64}$/.test(record.report.sha256))throw Error('지원하지 않는 베이킹 결과입니다.');
-  const content=await rawFile(`studio/renders/${record.id}/baked.glb`,ref,record.report.bytes),digest=await crypto.subtle.digest('SHA-256',await content.arrayBuffer()),hash=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
+  const content=await rawFile(`studio/renders/${record.id}/baked.glb`,ref,record.report.bytes,record.report.parts),digest=await crypto.subtle.digest('SHA-256',await content.arrayBuffer()),hash=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
   if(content.size!==record.report.bytes||hash!==record.report.sha256)throw Error('베이킹 GLB 파일 검증에 실패했습니다.');return content;
 }
 async function attachBake(version,index,ref){

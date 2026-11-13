@@ -15,7 +15,7 @@ async function init(){
   const [metadata,response]=await Promise.all([fetch(new URL('report.json',base)),fetch(new URL('views.json',base))]);
   if(!metadata.ok||!response.ok)throw Error('검증 결과가 아직 준비되지 않았습니다.');
   const report=await metadata.json(),spec=await response.json();
-  const bytes=await downloadModel(new URL('baked.glb',base),{bytes:report.bake.bytes,onProgress:(n,total)=>status.textContent=downloadLabel(n,total)});
+  const bytes=await downloadModel(new URL('baked.glb',base),{bytes:report.bake.bytes,parts:report.bake.parts,onProgress:(n,total)=>status.textContent=downloadLabel(n,total)});
   const modelSha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
   if(modelSha256!==report.bake.sha256)throw Error('공간 파일 검증에 실패했습니다.');
   status.textContent='공간을 준비하는 중…';
