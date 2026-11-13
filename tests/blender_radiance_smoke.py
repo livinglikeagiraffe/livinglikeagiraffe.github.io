@@ -92,5 +92,5 @@ assert 'RADIANCE_REUSE surfaces' in diagnostics.getvalue(),diagnostics.getvalue(
 assert 'RADIANCE_DIFFUSE' not in diagnostics.getvalue(),diagnostics.getvalue()
 # Blender may rename evaluated mesh datablocks after reloading the source;
 # validate the final exported geometry visually, rather than hashing its names.
-(output/'report.json').write_text(json.dumps(reused,indent=2))
+(output/'report.json').write_text(json.dumps({'bake':reused},indent=2))
 print('RADIANCE_SMOKE_PASS',flush=True)
