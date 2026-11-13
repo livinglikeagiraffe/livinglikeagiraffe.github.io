@@ -17,6 +17,89 @@
       "mode": "bake",
       "sourceCommit": "8e036d3f7694cef1c41d8302101241246754b77b",
       "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/42012716854"
+    },
+    "7e655b0f-2336-51a0-bb0e-06beb6576f8a": {
+      "id": "3b0e9db7-852c-40f9-89bf-a178767b95b8",
+      "status": "complete",
+      "quality": "preview",
+      "scene": "01_Clay_Normal",
+      "mode": "radiance",
+      "sourceCommit": "05aeb1da4a814563170b0f70e416229dcaaf19d6",
+      "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/blob/main/studio/renders/3b0e9db7-852c-40f9-89bf-a178767b95b8/report.json",
+      "validation": {
+        "schema": 1,
+        "method": "RGB MAE/p95 and 8x8 luminance SSIM; same cameras and pixel sizes",
+        "limits": {
+          "mae": 6,
+          "p95": 24,
+          "ssim": 0.94,
+          "maxTileMAE": 18
+        },
+        "passed": true,
+        "views": [
+          {
+            "view": "authored",
+            "width": 990,
+            "height": 792,
+            "mae": 1.12134858687889,
+            "p95": 3,
+            "ssim": 0.9800435673023351,
+            "maxTileMAE": 6.869873046875,
+            "passed": true
+          },
+          {
+            "view": "left",
+            "width": 990,
+            "height": 792,
+            "mae": 1.5457334285617115,
+            "p95": 6,
+            "ssim": 0.9737231304756497,
+            "maxTileMAE": 6.717936197916667,
+            "passed": true
+          },
+          {
+            "view": "right",
+            "width": 990,
+            "height": 792,
+            "mae": 1.5304905111723293,
+            "p95": 6,
+            "ssim": 0.9753188307757689,
+            "maxTileMAE": 6.673502604166667,
+            "passed": true
+          },
+          {
+            "view": "near",
+            "width": 990,
+            "height": 792,
+            "mae": 2.5873584328129784,
+            "p95": 9,
+            "ssim": 0.9655646666429363,
+            "maxTileMAE": 7.664469401041667,
+            "passed": true
+          },
+          {
+            "view": "low",
+            "width": 990,
+            "height": 792,
+            "mae": 2.1366616501717512,
+            "p95": 8,
+            "ssim": 0.9685603783661104,
+            "maxTileMAE": 7.320882161458333,
+            "passed": true
+          },
+          {
+            "view": "heldout",
+            "width": 990,
+            "height": 792,
+            "mae": 1.9271154303982587,
+            "p95": 8,
+            "ssim": 0.9683045718037318,
+            "maxTileMAE": 6.5185546875,
+            "passed": true
+          }
+        ],
+        "modelSha256": "445b7c8d226f3fc4b919cf96aed531cb0fd9baa46525cacf8e71832e4a11cbb3"
+      }
     }
   },
   "bakes": {
@@ -28,6 +111,89 @@
       "mode": "bake",
       "sourceCommit": "8e036d3f7694cef1c41d8302101241246754b77b",
       "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/actions/runs/42012716854"
+    },
+    "7e655b0f-2336-51a0-bb0e-06beb6576f8a": {
+      "id": "3b0e9db7-852c-40f9-89bf-a178767b95b8",
+      "status": "complete",
+      "quality": "preview",
+      "scene": "01_Clay_Normal",
+      "mode": "radiance",
+      "sourceCommit": "05aeb1da4a814563170b0f70e416229dcaaf19d6",
+      "url": "https://github.com/livinglikeagiraffe/livinglikeagiraffe.github.io/blob/main/studio/renders/3b0e9db7-852c-40f9-89bf-a178767b95b8/report.json",
+      "validation": {
+        "schema": 1,
+        "method": "RGB MAE/p95 and 8x8 luminance SSIM; same cameras and pixel sizes",
+        "limits": {
+          "mae": 6,
+          "p95": 24,
+          "ssim": 0.94,
+          "maxTileMAE": 18
+        },
+        "passed": true,
+        "views": [
+          {
+            "view": "authored",
+            "width": 990,
+            "height": 792,
+            "mae": 1.12134858687889,
+            "p95": 3,
+            "ssim": 0.9800435673023351,
+            "maxTileMAE": 6.869873046875,
+            "passed": true
+          },
+          {
+            "view": "left",
+            "width": 990,
+            "height": 792,
+            "mae": 1.5457334285617115,
+            "p95": 6,
+            "ssim": 0.9737231304756497,
+            "maxTileMAE": 6.717936197916667,
+            "passed": true
+          },
+          {
+            "view": "right",
+            "width": 990,
+            "height": 792,
+            "mae": 1.5304905111723293,
+            "p95": 6,
+            "ssim": 0.9753188307757689,
+            "maxTileMAE": 6.673502604166667,
+            "passed": true
+          },
+          {
+            "view": "near",
+            "width": 990,
+            "height": 792,
+            "mae": 2.5873584328129784,
+            "p95": 9,
+            "ssim": 0.9655646666429363,
+            "maxTileMAE": 7.664469401041667,
+            "passed": true
+          },
+          {
+            "view": "low",
+            "width": 990,
+            "height": 792,
+            "mae": 2.1366616501717512,
+            "p95": 8,
+            "ssim": 0.9685603783661104,
+            "maxTileMAE": 7.320882161458333,
+            "passed": true
+          },
+          {
+            "view": "heldout",
+            "width": 990,
+            "height": 792,
+            "mae": 1.9271154303982587,
+            "p95": 8,
+            "ssim": 0.9683045718037318,
+            "maxTileMAE": 6.5185546875,
+            "passed": true
+          }
+        ],
+        "modelSha256": "445b7c8d226f3fc4b919cf96aed531cb0fd9baa46525cacf8e71832e4a11cbb3"
+      }
     }
   },
   "layouts": {

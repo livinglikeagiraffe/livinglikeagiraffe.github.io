@@ -137,3 +137,20 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 Blender: `blender --background --factory-startup --disable-autoexec --python-exit-code 1 --python studio/render.py -- --manifest studio/layouts/<id>.json --output <directory> --kind layout --mode radiance --quality preview`.
 
 작은 전송 검증 씬: `tests/blender_radiance_smoke.py`. 웹 검증은 `/clay/lab.html`의 ‘6시점 검증’ 버튼과 CI의 `tests/validate-radiance.mjs`가 같은 `clay/validation.js`를 사용합니다. 이전 `hybrid.py`, `bake.py` 방식은 과거 결과와의 호환을 위해 남아 있습니다.
+
+### v06 검증 결과 (2026-11-13)
+
+실제 v06 원본을 macOS arm64 / Blender 3.6.23에서 계산하고 브라우저 WebGL로 비교했습니다. 6개 시점 모두 기존 품질 기준을 통과했습니다. 원본 PNG와 원본 시점 웹 화면의 RGB MAE는 1.079/255입니다. 이는 동일도 백분율이 아닙니다.
+
+| 시점 | RGB MAE /255 | 휘도 SSIM | 최악 영역 MAE /255 |
+|---|---:|---:|---:|
+| authored | 1.121 | 0.9800 | 6.870 |
+| left | 1.546 | 0.9737 | 6.718 |
+| right | 1.530 | 0.9753 | 6.674 |
+| near | 2.587 | 0.9656 | 7.664 |
+| low | 2.137 | 0.9686 | 7.321 |
+| heldout | 1.927 | 0.9683 | 6.519 |
+
+문·의자·운동장 확대 비교는 `studio/radiance-v06/comparison-details.jpg`, 제작자 PNG 비교는 `comparison-original.jpg`, 원시 측정값은 `validation.json`과 `comparison-regions.json`에 있습니다. 최종 GLB는 75.18MiB·257,644 삼각형입니다. 57개 표면 묶음 중 방향 변화가 민감한 2개 묶음에만 5방향 반사를 사용합니다. 모바일 실제 기기의 메모리·속도는 아직 검증하지 않았습니다.
+
+기존 홈페이지·/v2/·기존 공개 공간 포인터와 원본 .blend는 변경하지 않았습니다. 자동 업로드/배치 워크플로는 생성한 회전·스케일·역방향 면 테스트 씬의 실제 Blender 계산 및 WebGL 비교로 검증했고, v06의 최초 검증 결과는 로컬 워커 실행 결과로 저장했습니다.

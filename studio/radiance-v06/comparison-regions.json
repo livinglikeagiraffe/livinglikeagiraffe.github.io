@@ -1,0 +1,50 @@
+[
+  {
+    "region": "Door spill \u00b7 near",
+    "view": "near",
+    "rectangle": [
+      60,
+      205,
+      290,
+      410
+    ],
+    "mae": 2.4033863556026867
+  },
+  {
+    "region": "Right doorway \u00b7 near",
+    "view": "near",
+    "rectangle": [
+      365,
+      200,
+      530,
+      345
+    ],
+    "mae": 4.255910832462557
+  },
+  {
+    "region": "Chair shadows \u00b7 near",
+    "view": "near",
+    "rectangle": [
+      530,
+      240,
+      870,
+      410
+    ],
+    "mae": 2.643275663206459
+  },
+  {
+    "region": "Red track shadows \u00b7 right",
+    "view": "right",
+    "rectangle": [
+      500,
+      315,
+      930,
+      570
+    ],
+    "mae": 1.5179723362213102
+  },
+  {
+    "region": "Author PNG, authored camera",
+    "mae": 1.0790795156956774
+  }
+]

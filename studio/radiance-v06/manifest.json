@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "model": "studio/radiance-v06/baked.glb",
+  "sha256": "445b7c8d226f3fc4b919cf96aed531cb0fd9baa46525cacf8e71832e4a11cbb3",
+  "bytes": 78826704,
+  "validation": "studio/radiance-v06/validation.json",
+  "sourceVersion": "7e655b0f-2336-51a0-bb0e-06beb6576f8a"
+}
