@@ -94,7 +94,7 @@ function updateImage(){
   const f=current?.files.find(f=>f.name===current.reference),blob=imageMode==='render'?current?.renderBlob:f?.blob;
   $('#comparison-image').hidden=!blob;$('#image-empty').hidden=Boolean(blob);$('#image-select').hidden=imageMode==='render';
   if(blob){imageURL=URL.createObjectURL(blob);$('#comparison-image').src=imageURL;}
-  $('#image-caption').textContent=imageMode==='render'?(blob?`${current.job?.quality==='original'?'원본 설정':'빠른 미리보기'} · Blender 결과`:'아직 원본 렌더가 없습니다.'):(f?.name||'참고 이미지가 아직 없습니다.');
+  $('#image-caption').textContent=imageMode==='render'?(blob?'Blender 결과':'아직 원본 렌더가 없습니다.'):(f?.name||'참고 이미지가 아직 없습니다.');
   $('#render-link').hidden=!current?.job?.url;if(current?.job?.url)$('#render-link').href=current.job.url;
 }
 async function importFiles(files){
