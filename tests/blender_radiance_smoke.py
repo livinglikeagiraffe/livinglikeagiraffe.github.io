@@ -14,7 +14,8 @@ scene=bpy.context.scene
 scene.render.engine='CYCLES'
 scene.render.resolution_x=500;scene.render.resolution_y=400;scene.render.resolution_percentage=100
 scene.render.threads_mode='FIXED';scene.render.threads=4
-cube=scene.objects['Cube'];cube.location.z=1
+cube=scene.objects['Cube'];cube.location=(.12345,.23456,1.34567)
+cube.rotation_euler=(.2,.3,.4);cube.scale=(1.12345,.98765,1.01234)
 material=bpy.data.materials.new('Clay');material.use_nodes=True
 material.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value=(.16,.35,.12,1)
 material.node_tree.nodes.get('Principled BSDF').inputs['Roughness'].default_value=.24
@@ -76,7 +77,17 @@ bpy.ops.wm.open_mainfile(filepath=str(blend),load_ui=False,use_scripts=False)
 resumed=bake_scene(bpy.context.scene,output,'preview',resolution_override=128,samples_override=16,checkpoint_source=identity)
 assert all((output/name).stat().st_mtime_ns==stamp for name,stamp in timestamps.items())
 assert resumed['triangles']==report['triangles']
+# Reusing an exported GLB must survive float rounding at UV seams, including
+# nontrivial object rotation and scale. Capture our Python diagnostics only.
+import io,contextlib
+(output/'report.json').write_text(json.dumps({'bake':resumed}))
+bpy.ops.wm.open_mainfile(filepath=str(blend),load_ui=False,use_scripts=False)
+diagnostics=io.StringIO()
+with contextlib.redirect_stdout(diagnostics):
+    reused=bake_scene(bpy.context.scene,output,'preview',resolution_override=128,samples_override=16,reuse_root=output)
+assert 'RADIANCE_REUSE surfaces' in diagnostics.getvalue(),diagnostics.getvalue()
+assert 'RADIANCE_DIFFUSE' not in diagnostics.getvalue(),diagnostics.getvalue()
 # Blender may rename evaluated mesh datablocks after reloading the source;
 # validate the final exported geometry visually, rather than hashing its names.
-(output/'report.json').write_text(json.dumps(resumed,indent=2))
+(output/'report.json').write_text(json.dumps(reused,indent=2))
 print('RADIANCE_SMOKE_PASS',flush=True)
