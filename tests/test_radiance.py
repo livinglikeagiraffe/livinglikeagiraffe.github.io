@@ -8,6 +8,7 @@ import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'studio'))
 from save_result import save_result
 from radiance import compact_geometry
+from save_failure import save_failure
 
 class RadianceGeometryTests(unittest.TestCase):
     def test_unused_normals_are_removed_without_changing_positions_or_uvs(self):
@@ -55,5 +56,11 @@ class RadiancePublicationTests(unittest.TestCase):
     def test_reference_path_traversal_is_rejected(self):
         (self.result/'views.json').write_text(json.dumps({'schema':1,'views':[{'reference':'../../secret'}]*6}))
         with self.assertRaisesRegex(ValueError,'reference'):self.save()
+    def test_conversion_diagnostic_never_changes_the_public_scene_or_catalog(self):
+        (self.result/'failure.json').write_text(json.dumps({'message':'Unsupported volume'}))
+        save_failure(self.root,self.result,self.id,'https://example.test/run')
+        self.assertEqual(json.loads((self.root/'studio/renders'/self.id/'failure.json').read_text())['message'],'Unsupported volume')
+        self.assertEqual((self.root/'studio/public-scene.json').read_text(),'old published scene')
+        self.assertFalse((self.root/'studio/render-index.json').exists())
 
 if __name__=='__main__':unittest.main()

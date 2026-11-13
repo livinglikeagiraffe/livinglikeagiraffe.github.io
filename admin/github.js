@@ -132,7 +132,10 @@ export async function renderStatus(job){
   const run=runs.workflow_runs.find(r=>r.display_title?.includes(job.id));
   if(!run)return {status:'queued'};
   if(run.status!=='completed')return {status:run.status,url:run.html_url};
-  if(run.conclusion!=='success')return {status:'failed',url:run.html_url,message:`렌더 작업이 ${run.conclusion} 상태로 종료되었습니다.`};
+  if(run.conclusion!=='success'){
+    const failure=await fileJSON(`studio/renders/${job.id}/failure.json`);
+    return {status:'failed',url:run.html_url,message:failure?.message||`렌더 작업이 ${run.conclusion} 상태로 종료되었습니다.`};
+  }
   const report=await fileJSON(`studio/renders/${job.id}/report.json`);
   const validation=report?.bake?.radianceVersion?await fileJSON(`studio/renders/${job.id}/validation.json`):null;
   const bake=report?.bake?{id:job.id,repo:session.repo,quality:report.quality,scene:report.scene,report:report.bake,webScene:report.webScene}:null;

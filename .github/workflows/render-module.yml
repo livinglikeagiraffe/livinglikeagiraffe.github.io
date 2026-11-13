@@ -126,6 +126,7 @@ jobs:
           retention-days: 3
   save:
     needs: render
+    if: always() && needs.render.result != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -135,6 +136,7 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: studio-render-${{ inputs.request_id }}
           path: result
@@ -149,16 +151,22 @@ jobs:
           SOURCE_REF: ${{ inputs.source_ref }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           BRANCH: ${{ github.event.repository.default_branch }}
+          RENDER_RESULT: ${{ needs.render.result }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           for attempt in 1 2 3; do
             git fetch origin "$BRANCH"
             git checkout -B studio-save "origin/$BRANCH"
-            python3 worker/studio/save_result.py
-            git add -- "studio/renders/$REQUEST_ID" studio/render-index.json
-            if [ -f studio/public-scene.json ]; then git add studio/public-scene.json; fi
-            if [ -f studio/radiance-scene.json ]; then git add studio/radiance-scene.json; fi
+            if [ "$RENDER_RESULT" = success ]; then
+              python3 worker/studio/save_result.py
+              git add -- "studio/renders/$REQUEST_ID" studio/render-index.json
+              if [ -f studio/public-scene.json ]; then git add studio/public-scene.json; fi
+              if [ -f studio/radiance-scene.json ]; then git add studio/radiance-scene.json; fi
+            else
+              python3 worker/studio/save_failure.py
+              git add -- "studio/renders/$REQUEST_ID/failure.json"
+            fi
             if git diff --cached --quiet; then exit 0; fi
             git commit -m "studio: save render $REQUEST_ID"
             git push origin "HEAD:$BRANCH" && exit 0

@@ -131,6 +131,8 @@ def preflight(scene):
     for mat in {m for o in scene.objects if o.type in {'MESH', 'CURVE', 'FONT', 'SURFACE'} for m in o.data.materials if m}:
         nodes(mat.node_tree)
         if mat.use_nodes:
+            if getattr(mat.cycles,'displacement_method','BUMP')!='BUMP' and any(n.type=='OUTPUT_MATERIAL' and n.inputs['Displacement'].is_linked for n in mat.node_tree.nodes):
+                errors.append('Convert render-time displacement into mesh geometry before export: '+mat.name)
             for node in mat.node_tree.nodes:
                 if node.type == 'BSDF_PRINCIPLED':
                     for name in ('Transmission', 'Transmission Weight', 'Alpha'):
