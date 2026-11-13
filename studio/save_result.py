@@ -35,7 +35,8 @@ def save_result(root,result,request,source_ref,url):
         names+=['validation.json']+[f'web-{name}.png' for name in sorted(expected)]
     for name in names:
         source=result/name
-        if not source.is_file() or source.is_symlink() or source.stat().st_size>=48*1024**2:raise ValueError('Invalid result file')
+        limit=(96 if radiance and name=='baked.glb' else 48)*1024**2
+        if not source.is_file() or source.is_symlink() or source.stat().st_size>limit:raise ValueError('Invalid result file')
     if report.get('bake'):
         binary=(result/'baked.glb').read_bytes()
         if len(binary)!=report['bake']['bytes'] or hashlib.sha256(binary).hexdigest()!=report['bake']['sha256']:raise ValueError('GLB checksum mismatch')

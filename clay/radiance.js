@@ -3,7 +3,7 @@ import {mergeGeometries} from '../node_modules/three/examples/jsm/utils/BufferGe
 
 export function validateRadiance(spec) {
   const finite = a => Array.isArray(a) && a.every(Number.isFinite);
-  if (spec?.schema!==1 || !['1,3','3,3'].includes(spec.grid?.join(',')) || !finite(spec.domain?.azimuthRange) || !finite(spec.domain?.elevationRange) ||
+  if (spec?.schema!==1 || !['1,3','1,5','3,3','3,5'].includes(spec.grid?.join(',')) || !finite(spec.domain?.azimuthRange) || !finite(spec.domain?.elevationRange) ||
       spec.domain.azimuthRange.length!==2 || spec.domain.elevationRange.length!==2 || spec.domain.azimuthRange[0]>=spec.domain.azimuthRange[1] ||
       spec.domain.elevationRange[0]>=spec.domain.elevationRange[1] || !Number.isInteger(spec.displayTexture) || spec.displayTexture<0 || spec.display?.size!==64)
     throw Error('지원하지 않는 방향별 조명 데이터입니다.');
@@ -20,7 +20,6 @@ export function radiancePlugin(parser) {
     const spec=parser.json.extras?.studioRadiance;
     if(!spec)return;
     validateRadiance(spec);
-    const columns=spec.grid[0],viewCount=columns*spec.grid[1];
     const getTexture=async index=>{
       if(!Number.isInteger(index)||index<0||index>=parser.json.textures.length)throw Error('잘못된 조명 텍스처입니다.');
       const t=(await parser.getDependency('texture',index)).clone();
@@ -31,6 +30,9 @@ export function radiancePlugin(parser) {
     for(let index=0;index<originals.length;index++){
       const info=parser.json.materials[index]?.extras?.studioRadiance;
       if(!info)continue;
+      const grid=info.grid||spec.grid;
+      if(!['1,3','1,5','3,3','3,5'].includes(grid.join(','))||grid[0]!==spec.grid[0]||grid[1]>spec.grid[1])throw Error('잘못된 재질 조명 격자입니다.');
+      const columns=grid[0],rows=grid[1],viewCount=columns*rows;
       if(info.schema!==1||info.views?.length!==viewCount)throw Error('방향별 조명 샘플이 누락되었습니다.');
       const maps=[info.diffuse,...info.views];
       if(maps.some(m=>!Number.isFinite(m.range)||m.range<=0||m.range>1e8))throw Error('잘못된 조명 범위입니다.');
@@ -60,7 +62,7 @@ export function radiancePlugin(parser) {
             float center=(azimuthRange.x+azimuthRange.y)*.5;
             az=center+atan(sin(az-center),cos(az-center));
             vec2 p=clamp(vec2(${columns===1?'0.':'(az-azimuthRange.x)/(azimuthRange.y-azimuthRange.x)'},
-                      (asin(clamp(direction.y,-1.,1.))-elevationRange.x)/(elevationRange.y-elevationRange.x)),0.,1.)*2.;
+                      (asin(clamp(direction.y,-1.,1.))-elevationRange.x)/(elevationRange.y-elevationRange.x)),0.,1.)*vec2(${(columns-1).toFixed(1)},${(rows-1).toFixed(1)});
             vec3 light=decode(diffuseCache,diffuseRange,diffuseSize);
             ${Array.from({length:viewCount},(_,i)=>`{float weight=max(0.,1.-abs(p.x-${(i%columns).toFixed(1)}))*max(0.,1.-abs(p.y-${Math.floor(i/columns).toFixed(1)}));if(weight>0.)light+=decode(cache${i},range${i},size${i})*weight;}`).join('\n')}
             gl_FragColor=vec4(light,1.);

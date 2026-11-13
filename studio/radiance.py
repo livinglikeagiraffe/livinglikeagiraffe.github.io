@@ -37,51 +37,90 @@ def uncovered_surfaces(objects, image):
     return missing
 
 
-def read_reuse(root, domain, grid, repaired):
-    """Reuse only verified files and byte-equivalent source geometry/UV pairs.
+def dense_reflections(objects):
+    """Use extra elevation samples for transparent or sharp reflective surfaces."""
+    seen=set()
+    def inspect(tree):
+        if not tree or tree in seen:return False
+        seen.add(tree)
+        for node in tree.nodes:
+            if node.type=='GROUP' and inspect(node.node_tree):return True
+            if node.type in {'BSDF_GLASS','BSDF_REFRACTION','BSDF_TRANSPARENT'}:return True
+            if node.type in {'BSDF_GLOSSY','BSDF_PRINCIPLED'}:
+                rough=node.inputs.get('Roughness')
+                if rough and (rough.is_linked or rough.default_value<.25):return True
+            if node.type=='BSDF_PRINCIPLED':
+                for name in ('Transmission','Transmission Weight','Alpha'):
+                    socket=node.inputs.get(name)
+                    if socket and (socket.is_linked or (socket.default_value<.99 if name=='Alpha' else socket.default_value>.01)):return True
+        return False
+    return any(inspect(m.node_tree) for obj in objects for m in obj.data.materials if m and m.use_nodes)
 
-    render.py additionally requires the same source manifest, scene and quality.
-    A fresh one-sample coverage bake still runs for every reused atlas.
+
+def read_reuse(root, domain, grid, repaired):
+    """Verify source identity in render.py and world geometry/UVs here.
+
+    Joined exports and individual meshes share the same canonical surface key.
+    Direction samples are reused by angle, never merely by array index.
     """
     import numpy as np
+    from mathutils import Matrix,Quaternion
     data=(root/'baked.glb').read_bytes();report=json.loads((root/'report.json').read_text())
     if hashlib.sha256(data).hexdigest()!=report['bake']['sha256']:raise ValueError('Reuse GLB checksum mismatch')
     n=struct.unpack_from('<I',data,12)[0];doc=json.loads(data[20:20+n]);blob=data[28+n:]
-    old=doc['extras']['studioRadiance']['domain']
-    same_directions=doc['extras']['studioRadiance']['grid']==grid and all(old[k]==domain[k] for k in ('azimuthRange','elevationRange'))
+    profile=doc['extras']['studioRadiance'];old=profile['domain']
+    same_domain=all(old[k]==domain[k] for k in ('azimuthRange','elevationRange'))
+    prior_repairs=set(report['bake'].get('normalRepairs',[]))
     def accessor(index):
-        a=doc['accessors'][index];v=doc['bufferViews'][a['bufferView']]
-        return np.ndarray((a['count'],{'VEC2':2,'VEC3':3}[a['type']]),dtype='<f4',buffer=blob,offset=v.get('byteOffset',0)+a.get('byteOffset',0),strides=(v.get('byteStride',{'VEC2':8,'VEC3':12}[a['type']]),4))
+        a=doc['accessors'][index];v=doc['bufferViews'][a['bufferView']];width={'VEC2':2,'VEC3':3}[a['type']]
+        return np.ndarray((a['count'],width),dtype='<f4',buffer=blob,offset=v.get('byteOffset',0)+a.get('byteOffset',0),strides=(v.get('byteStride',width*4),4))
     geometry={}
-    for node in doc['nodes']:
-        if 'mesh' not in node:continue
-        primitives=doc['meshes'][node['mesh']]['primitives']
-        if len(primitives)!=1:continue
-        p=primitives[0]
-        geometry[node['name']]=np.unique(np.round(np.concatenate([accessor(p['attributes']['POSITION']),accessor(p['attributes']['TEXCOORD_0'])],axis=1),5),axis=0)
+    def visit(index,parent):
+        node=doc['nodes'][index]
+        if 'matrix' in node:local=Matrix(np.array(node['matrix']).reshape(4,4).T.tolist())
+        else:
+            q=node.get('rotation',[0,0,0,1]);local=Matrix.Translation(node.get('translation',[0,0,0]))@Quaternion((q[3],*q[:3])).to_matrix().to_4x4()@Matrix.Diagonal((*node.get('scale',[1,1,1]),1))
+        matrix=parent@local;m=np.array(matrix)
+        for primitive in doc['meshes'][node['mesh']]['primitives'] if 'mesh' in node else []:
+            attrs=primitive['attributes'];points=accessor(attrs['POSITION'])@m[:3,:3].T+m[:3,3];uv=accessor(attrs['TEXCOORD_0'])
+            material=doc['materials'][primitive['material']]['name']
+            geometry.setdefault(material,[]).append(np.concatenate([points,uv],axis=1))
+        for child in node.get('children',[]):visit(child,matrix)
+    for index in doc['scenes'][doc.get('scene',0)]['nodes']:visit(index,Matrix.Identity(4))
+    def canonical(rows):
+        # Source hash is already exact; tolerate only export float precision.
+        rows=np.array(rows,dtype=np.float32);rows[:,:3]=np.round(rows[:,:3],4);rows[:,3:]=np.round(rows[:,3:],5)
+        return np.unique(rows,axis=0)
+    geometry={name:canonical(np.concatenate(parts)) for name,parts in geometry.items()}
     materials={m['name']:m.get('extras',{}).get('studioRadiance') for m in doc['materials']}
-    def reuse(name,objects,output):
-        if any(obj.name in repaired for obj in objects):return None
+    def reuse(name,objects,output,desired):
+        if any(obj.name in repaired-prior_repairs for obj in objects):return None
         info=materials.get('Radiance '+name)
         if not info:return None
+        pairs=[]
         for obj in objects:
             uv=obj.data.uv_layers[UV_NAME].data
-            pairs=[]
             for loop in obj.data.loops:
-                p=obj.data.vertices[loop.vertex_index].co;t=uv[loop.index].uv
+                p=obj.matrix_world@obj.data.vertices[loop.vertex_index].co;t=uv[loop.index].uv
                 pairs.append((p.x,p.z,-p.y,t.x,1-t.y))
-            current=np.unique(np.round(np.array(pairs,dtype=np.float32),5),axis=0)
-            previous=geometry.get(obj.name)
-            if previous is None or current.shape!=previous.shape or not np.allclose(current,previous,rtol=0,atol=2e-5):
-                print('RADIANCE_REUSE_UV_MISMATCH',name,obj.name,flush=True);return None
-        maps={}
-        for suffix,item in [('diffuse',info['diffuse'])]+([('view'+str(i),v) for i,v in enumerate(info['views'])] if same_directions else []):
+        current=canonical(pairs);previous=geometry.get('Radiance '+name)
+        if previous is None or current.shape!=previous.shape or not np.allclose(current,previous,rtol=0,atol=2e-4):
+            print('RADIANCE_REUSE_UV_MISMATCH',name,flush=True);return None
+        def extract(suffix,item,old_suffix):
             image=doc['images'][doc['textures'][item['texture']]['source']];view=doc['bufferViews'][image['bufferView']]
             encoded=blob[view.get('byteOffset',0):view.get('byteOffset',0)+view['byteLength']]
             path=output/(name+'_'+suffix+'.png');path.write_bytes(encoded)
-            maps[suffix]={'path':path,'range':item['range']}
-        entries=[a for a in report['bake']['atlases'] if a['name'] in {name+'_'+s+'.png' for s in maps}]
-        return {'diffuse':maps['diffuse'],'views':[maps['view'+str(i)] for i in range(grid[0]*grid[1])] if same_directions else []},entries
+            entry=next(a for a in report['bake']['atlases'] if a['name']==name+'_'+old_suffix+'.png')
+            return {'path':path,'range':item['range'],'entry':{**entry,'name':path.name,'kind':suffix}}
+        diffuse=extract('diffuse',info['diffuse'],'diffuse');views=[];old_grid=info.get('grid',profile['grid'])
+        for e in range(desired[1]):
+            for a in range(desired[0]):
+                old_e=e/(desired[1]-1)*(old_grid[1]-1)
+                old_a=0 if desired[0]==1 else a/(desired[0]-1)*(old_grid[0]-1)
+                exact=same_domain and old_grid[0]==desired[0] and abs(old_e-round(old_e))<1e-8 and abs(old_a-round(old_a))<1e-8
+                index=round(old_e)*old_grid[0]+round(old_a)
+                views.append(extract('view'+str(len(views)),info['views'][index],'view'+str(index)) if exact else None)
+        return {'diffuse':diffuse,'views':views,'grid':desired},[diffuse['entry']]
     return reuse
 
 
@@ -319,7 +358,7 @@ def embed(path, material_maps, metadata, lut):
         maps = material_maps.get(material.get('name'))
         if maps:
             material.setdefault('extras', {})['studioRadiance'] = {
-                'schema': VERSION, 'diffuse': {'texture': texture(maps['diffuse']['path']), 'range': maps['diffuse']['range']},
+                'schema': VERSION, 'grid':maps.get('grid',metadata['grid']), 'diffuse': {'texture': texture(maps['diffuse']['path']), 'range': maps['diffuse']['range']},
                 'views': [{'texture': texture(v['path']), 'range': v['range']} for v in maps['views']]}
     metadata = {**metadata, 'display': {k:v for k,v in lut.items() if k != 'path'}, 'displayTexture': texture(lut['path'])}
     doc.setdefault('extras', {})['studioRadiance'] = metadata
@@ -385,7 +424,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             bmesh.ops.reverse_faces(bm,faces=list(bm.faces));bm.to_mesh(obj.data);obj.data.update()
             repaired.append(obj.name)
         bm.free()
-    grid=[1,3] if scene.camera.data.type=='ORTHO' else [3,3]
+    grid=[1 if scene.camera.data.type=='ORTHO' else 3,5 if dense_reflections(meshes) else 3]
     checkpoint=None
     if checkpoint_source:
         from checkpoint import BakeCheckpoint
@@ -419,6 +458,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
     while cursor < len(groups):
         name, objects, _ = groups[cursor]
         cursor += 1
+        group_grid=[grid[0],5 if dense_reflections(objects) else 3]
         resolution = resolution_override or (1024 if '_detail' in name and quality=='preview' else 2048)
         if len(objects)>96 or (sum(len(o.data.polygons) for o in objects)>50000 and len(objects)>1):
             mid = len(objects)//2
@@ -487,7 +527,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             mid=len(objects)//2;groups[cursor:cursor]=[(name+'_p0',objects[:mid],resolution),(name+'_p1',objects[mid:],resolution)]
             print('RADIANCE_SPLIT_UNCOVERED',name,missing,flush=True)
             continue
-        cached=reuse(name,objects,output) if reuse else None
+        cached=reuse(name,objects,output,group_grid) if reuse else None
         geometry=hashlib.sha256()
         for obj in objects:
             geometry.update(obj.name.encode())
@@ -497,8 +537,8 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
         resumed=checkpoint.get(name,geometry,'diffuse') if checkpoint else None
         if resumed:
             cached=({'diffuse':resumed[0],'views':[]},[resumed[1]])
-        if cached and cached[0]['views']:
-            replace_later(name,objects,cached[0]);atlases.extend(cached[1]);bpy.data.images.remove(target)
+        if cached and cached[0]['views'] and all(cached[0]['views']):
+            replace_later(name,objects,cached[0]);atlases.extend(cached[1]+[v['entry'] for v in cached[0]['views']]);bpy.data.images.remove(target)
             print('RADIANCE_REUSE',name,flush=True)
             continue
         def bake(image, passes):
@@ -561,15 +601,18 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
         views = []
         size = resolution_override or min(resolution,512 if quality=='preview' else 1024)
         glossy = new_image(name+' glossy',size)
-        for e in range(grid[1]):
-            for a in range(grid[0]):
-                resumed=checkpoint.get(name,geometry,'view'+str(e*grid[0]+a)) if checkpoint else None
+        for e in range(group_grid[1]):
+            for a in range(group_grid[0]):
+                index=e*group_grid[0]+a
+                resumed=checkpoint.get(name,geometry,'view'+str(index)) if checkpoint else None
+                if not resumed and cached and cached[0]['views'] and cached[0]['views'][index]:
+                    item=cached[0]['views'][index];resumed=(item,item['entry'])
                 if resumed:
                     views.append(resumed[0]);atlases.append(resumed[1])
                     print('RADIANCE_VIEW_RESUMED',name,e*grid[0]+a,flush=True)
                     continue
                 az = domain['azimuth'] if grid[0]==1 else domain['azimuthRange'][0]+a/2*(domain['azimuthRange'][1]-domain['azimuthRange'][0])
-                el = domain['elevationRange'][0]+e/2*(domain['elevationRange'][1]-domain['elevationRange'][0])
+                el = domain['elevationRange'][0]+e/(group_grid[1]-1)*(domain['elevationRange'][1]-domain['elevationRange'][0])
                 direction = Vector((math.sin(az)*math.cos(el),-math.cos(az)*math.cos(el),math.sin(el)))
                 # Bake rays are effectively parallel. Runtime evaluates directions per fragment.
                 scene.camera.data.type = 'PERSP'
@@ -582,7 +625,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
         bpy.data.images.remove(glossy)
         scene.camera.matrix_world = source_matrix.copy()
         scene.camera.data.type = source_type
-        replace_later(name,objects,{'diffuse':diffuse,'views':views})
+        replace_later(name,objects,{'diffuse':diffuse,'views':views,'grid':group_grid})
     for objects,mat in replacements:
         bpy.ops.object.select_all(action='DESELECT')
         for obj in objects:
@@ -611,9 +654,9 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
     embed(path,maps,{'schema':VERSION,'domain':domain,'lighting':source,'grid':grid,
                     'warnings':audit['warnings'],'static':True},lut)
     data = path.read_bytes()
-    if len(data)>48*1024**2:
-        raise ValueError('Radiance GLB exceeds 48 MiB; split the scene or reduce atlas resolution.')
-    return {'schema':1,'radianceVersion':VERSION,'bakerVersion':9,'file':'baked.glb','bytes':len(data),'coverageThreshold':.002,
+    if len(data)>96*1024**2:
+        raise ValueError('Radiance GLB exceeds 96 MiB; split the scene or reduce atlas resolution.')
+    return {'schema':1,'radianceVersion':VERSION,'bakerVersion':10,'file':'baked.glb','bytes':len(data),'coverageThreshold':.002,
             'sha256':hashlib.sha256(data).hexdigest(),'samples':samples,'triangles':triangles,'atlases':atlases,
             'compatibility':audit,'domain':domain,'directionSamples':grid[0]*grid[1],'normalRepairs':repaired,'seconds':round(time.monotonic()-start,2),
             'limitations':['Static current frame','Bounded directional approximation; sharp reflections/transmission require denser sampling',

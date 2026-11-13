@@ -7,7 +7,7 @@ async function load(){
   let record;
   try{const r=await fetch(new URL('studio/radiance-scene.json',base),{cache:'no-store'});if(!r.ok)throw Error();record=await r.json();}
   catch{const r=await fetch('../studio/radiance-v06/manifest.json');if(!r.ok)throw Error('검증된 공간이 아직 없습니다.');record=await r.json();}
-  if(!/^studio\/(renders\/[0-9a-f-]{36}|radiance-v06)\/baked\.glb$/.test(record.model)||!/^[0-9a-f]{64}$/.test(record.sha256)||!(record.bytes>0&&record.bytes<=48*1024**2))throw Error('잘못된 공간 정보입니다.');
+  if(!/^studio\/(renders\/[0-9a-f-]{36}|radiance-v06)\/baked\.glb$/.test(record.model)||!/^[0-9a-f]{64}$/.test(record.sha256)||!(record.bytes>0&&record.bytes<=96*1024**2))throw Error('잘못된 공간 정보입니다.');
   const modelBase=record.model.startsWith('studio/radiance-v06')?new URL('../',location.href):base;
   const response=await fetch(new URL(record.model,modelBase));if(!response.ok)throw Error('공간 파일을 읽지 못했습니다.');const bytes=await response.arrayBuffer();
   const sha=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),n=>n.toString(16).padStart(2,'0')).join('');
