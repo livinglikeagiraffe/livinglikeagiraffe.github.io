@@ -98,18 +98,19 @@ def camera_domain(scene, objects):
     out = -forward
     azimuth = math.atan2(out.x, -out.y)
     elevation = math.asin(out.z)
+    up = camera.matrix_world.to_quaternion() @ Vector((0,1,0))
     # The public rig never orbits. The azimuth interval covers perspective rays.
     return {'azimuth': azimuth, 'elevation': elevation,
             'azimuthRange': [azimuth-math.radians(30), azimuth+math.radians(30)],
-            'elevationRange': [max(.08, elevation-math.radians(24)), min(1.48, elevation+math.radians(18))],
-            'tilt': math.radians(10), 'pan': .22, 'zoomMax': 2.2,
+            'elevationRange': [max(-1.56, elevation-math.radians(24)), min(1.56, elevation+math.radians(18))],
+            'tilt': min(math.radians(10),max(0,elevation-.08)), 'pan': .22, 'zoomMax': 2.2,
             'span': max(high.x-low.x, high.y-low.y, 1), 'distance': distance,
-            'target': [target.x, target.z, -target.y], 'projection': camera.data.type}
+            'target': [target.x, target.z, -target.y], 'up':[up.x,up.z,-up.y], 'projection': camera.data.type}
 
 
 def render_views(scene, output, domain, samples=64):
     import bpy
-    from mathutils import Vector
+    from mathutils import Vector,Matrix
     from render import web_scene
     camera = scene.camera
     matrix, data = camera.matrix_world.copy(), camera.data.copy()
@@ -117,6 +118,7 @@ def render_views(scene, output, domain, samples=64):
                 scene.render.filepath, scene.cycles.samples)
     target = Vector((domain['target'][0], -domain['target'][2], domain['target'][1]))
     right = matrix.to_quaternion() @ Vector((1, 0, 0))
+    source_up = matrix.to_quaternion() @ Vector((0,1,0))
     across = Vector((-right.y, right.x, 0))
     # Includes held-out positions/elevations, not just the baked sample directions.
     poses = [('authored', 0, 0, 0), ('left', -.18, 0, .35), ('right', .18, 0, .35),
@@ -131,7 +133,8 @@ def render_views(scene, output, domain, samples=64):
                 azimuth = domain['azimuth']
                 direction = Vector((math.sin(azimuth)*math.cos(elevation), -math.cos(azimuth)*math.cos(elevation), math.sin(elevation)))
                 camera.location = focus + direction*domain['distance']*(1-.08*zoom)
-                camera.rotation_euler = (-direction).to_track_quat('-Z','Y').to_euler()
+                camera_right=source_up.cross(direction).normalized()
+                camera.rotation_euler=Matrix((camera_right,direction.cross(camera_right),direction)).transposed().to_euler()
             camera.data.ortho_scale = data.ortho_scale/(1+(domain['zoomMax']-1)*zoom)
             camera.data.lens = data.lens*(1+(domain['zoomMax']-1)*zoom)
             scene.render.resolution_x, scene.render.resolution_y = settings[:2]
@@ -180,18 +183,56 @@ def make_lut(scene, output, size=64):
     return {'path': path, 'size': size, 'shaper': 'log2(1+16*x)/16', 'origin': 'bottom-left'}
 
 
+def compact_geometry(doc, blob):
+    """Losslessly discard attributes unused by the radiance shader."""
+    primitives=[p for mesh in doc.get('meshes',[]) for p in mesh['primitives']]
+    if doc.get('skins') or doc.get('animations') or any(p.get('targets') or p.get('extensions') for p in primitives):
+        return blob
+    used=set()
+    for primitive in primitives:
+        primitive['attributes']={k:v for k,v in primitive['attributes'].items() if k in {'POSITION','TEXCOORD_0'}}
+        used.update(primitive['attributes'].values())
+        if 'indices' in primitive:used.add(primitive['indices'])
+    indices={old:new for new,old in enumerate(sorted(used))}
+    doc['accessors']=[doc['accessors'][old] for old in sorted(used)]
+    for primitive in primitives:
+        primitive['attributes']={k:indices[v] for k,v in primitive['attributes'].items()}
+        if 'indices' in primitive:primitive['indices']=indices[primitive['indices']]
+    views={a['bufferView'] for a in doc['accessors'] if 'bufferView' in a}
+    views.update(i['bufferView'] for i in doc.get('images',[]) if 'bufferView' in i)
+    if any(a.get('sparse') for a in doc['accessors']):
+        for a in doc['accessors']:
+            for entry in a.get('sparse',{}).values():
+                if isinstance(entry,dict) and 'bufferView' in entry:views.add(entry['bufferView'])
+    mapping={old:new for new,old in enumerate(sorted(views))};packed=bytearray();new_views=[]
+    for old in sorted(views):
+        view=dict(doc['bufferViews'][old]);start=view.get('byteOffset',0)
+        packed.extend(b'\0'*(-len(packed)%4));view['byteOffset']=len(packed)
+        packed.extend(blob[start:start+view['byteLength']]);new_views.append(view)
+    for a in doc['accessors']:
+        if 'bufferView' in a:a['bufferView']=mapping[a['bufferView']]
+        for entry in a.get('sparse',{}).values():
+            if isinstance(entry,dict) and 'bufferView' in entry:entry['bufferView']=mapping[entry['bufferView']]
+    for image in doc.get('images',[]):
+        if 'bufferView' in image:image['bufferView']=mapping[image['bufferView']]
+    doc['bufferViews']=new_views
+    return packed
+
+
 def embed(path, material_maps, metadata, lut):
     binary = path.read_bytes()
     length = struct.unpack_from('<I', binary, 12)[0]
     doc = json.loads(binary[20:20+length])
     blob = bytearray(binary[28+length:])
+    blob = compact_geometry(doc,blob)
     cache = {}
     def texture(file):
         file = Path(file)
-        if file in cache:
-            return cache[file]
-        blob.extend(b'\0'*(-len(blob)%4))
         data = file.read_bytes()
+        digest=hashlib.sha256(data).digest()
+        if digest in cache:
+            return cache[digest]
+        blob.extend(b'\0'*(-len(blob)%4))
         view = len(doc.setdefault('bufferViews', []))
         doc['bufferViews'].append({'buffer': 0, 'byteOffset': len(blob), 'byteLength': len(data)})
         blob.extend(data)
@@ -199,7 +240,7 @@ def embed(path, material_maps, metadata, lut):
         doc['images'].append({'bufferView': view, 'mimeType': 'image/png'})
         index = len(doc.setdefault('textures', []))
         doc['textures'].append({'source': image})
-        cache[file] = index
+        cache[digest] = index
         return index
     for material in doc.get('materials', []):
         maps = material_maps.get(material.get('name'))
@@ -359,10 +400,12 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             pad_bake_images([clean],radius=6,coverage=coverage)
             clean.pixels.foreach_get(values)
             encoded, scale = encode_rgbm(values.reshape(size,size,4))
+            if np.all(encoded==encoded[0,0]):
+                encoded=encoded[:1,:1]
             write_png(path,encoded)
             bpy.data.images.remove(clean)
             linear.unlink()
-            atlases.append({'name':path.name,'width':size,'height':size,'kind':suffix,'objects':len(objects)})
+            atlases.append({'name':path.name,'width':encoded.shape[1],'height':encoded.shape[0],'kind':suffix,'objects':len(objects)})
             return {'path':path,'range':scale}
         print('RADIANCE_DIFFUSE',name,len(objects),resolution,flush=True)
         scene.camera.matrix_world = source_matrix.copy()

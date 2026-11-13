@@ -52,7 +52,7 @@ export class RadianceViewer {
   }
   zoomBy(delta){this.fixed=false;this.zoom=THREE.MathUtils.clamp(this.zoom+delta,0,1);this.pose();}
   reset(){this.fixed=false;this.zoom=0;this.pan.set(0,0);this.pose();}
-  pose(){if(!this.profile)return;const p=domainPose(this.profile.domain,this.zoom,this.pan.toArray());this.camera.position.copy(p.position);this.camera.lookAt(p.target);this.camera.zoom=p.zoom;this.camera.updateMatrixWorld();this.resize();}
+  pose(){if(!this.profile)return;const p=domainPose(this.profile.domain,this.zoom,this.pan.toArray());this.camera.position.copy(p.position);this.camera.up.fromArray(this.profile.domain.up||[0,1,0]);this.camera.lookAt(p.target);this.camera.zoom=p.zoom;this.camera.updateMatrixWorld();this.resize();}
   setView(record){this.fixed=true;this.camera=cameraFromRecord(record.camera||record);this.resize();}
   resize(){if(!this.camera||!this.host.clientWidth||!this.host.clientHeight)return;
     const w=this.host.clientWidth,h=this.host.clientHeight;this.renderer.setSize(w,h);

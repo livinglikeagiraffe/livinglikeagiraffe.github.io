@@ -7,6 +7,18 @@ import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'studio'))
 from save_result import save_result
+from radiance import compact_geometry
+
+class RadianceGeometryTests(unittest.TestCase):
+    def test_unused_normals_are_removed_without_changing_positions_or_uvs(self):
+        doc={'meshes':[{'primitives':[{'attributes':{'POSITION':0,'NORMAL':1,'TEXCOORD_0':2},'indices':3}]}],
+             'accessors':[{'bufferView':i} for i in range(4)],
+             'bufferViews':[{'buffer':0,'byteOffset':i*4,'byteLength':4} for i in range(5)],
+             'images':[{'bufferView':4}]}
+        packed=compact_geometry(doc,bytearray(b'POSINORMTEXCINDXIMAG'))
+        self.assertEqual(packed,b'POSITEXCINDXIMAG')
+        self.assertEqual(doc['meshes'][0]['primitives'][0],{'attributes':{'POSITION':0,'TEXCOORD_0':1},'indices':2})
+        self.assertEqual(doc['images'][0]['bufferView'],3)
 
 class RadiancePublicationTests(unittest.TestCase):
     def setUp(self):

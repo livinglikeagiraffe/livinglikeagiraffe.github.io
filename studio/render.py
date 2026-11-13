@@ -143,6 +143,12 @@ def main():
             missing.append(image.filepath)
     if missing:
         raise ValueError('Pack external assets into the .blend: ' + ', '.join(missing))
+    if args.mode=='radiance':
+        from radiance import preflight
+        audit=preflight(scene)
+        (args.output/'compatibility.json').write_text(json.dumps(audit,ensure_ascii=False,indent=2))
+        if audit['errors']:
+            raise ValueError('\n'.join(audit['errors']))
     original = {'engine': scene.render.engine, 'width': scene.render.resolution_x,
                 'height': scene.render.resolution_y, 'percentage': scene.render.resolution_percentage,
                 'samples': scene.cycles.samples if scene.render.engine == 'CYCLES' else None,

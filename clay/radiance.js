@@ -35,19 +35,19 @@ export function radiancePlugin(parser) {
       if(maps.some(m=>!Number.isFinite(m.range)||m.range<=0||m.range>1e8))throw Error('잘못된 조명 범위입니다.');
       const textures=await Promise.all(maps.map(m=>getTexture(m.texture)));
       const uniforms={diffuseCache:{value:textures[0]},diffuseRange:{value:info.diffuse.range},
-        diffuseSize:{value:new THREE.Vector2(textures[0].image.width,textures[0].image.height)},viewSize:{value:new THREE.Vector2(textures[1].image.width,textures[1].image.height)},
+        diffuseSize:{value:new THREE.Vector2(textures[0].image.width,textures[0].image.height)},
         radianceDirection:{value:new THREE.Vector3()},radianceEye:{value:new THREE.Vector3()},radianceOrtho:{value:true},
         azimuthRange:{value:new THREE.Vector2(...spec.domain.azimuthRange)},elevationRange:{value:new THREE.Vector2(...spec.domain.elevationRange)}};
-      for(let i=0;i<9;i++){uniforms['cache'+i]={value:textures[i+1]};uniforms['range'+i]={value:info.views[i].range};}
+      for(let i=0;i<9;i++){uniforms['cache'+i]={value:textures[i+1]};uniforms['range'+i]={value:info.views[i].range};uniforms['size'+i]={value:new THREE.Vector2(textures[i+1].image.width,textures[i+1].image.height)};}
       const material=new THREE.ShaderMaterial({uniforms,side:THREE.DoubleSide,toneMapped:false,
         vertexShader:`varying vec2 cacheUV; varying vec3 cachePosition;
           void main(){cacheUV=uv;cachePosition=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
         fragmentShader:`precision highp float;
           varying vec2 cacheUV; varying vec3 cachePosition;
-          uniform sampler2D diffuseCache; uniform float diffuseRange;uniform vec2 diffuseSize,viewSize;
+          uniform sampler2D diffuseCache; uniform float diffuseRange;uniform vec2 diffuseSize;
           uniform vec3 radianceDirection,radianceEye; uniform bool radianceOrtho;
           uniform vec2 azimuthRange,elevationRange;
-          ${Array.from({length:9},(_,i)=>`uniform sampler2D cache${i}; uniform float range${i};`).join('\n')}
+          ${Array.from({length:9},(_,i)=>`uniform sampler2D cache${i}; uniform float range${i}; uniform vec2 size${i};`).join('\n')}
           vec3 texel(sampler2D tex,vec2 p,float range){vec4 v=texture2D(tex,p);return v.rgb*v.a*range;}
           vec3 decode(sampler2D tex,float range,vec2 size){
             vec2 p=clamp(cacheUV,vec2(0.),vec2(1.))*size-.5,f=fract(p),a=(floor(p)+.5)/size,b=a+1./size;
@@ -61,7 +61,7 @@ export function radiancePlugin(parser) {
             vec2 p=clamp(vec2((az-azimuthRange.x)/(azimuthRange.y-azimuthRange.x),
                       (asin(clamp(direction.y,-1.,1.))-elevationRange.x)/(elevationRange.y-elevationRange.x)),0.,1.)*2.;
             vec3 light=decode(diffuseCache,diffuseRange,diffuseSize);
-            ${Array.from({length:9},(_,i)=>`{float weight=max(0.,1.-abs(p.x-${(i%3).toFixed(1)}))*max(0.,1.-abs(p.y-${Math.floor(i/3).toFixed(1)}));if(weight>0.)light+=decode(cache${i},range${i},viewSize)*weight;}`).join('\n')}
+            ${Array.from({length:9},(_,i)=>`{float weight=max(0.,1.-abs(p.x-${(i%3).toFixed(1)}))*max(0.,1.-abs(p.y-${Math.floor(i/3).toFixed(1)}));if(weight>0.)light+=decode(cache${i},range${i},size${i})*weight;}`).join('\n')}
             gl_FragColor=vec4(light,1.);
           }`});
       material.name=originals[index].name;material.userData.studioRadiance=true;
