@@ -29,7 +29,7 @@ export class LayoutBakeUI{
     if(build&&!valid)message='변경됨 · 저장 필요';
     else if(this.job?.status==='failed')message=this.job.message||'실패 · 로그 확인';
     else if(this.job&&!['complete','failed'].includes(this.job.status))message='간접광 베이킹 중…';
-    else if(ready && this.result.report.bake?.radianceVersion)message=this.result.validation?.passed?'완료 · 6시점 검증 통과':'품질 검증 미달 · 공개 보류';
+    else if(ready && this.result.report.bake?.radianceVersion)message=this.result.validation?.passed?'완료 · 이동 범위 검증 통과':'품질 검증 미달 · 공개 보류';
     else if(ready && this.result.report.bake?.webBake?.surfaces)message=`완료 · WebBake 표면 ${this.result.report.bake.webBake.surfaces}개`;
     else if(ready)message=this.result.report.bake?.hybridVersion?'완료 · 간접광 적용':'완료 · 고정 조명';
     else if(build)message='배치 저장됨';

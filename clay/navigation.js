@@ -17,13 +17,13 @@ export class Navigation {
   move(x,y){this.velocity=[0,0];this.target=[clamp(this.target[0]+x,-this.limit,this.limit),clamp(this.target[1]+y,-this.limit,this.limit)];}
   zoomBy(delta){this.targetZoom=clamp(this.targetZoom+delta,0,1);}
   step(seconds,reduced=false){
-    const dt=Math.min(Math.max(seconds,0),.05),decay=Math.exp(-dt/.18);
+    const dt=Math.min(Math.max(seconds,0),.05),decay=Math.exp(-dt/.09);
     if(!this.dragging&&!reduced)for(let i=0;i<2;i++){
-      const next=this.target[i]+this.velocity[i]*.18*(1-decay);
+      const next=this.target[i]+this.velocity[i]*.09*(1-decay);
       this.target[i]=clamp(next,-this.limit,this.limit);
       this.velocity[i]=next===this.target[i]?this.velocity[i]*decay:0;
     }
-    const alpha=reduced?1:1-Math.exp(-dt/(this.dragging?.055:.11));
+    const alpha=reduced?1:1-Math.exp(-dt/(this.dragging?.055:.065));
     for(let i=0;i<2;i++)this.pan[i]+=(this.target[i]-this.pan[i])*alpha;
     this.zoom+=(this.targetZoom-this.zoom)*(reduced?1:1-Math.exp(-dt/.12));
     if(reduced)this.velocity=[0,0];

@@ -62,7 +62,7 @@ export class RadianceViewer {
   zoomBy(delta){if(!this.profile)return;this.fixed=false;this.navigation.zoomBy(delta);this.animate();}
   animate(){if(this.frame||!this.profile||this.fixed)return;this.previousFrame=performance.now();const tick=now=>{this.frame=0;if(this.fixed)return;const active=this.navigation.step((now-this.previousFrame)/1000,this.reduced.matches);this.previousFrame=now;this.pose();if(active)this.frame=requestAnimationFrame(tick);};this.frame=requestAnimationFrame(tick);}
   reset(){cancelAnimationFrame(this.frame);this.frame=0;this.fixed=false;this.navigation.reset();this.pose();}
-  pose(){if(!this.profile)return;const p=domainPose(this.profile.domain,this.navigation.zoom,this.navigation.pan,EXPLORATION);this.camera.position.copy(p.position);this.camera.up.set(0,1,0);this.camera.lookAt(p.target);this.camera.zoom=p.zoom;this.camera.updateMatrixWorld();this.resize();}
+  pose(){if(!this.profile)return;const p=domainPose(this.profile.domain,this.navigation.zoom,this.navigation.pan,this.profile.domain.exploration||EXPLORATION);this.camera.position.copy(p.position);this.camera.up.set(0,1,0);this.camera.lookAt(p.target);this.camera.zoom=p.zoom;this.camera.updateMatrixWorld();this.resize();}
   setView(record){cancelAnimationFrame(this.frame);this.frame=0;this.fixed=true;this.navigation.end(false);this.camera=cameraFromRecord(record.camera||record);this.resize();}
   resize(){if(!this.camera||!this.host.clientWidth||!this.host.clientHeight)return;
     const w=this.host.clientWidth,h=this.host.clientHeight,size=this.renderer.getSize(this.renderSize??=new THREE.Vector2());if(size.x!==w||size.y!==h)this.renderer.setSize(w,h);

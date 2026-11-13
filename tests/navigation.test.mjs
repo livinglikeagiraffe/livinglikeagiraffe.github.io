@@ -22,3 +22,18 @@ test('cancel and reduced motion eliminate inertia; zoom stays bounded',()=>{
  n.zoomBy(99);n.step(1/60,true);assert.equal(n.zoom,1);n.zoomBy(-99);n.step(1/60,true);assert.equal(n.zoom,0);
  n.begin();n.drag(.02,0,.01);n.end();n.step(1/60,true);assert.equal(n.pan[0],.05);assert.equal(n.step(1/60,true),false);
 });
+
+test('release loses 95 percent of speed within 300ms',()=>{
+ const n=new Navigation();n.begin();n.drag(.01,0,.1);n.end();const initial=n.velocity[0];
+ for(let i=0;i<18;i++)n.step(1/60);
+ assert.ok(n.velocity[0]<initial*.05);assert.ok(n.pan[0]<.02);
+});
+
+test('Blender reference positions match the web rig across full navigation bounds',async()=>{
+ const {execFileSync}=await import('node:child_process');
+ const fixtures=JSON.parse(execFileSync('python3',['-c',`import sys,json;sys.path.insert(0,'studio');from camera_contract import pose,reference_poses,EXPLORATION;d=json.loads(sys.argv[1]);d['exploration']=EXPLORATION;print(json.dumps([{'pan':[x,y],'zoom':t,'pose':pose(d,t,(x,y))} for name,x,y,t in reference_poses(d) if name!='authored']))`,JSON.stringify(domain)],{encoding:'utf8'}));
+ for(const f of fixtures){const actual=domainPose(domain,f.zoom,f.pan,EXPLORATION);
+  assert.ok(actual.position.distanceTo({x:f.pose.position[0],y:f.pose.position[1],z:f.pose.position[2]})<1e-10);
+  assert.ok(actual.target.toArray().every((v,i)=>Math.abs(v-f.pose.target[i])<1e-10));assert.equal(actual.zoom,f.pose.zoom);
+ }
+});

@@ -74,6 +74,7 @@ await copy('studio/web_bake.py');
 await copy('studio/save_result.py');
 await copy('studio/save_failure.py');
 await copy('studio/radiance.py');
+await copy('studio/camera_contract.py');
 await copy('studio/checkpoint.py');
 // Include a verified v06 fallback; ongoing uploads are read from the repository.
 try { await stat(path.join(root,'studio/radiance-v06/manifest.json')); await directory('studio/radiance-v06'); }

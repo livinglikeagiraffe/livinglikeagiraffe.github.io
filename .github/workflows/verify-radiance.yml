@@ -33,7 +33,7 @@ jobs:
       - name: Bake a generated source scene
         run: |
           BLENDER_THREADS=4 "$RUNNER_TEMP/blender/blender" --background --factory-startup --disable-autoexec --python-exit-code 1 --python tests/blender_radiance_smoke.py
-      - name: Compare six actual WebGL views
+      - name: Compare navigation-range WebGL views
         run: |
           node scripts/optimize-result.mjs .source-assets/radiance-smoke
           npm install --no-save --package-lock=false playwright@1.56.1

@@ -14,6 +14,8 @@ from pathlib import Path
 from bake import UV_NAME, atlas_groups, unwrap_objects, pad_bake_images, save_denoised
 from hybrid import bake_log, encode_rgbm, write_png
 
+from camera_contract import set_ranges, pose, reference_poses
+
 VERSION = 1
 
 
@@ -210,16 +212,15 @@ def camera_domain(scene, objects):
     azimuth = math.atan2(out.x, -out.y)
     elevation = math.asin(out.z)
     up = camera.matrix_world.to_quaternion() @ Vector((0,1,0))
-    # The public rig never orbits. The azimuth interval covers perspective rays.
+    # The exported domain also drives the public camera; no independent rig offsets.
     domain = {'azimuth': azimuth, 'elevation': elevation,
             'azimuthRange': [azimuth-math.radians(30), azimuth+math.radians(30)],
             'elevationRange': [max(-1.56, elevation-math.radians(24)), min(1.56, elevation+math.radians(18))],
             'tilt': min(math.radians(10),max(0,elevation-.08)), 'pan': .22, 'zoomMax': 2.2,
             'span': max(high.x-low.x, high.y-low.y, 1), 'distance': distance,
             'target': [target.x, target.z, -target.y], 'up':[up.x,up.z,-up.y], 'projection': camera.data.type}
-    if camera.data.type=='ORTHO':
-        domain['elevationRange']=[elevation-max(domain['tilt'],.01),elevation]
-    return domain
+    corners=[(p.x,p.z,-p.y) for o in objects for p in [o.matrix_world@Vector(c) for c in o.bound_box]]
+    return set_ranges(domain,corners)
 
 
 def render_views(scene, output, domain, samples=64):
@@ -230,24 +231,17 @@ def render_views(scene, output, domain, samples=64):
     matrix, data = camera.matrix_world.copy(), camera.data.copy()
     settings = (scene.render.resolution_x, scene.render.resolution_y, scene.render.resolution_percentage,
                 scene.render.filepath, scene.cycles.samples)
-    target = Vector((domain['target'][0], -domain['target'][2], domain['target'][1]))
-    right = matrix.to_quaternion() @ Vector((1, 0, 0))
-    source_up = matrix.to_quaternion() @ Vector((0,1,0))
-    across = Vector((-right.y, right.x, 0))
-    # Includes held-out positions/elevations, not just the baked sample directions.
-    poses = [('authored', 0, 0, 0), ('left', -.18, 0, .35), ('right', .18, 0, .35),
-             ('near', 0, 0, 1), ('low', .10, .08, .75), ('heldout', -.07, -.06, .57)]
+    poses = reference_poses(domain)
     views = []
     try:
         for name, x, y, zoom in poses:
             camera.matrix_world = matrix.copy()
-            if zoom or x or y:
-                focus = target + (right*x + across*y)*domain['span']
-                elevation = domain['elevation'] - domain['tilt']*zoom
-                azimuth = domain['azimuth']
-                direction = Vector((math.sin(azimuth)*math.cos(elevation), -math.cos(azimuth)*math.cos(elevation), math.sin(elevation)))
-                camera.location = focus + direction*domain['distance']*(1-.08*zoom)
-                camera_right=source_up.cross(direction).normalized()
+            if name != 'authored':
+                p = pose(domain, zoom, (x,y))
+                camera.location = Vector((p['position'][0],-p['position'][2],p['position'][1]))
+                focus = Vector((p['target'][0],-p['target'][2],p['target'][1]))
+                direction = (camera.location-focus).normalized()
+                camera_right=Vector((0,0,1)).cross(direction).normalized()
                 camera.rotation_euler=Matrix((camera_right,direction.cross(camera_right),direction)).transposed().to_euler()
             camera.data.ortho_scale = data.ortho_scale/(1+(domain['zoomMax']-1)*zoom)
             camera.data.lens = data.lens*(1+(domain['zoomMax']-1)*zoom)
@@ -426,12 +420,12 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             bmesh.ops.reverse_faces(bm,faces=list(bm.faces));bm.to_mesh(obj.data);obj.data.update()
             repaired.append(obj.name)
         bm.free()
-    grid=[1 if scene.camera.data.type=='ORTHO' else 3,5 if dense_reflections(meshes) else 3]
+    grid=[3,5 if dense_reflections(meshes) else 3]
     checkpoint=None
     if checkpoint_source:
         from checkpoint import BakeCheckpoint
         identity=hashlib.sha256(json.dumps([checkpoint_source,quality,whole_space,resolution_override,samples_override,domain,grid,repaired],sort_keys=True).encode())
-        for filename in ('radiance.py','bake.py','hybrid.py','render.py','compose.py','checkpoint.py'):
+        for filename in ('radiance.py','bake.py','hybrid.py','render.py','compose.py','checkpoint.py','camera_contract.py'):
             identity.update(Path(__file__).with_name(filename).read_bytes())
         checkpoint=BakeCheckpoint(output,identity.hexdigest())
     reuse=read_reuse(reuse_root,domain,grid,set(repaired)) if reuse_root else None
@@ -613,7 +607,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
                     views.append(resumed[0]);atlases.append(resumed[1])
                     print('RADIANCE_VIEW_RESUMED',name,e*grid[0]+a,flush=True)
                     continue
-                az = domain['azimuth'] if grid[0]==1 else domain['azimuthRange'][0]+a/2*(domain['azimuthRange'][1]-domain['azimuthRange'][0])
+                az = domain['azimuthRange'][0]+a/(group_grid[0]-1)*(domain['azimuthRange'][1]-domain['azimuthRange'][0])
                 el = domain['elevationRange'][0]+e/(group_grid[1]-1)*(domain['elevationRange'][1]-domain['elevationRange'][0])
                 direction = Vector((math.sin(az)*math.cos(el),-math.cos(az)*math.cos(el),math.sin(el)))
                 # Bake rays are effectively parallel. Runtime evaluates directions per fragment.
@@ -656,9 +650,9 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
     embed(path,maps,{'schema':VERSION,'domain':domain,'lighting':source,'grid':grid,
                     'warnings':audit['warnings'],'static':True},lut)
     data = path.read_bytes()
-    if len(data)>96*1024**2:
-        raise ValueError('Radiance GLB exceeds 96 MiB; split the scene or reduce atlas resolution.')
-    return {'schema':1,'radianceVersion':VERSION,'bakerVersion':10,'file':'baked.glb','bytes':len(data),'coverageThreshold':.002,
+    if len(data)>512*1024**2:
+        raise ValueError('Uncompressed radiance GLB exceeds 512 MiB; split the scene or reduce atlas resolution.')
+    return {'schema':1,'radianceVersion':VERSION,'bakerVersion':11,'file':'baked.glb','bytes':len(data),'coverageThreshold':.002,
             'sha256':hashlib.sha256(data).hexdigest(),'samples':samples,'triangles':triangles,'atlases':atlases,
             'compatibility':audit,'domain':domain,'directionSamples':grid[0]*grid[1],'normalRepairs':repaired,'seconds':round(time.monotonic()-start,2),
             'limitations':['Static current frame','Bounded directional approximation; sharp reflections/transmission require denser sampling',

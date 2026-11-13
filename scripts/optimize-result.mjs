@@ -6,6 +6,7 @@ const reportPath=path.join(directory,'report.json'),report=JSON.parse(await read
 if(report.bake?.radianceVersion!==1)throw Error('Expected radiance result');
 const model=path.join(directory,'baked.glb'),original=await readFile(model);
 const {output,report:optimization}=await optimizeGLB(original);
+if(output.length>96*1024**2)throw Error('Optimized GLB exceeds 96 MiB; split the scene or reduce atlas resolution.');
 // Keep the uncompressed output in the workflow artifact as well as the source .blend.
 await writeFile(path.join(directory,'baked-source.glb'),original,{flag:'wx'});
 await writeFile(model+'.tmp',output);await rename(model+'.tmp',model);

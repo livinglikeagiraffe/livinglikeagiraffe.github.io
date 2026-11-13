@@ -70,6 +70,14 @@ class RadiancePublicationTests(unittest.TestCase):
     def test_reference_path_traversal_is_rejected(self):
         (self.result/'views.json').write_text(json.dumps({'schema':1,'views':[{'reference':'../../secret'}]*6}))
         with self.assertRaisesRegex(ValueError,'reference'):self.save()
+    def test_new_contract_rejects_missing_corner_views(self):
+        from camera_contract import EXPLORATION
+        domain={'exploration':EXPLORATION}
+        self.report['bake']['domain']=domain
+        (self.result/'report.json').write_text(json.dumps(self.report))
+        views=json.loads((self.result/'views.json').read_text());views['domain']=domain
+        (self.result/'views.json').write_text(json.dumps(views))
+        with self.assertRaisesRegex(ValueError,'multi-view'):self.save()
     def test_conversion_diagnostic_never_changes_the_public_scene_or_catalog(self):
         (self.result/'failure.json').write_text(json.dumps({'message':'Unsupported volume'}))
         save_failure(self.root,self.result,self.id,'https://example.test/run')
@@ -78,3 +86,14 @@ class RadiancePublicationTests(unittest.TestCase):
         self.assertFalse((self.root/'studio/render-index.json').exists())
 
 if __name__=='__main__':unittest.main()
+
+class CameraContractTests(unittest.TestCase):
+    def test_orthographic_cache_covers_every_navigation_direction(self):
+        from camera_contract import set_ranges,pose,reference_poses,VIEW_IDS
+        d=set_ranges({'azimuth':.7,'elevation':.7,'tilt':.17,'pan':.22,'zoomMax':2.2,'span':40,'distance':100,'target':[1,0,2],'projection':'ORTHO'},[])
+        self.assertEqual(tuple(p[0] for p in reference_poses(d)),VIEW_IDS)
+        for x in range(11):
+            for z in range(11):
+                p=pose(d,z/10,((x/5-1)*d['pan'],.22))
+                for key in ('azimuth','elevation'):
+                    self.assertGreaterEqual(p[key]+1e-12,d[key+'Range'][0]);self.assertLessEqual(p[key]-1e-12,d[key+'Range'][1])

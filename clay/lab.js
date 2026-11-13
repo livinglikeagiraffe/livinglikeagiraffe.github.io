@@ -20,7 +20,7 @@ async function init(){
   if(modelSha256!==report.bake.sha256)throw Error('공간 파일 검증에 실패했습니다.');
   status.textContent='공간을 준비하는 중…';
   await viewer.load(bytes);
-  const labels={authored:'원본 시점',left:'왼쪽',right:'오른쪽',near:'근접',low:'낮은 시점',heldout:'중간 시점'};
+  const labels={authored:'원본 시점',left:'왼쪽',right:'오른쪽',near:'근접',low:'낮은 시점',heldout:'중간 시점',start:'탐색 시작','far-nw':'최소 줌 · 좌상','far-ne':'최소 줌 · 우상','far-sw':'최소 줌 · 좌하','far-se':'최소 줌 · 우하','near-nw':'최대 줌 · 좌상','near-ne':'최대 줌 · 우상','near-sw':'최대 줌 · 좌하','near-se':'최대 줌 · 우하'};
   for(const view of spec.views){const option=document.createElement('option');option.value=view.id;option.textContent=labels[view.id]||view.id;select.append(option);}
   const show=()=>{const view=spec.views.find(v=>v.id===select.value);host.classList.remove('explore');reference.hidden=false;host.style.aspectRatio=`${view.width}/${view.height}`;reference.style.aspectRatio=host.style.aspectRatio;reference.querySelector('img').src=new URL(view.reference,base);viewer.canvas.style.pointerEvents='none';viewer.canvas.tabIndex=-1;viewer.setView(view);document.querySelector('#label').textContent='웹 3D / Blender';};
   select.onchange=()=>{status.hidden=true;show();};select.value=params.get('view')||'authored';show();
@@ -39,7 +39,7 @@ async function init(){
       const result=await validateViews(viewer,spec,base,r=>status.textContent=`${r.view}: MAE ${r.mae.toFixed(2)}, SSIM ${r.ssim.toFixed(3)}`);
       result.report.modelSha256=modelSha256;
       const node=document.createElement('script');node.type='application/json';node.id='validation-result';node.textContent=JSON.stringify(result);document.querySelector('#validation-result')?.remove();document.body.append(node);
-      status.textContent=result.report.passed?'6개 시점 통과':'일부 시점 기준 미달 · 검증 결과 확인';
+      status.textContent=result.report.passed?`${spec.views.length}개 시점 통과`:'일부 시점 기준 미달 · 검증 결과 확인';
       const download=document.querySelector('#report-download');download.hidden=false;download.onclick=()=>{
         const files={'validation.json':strToU8(JSON.stringify(result.report,null,2))};
         for(const capture of result.captures)files['web-'+capture.id+'.png']=Uint8Array.from(atob(capture.png.split(',')[1]),c=>c.charCodeAt(0));

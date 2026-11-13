@@ -122,7 +122,7 @@ $('#save-version').onclick=()=>action(async()=>{
   await storage.saveVersion(version);versions=await storage.get('versions');await selectVersion(version);notice(conn?'GitHub에 새 버전을 저장했습니다.':'이 브라우저에 새 버전을 저장했습니다. GitHub 연결 후 저장하면 저장소에도 기록됩니다.');
   if(conn&&version.blend&&!keepRender&&$('#bake-with-render').checked){
     const quality=$('#render-quality').value,job=await github.renderRemote(version,quality,scene,'radiance');
-    current.job={...job,status:'queued',quality};await storage.saveVersion(current);notice('저장됨 · 조명 계산과 6시점 검증 대기');pollRender();
+    current.job={...job,status:'queued',quality};await storage.saveVersion(current);notice('저장됨 · 조명 계산과 이동 범위 검증 대기');pollRender();
   }
 });
 $('#new-module').onclick=()=>{current=null;$('#module-title').value='이름 없는 공간';$('#module-target').value='';$('#upload-input').click();updateButtons();};

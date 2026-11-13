@@ -11,6 +11,7 @@ export function validateRadiance(spec) {
   if(!finite(d.target)||d.target.length!==3||!['azimuth','elevation','tilt','pan','zoomMax','span','distance'].every(k=>Number.isFinite(d[k]))||
      d.span<=0||d.distance<=0||d.pan<0||d.pan>1||d.zoomMax<1||d.zoomMax>4||d.tilt<0||d.tilt>.6)
     throw Error('잘못된 카메라 이동 범위입니다.');
+  if(d.exploration&&(d.exploration.version!==1||!['elevationLift','yaw'].every(k=>Number.isFinite(d.exploration[k])&&Math.abs(d.exploration[k])<=.6)))throw Error('잘못된 탐색 카메라 규격입니다.');
 }
 
 // Directional radiance uses original world coordinates. An inverse model matrix

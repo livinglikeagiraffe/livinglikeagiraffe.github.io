@@ -9,7 +9,7 @@ try{
  const page=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1});
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(url);await page.locator('#status').waitFor({state:'hidden',timeout:180000});
- await page.getByRole('button',{name:'6시점 검증',exact:true}).click();
+ await page.getByRole('button',{name:'이동 범위 검증',exact:true}).click();
  await page.locator('#validation-result').waitFor({state:'attached',timeout:600000});
  const result=JSON.parse(await page.locator('#validation-result').textContent());
  result.report.errors=errors;result.report.passed&&=errors.length===0;

@@ -72,7 +72,7 @@ print('RADIANCE_COMPOSITION_PASS',flush=True)
 output=root/'.source-assets/radiance-smoke';output.mkdir(parents=True,exist_ok=True)
 identity=hashlib.sha256(binary).hexdigest()
 report=bake_scene(scene,output,'preview',resolution_override=128,samples_override=16,checkpoint_source=identity)
-assert report['radianceVersion']==1 and report['directionSamples']==5
+assert report['radianceVersion']==1 and report['directionSamples']==15
 assert 'Cube' in report['normalRepairs']
 # A restarted worker must use checked pixels instead of recomputing them.
 timestamps={a['name']:(output/a['name']).stat().st_mtime_ns for a in report['atlases']}

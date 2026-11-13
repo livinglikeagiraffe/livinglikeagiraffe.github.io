@@ -5,6 +5,7 @@ import re
 import shutil
 import uuid
 from pathlib import Path
+from camera_contract import LEGACY_VIEWS, VIEW_IDS
 
 
 def save_result(root,result,request,source_ref,url):
@@ -21,16 +22,18 @@ def save_result(root,result,request,source_ref,url):
         if not compatibility.get('supported') or compatibility.get('errors'):
             raise ValueError('Unsupported scene cannot publish a radiance result')
         views=json.loads((result/'views.json').read_text())
-        if views.get('schema')!=1 or len(views.get('views',[]))!=6:
+        domain=report['bake'].get('domain',{})
+        expected=set(VIEW_IDS if domain.get('exploration') else LEGACY_VIEWS)
+        if domain.get('exploration') and views.get('domain')!=domain:raise ValueError('Reference camera domain mismatch')
+        if views.get('schema')!=1 or len(views.get('views',[]))!=len(expected):
             raise ValueError('Missing multi-view references')
         references=[v['reference'] for v in views['views']]
-        if set(references)!={f'reference-{n}.png' for n in ('authored','left','right','near','low','heldout')}:
+        if set(references)!={f'reference-{n}.png' for n in expected}:
             raise ValueError('Invalid reference paths')
         names+=['views.json','compatibility.json','radiance-display.png']+references
         validation=json.loads((result/'validation.json').read_text())
-        expected={'authored','left','right','near','low','heldout'}
         if (validation.get('schema')!=1 or validation.get('modelSha256')!=report['bake']['sha256'] or
-                {v.get('view') for v in validation.get('views',[])}!=expected or len(validation['views'])!=6):
+                {v.get('view') for v in validation.get('views',[])}!=expected or len(validation['views'])!=len(expected)):
             raise ValueError('Invalid web validation record')
         names+=['validation.json']+[f'web-{name}.png' for name in sorted(expected)]
     for name in names:

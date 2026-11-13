@@ -30,6 +30,10 @@ on:
         type: choice
         options: [module, layout]
         default: module
+      reuse_render:
+        description: Optional prior raw radiance result UUID; exact source identity is verified
+        type: string
+        default: ''
       scene:
         description: Scene name, or empty for authored active scene
         type: string
@@ -60,11 +64,13 @@ jobs:
           SOURCE_REF: ${{ inputs.source_ref }}
           REQUEST_ID: ${{ inputs.request_id }}
           KIND: ${{ inputs.kind }}
+          REUSE_RENDER: ${{ inputs.reuse_render }}
         run: |
           python3 - <<'PY'
           import os, re, uuid
           assert re.fullmatch(r'[0-9a-f]{40}', os.environ['SOURCE_REF'])
           uuid.UUID(os.environ['REQUEST_ID'])
+          if os.environ.get('REUSE_RENDER'):uuid.UUID(os.environ['REUSE_RENDER'])
           kind=os.environ['KIND'] or 'module'
           assert kind in ('module','layout')
           pattern=r'studio/layouts/[0-9a-f-]{36}\.json' if kind=='layout' else r'studio/modules/[0-9a-f-]{36}/versions/[0-9a-f-]{36}/manifest\.json'
@@ -89,13 +95,16 @@ jobs:
           SCENE: ${{ inputs.scene }}
           MODE: ${{ inputs.mode }}
           KIND: ${{ inputs.kind }}
+          REUSE_RENDER: ${{ inputs.reuse_render }}
         run: |
           mkdir -p "$RUNNER_TEMP/render-output" "$RUNNER_TEMP/blender-home"
+          reuse=()
+          if [ -n "$REUSE_RENDER" ]; then reuse=(--reuse-radiance "input/studio/renders/$REUSE_RENDER"); fi
           env -i PATH="$PATH" HOME="$RUNNER_TEMP/blender-home" BLENDER_THREADS=4 \
             "$RUNNER_TEMP/blender/blender" --background --factory-startup --disable-autoexec \
             --python-exit-code 1 --python worker/studio/render.py -- \
-            --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE" --mode "${MODE:-render}" --kind "${KIND:-module}"
-      - name: Validate six real WebGL views against Cycles
+            --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE" --mode "${MODE:-render}" --kind "${KIND:-module}" "${reuse[@]}"
+      - name: Validate navigation range against Cycles
         if: inputs.mode == 'radiance'
         env:
           RESULT: ${{ runner.temp }}/render-output
