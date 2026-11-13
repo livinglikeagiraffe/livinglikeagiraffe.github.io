@@ -7,9 +7,20 @@ import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'studio'))
 from save_result import save_result
-from radiance import compact_geometry
+from radiance import compact_geometry,reflection_sample_count,reflection_reuse_allowed
 from save_failure import save_failure
 from checkpoint import BakeCheckpoint
+
+class ReflectionQualityTests(unittest.TestCase):
+    def test_sensitive_surfaces_get_more_samples_without_slowing_explicit_fixtures(self):
+        self.assertEqual(reflection_sample_count(128,False),128)
+        self.assertEqual(reflection_sample_count(128,True),512)
+        self.assertEqual(reflection_sample_count(1024,True),1024)
+        self.assertEqual(reflection_sample_count(16,True,16),16)
+    def test_lower_quality_direction_cache_is_not_reused_for_refinement(self):
+        self.assertFalse(reflection_reuse_allowed({'samples':128},'glass',512))
+        self.assertTrue(reflection_reuse_allowed({'samples':128},'clay',128))
+        self.assertTrue(reflection_reuse_allowed({'samples':128,'reflectionSamples':{'glass':512}},'glass',512))
 
 class BakeCheckpointTests(unittest.TestCase):
     def test_changed_inputs_uvs_or_corrupt_pixels_are_never_reused(self):
