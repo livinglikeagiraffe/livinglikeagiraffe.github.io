@@ -23,6 +23,27 @@ export function cameraFromRecord(record){
   camera.updateMatrixWorld();return camera;
 }
 
+export function explorationProjection(record,aspect,zoom){
+  const matrix=new THREE.Matrix4().fromArray(record.projection),fit=Math.max(1,record.aspect/aspect),sx=record.aspect/aspect/fit,sy=1/fit,e=matrix.elements;
+  // Lens/sensor shift is a fraction of the frame, not of the focal length.
+  for(const index of [0,4])e[index]*=sx*zoom;
+  for(const index of [1,5])e[index]*=sy*zoom;
+  for(const index of [8,12])e[index]*=sx;
+  for(const index of [9,13])e[index]*=sy;
+  return matrix;
+}
+
+export function navigationCameraAgreement(profile,view){
+  const record=profile.lighting.camera,p=domainPose(profile.domain,view.zoom,view.pan,profile.domain.exploration||EXPLORATION);
+  const actual=cameraFromRecord(record),expected=cameraFromRecord(view.camera);
+  actual.position.copy(p.position);actual.up.set(0,1,0);actual.lookAt(p.target);actual.updateMatrixWorld();
+  actual.projectionMatrix.copy(explorationProjection(record,view.camera.aspect,p.zoom));
+  const positionError=actual.position.distanceTo(expected.position),positionRelative=positionError/Math.max(1,profile.domain.span,profile.domain.distance);
+  const orientationError=Math.max(...[0,1,2,4,5,6,8,9,10].map(i=>Math.abs(actual.matrixWorld.elements[i]-expected.matrixWorld.elements[i])));
+  const projectionError=Math.max(...actual.projectionMatrix.elements.map((v,i)=>Math.abs(v-expected.projectionMatrix.elements[i])));
+  return {positionError,positionRelative,orientationError,projectionError,passed:positionRelative<1e-5&&orientationError<1e-5&&projectionError<1e-5};
+}
+
 export class RadianceViewer {
   constructor(host){
     this.host=host;this.scene=new THREE.Scene();this.renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,powerPreference:'high-performance'});
@@ -71,10 +92,7 @@ export class RadianceViewer {
       else {this.camera.aspect=aspect;this.camera.fov=THREE.MathUtils.radToDeg(2*Math.atan(Math.tan(record.fov/2)*Math.max(1,record.aspect/aspect)));}
       this.camera.updateProjectionMatrix();
       if(record.projection?.length===16){
-        this.camera.projectionMatrix.fromArray(record.projection);
-        const fit=Math.max(1,record.aspect/aspect),sx=this.camera.zoom*record.aspect/aspect/fit,sy=this.camera.zoom/fit,e=this.camera.projectionMatrix.elements;
-        for(const index of [0,4,8,12])e[index]*=sx;
-        for(const index of [1,5,9,13])e[index]*=sy;
+        this.camera.projectionMatrix.copy(explorationProjection(record,aspect,this.camera.zoom));
         this.camera.projectionMatrixInverse.copy(this.camera.projectionMatrix).invert();
       }
     }

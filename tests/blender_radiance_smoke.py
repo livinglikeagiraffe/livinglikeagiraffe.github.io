@@ -25,7 +25,7 @@ plane=bpy.context.object;plane.name='Background';plane.data.materials.append(mat
 plane.data.materials[0].node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value=(.4,.35,.3,1)
 plane.data.materials[0].node_tree.nodes.get('Principled BSDF').inputs['Roughness'].default_value=.5
 scene.objects['Light'].data.type='AREA';scene.objects['Light'].data.size=3;scene.objects['Light'].data.energy=800
-camera=scene.camera;camera.data.type='ORTHO';camera.data.ortho_scale=9;camera.location=(6,-8,6)
+camera=scene.camera;camera.data.shift_x=.07;camera.data.shift_y=-.03;camera.data.type='ORTHO';camera.data.ortho_scale=9;camera.location=(6,-8,6)
 camera.rotation_euler=(Vector((0,0,.7))-camera.location).to_track_quat('-Z','Y').to_euler()
 # Regression: camera renders a reversed closed mesh normally while bake rays
 # would enter its interior and produce black surfaces without normalization.

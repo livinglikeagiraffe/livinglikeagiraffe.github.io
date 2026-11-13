@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {domainPose,cameraFromRecord} from '../clay/radiance-viewer.js';
+import {domainPose,cameraFromRecord,explorationProjection} from '../clay/radiance-viewer.js';
 import {validateRadiance} from '../clay/radiance.js';
 import {comparePixels} from '../clay/validation.js';
 
@@ -34,4 +34,11 @@ test('new camera contracts reject reflection caches that omit the exploration an
  assert.throws(()=>validateRadiance({...spec,grid:[1,5]}),/탐색 범위/);
  assert.throws(()=>validateRadiance({...spec,domain:{...d,elevationRange:[.5,.7]}}),/탐색 범위/);
  assert.throws(()=>validateRadiance({...spec,domain:{...d,azimuthRange:[.6,.8]}}),/탐색 범위/);
+});
+
+test('zoom scales the lens but preserves the authored principal point',()=>{
+ const projection=[2,0,0,0,0,3,0,0,.12,-.08,-1,-1,.14,-.06,-.2,0];
+ const result=explorationProjection({aspect:1.25,projection},1.25,2).elements;
+ assert.equal(result[0],4);assert.equal(result[5],6);
+ for(const i of [8,9,12,13])assert.equal(result[i],projection[i]);
 });

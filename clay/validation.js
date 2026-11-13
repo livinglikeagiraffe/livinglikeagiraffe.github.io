@@ -1,3 +1,4 @@
+import {navigationCameraAgreement} from './radiance-viewer.js';
 // Same pixel comparison runs in the studio, local lab, and the trusted CI browser.
 export const QUALITY_LIMITS={mae:6,p95:24,ssim:.94,maxTileMAE:18};
 export function comparePixels(actual,reference,width,height){
@@ -34,6 +35,7 @@ export async function validateViews(viewer,spec,base,onProgress=()=>{}){
       context.drawImage(viewer.canvas,0,0);
       const actual=context.getImageData(0,0,canvas.width,canvas.height).data;
       const result={view:view.id,width:canvas.width,height:canvas.height,...comparePixels(actual,expected,canvas.width,canvas.height)};
+      if(spec.domain?.exploration&&view.id!=='authored'){result.cameraAgreement=navigationCameraAgreement(viewer.profile,view);result.passed&&=result.cameraAgreement.passed;}
       result.reflectionRegions=(view.reflectionRegions||[]).map(region=>{
         const {x,y,width,height}=region;
         if(![x,y,width,height].every(Number.isInteger)||x<0||y<0||width<1||height<1||x+width>canvas.width||y+height>canvas.height)throw Error('잘못된 반사 비교 영역');
@@ -43,7 +45,7 @@ export async function validateViews(viewer,spec,base,onProgress=()=>{}){
       results.push(result);captures.push({id:view.id,png:canvas.toDataURL('image/png')});reference.close();onProgress(result);
       await new Promise(resolve=>requestAnimationFrame(resolve));
     }
-    return {report:{schema:1,method:'RGB MAE/p95 and 8x8 luminance SSIM; same cameras and pixel sizes',limits:QUALITY_LIMITS,
+    return {report:{schema:1,method:'RGB MAE/p95 and 8x8 luminance SSIM; same cameras and pixel sizes',cameraMethod:'Runtime navigation position, orientation and projection compared with Blender',limits:QUALITY_LIMITS,
       passed:results.every(r=>r.passed),views:results},captures};
   }finally{viewer.renderer.setPixelRatio(originalRatio);viewer.resize();}
 }
