@@ -103,7 +103,8 @@ export async function refreshRender(version){
   return attachBake(updated,index,session.branch);
 }
 async function bakedFile(record,ref){
-  if(!record?.report||record.report.file!=='baked.glb'||record.report.bytes>MAX_FILE||!/^[0-9a-f]{64}$/.test(record.report.sha256))throw Error('지원하지 않는 베이킹 결과입니다.');
+  const limit=record?.report?.radianceVersion===1?96*1024**2:MAX_FILE;
+  if(!record?.report||record.report.file!=='baked.glb'||!Number.isSafeInteger(record.report.bytes)||record.report.bytes<=0||record.report.bytes>limit||!/^[0-9a-f]{64}$/.test(record.report.sha256))throw Error('지원하지 않는 베이킹 결과입니다.');
   const content=await rawFile(`studio/renders/${record.id}/baked.glb`,ref),digest=await crypto.subtle.digest('SHA-256',await content.arrayBuffer()),hash=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
   if(content.size!==record.report.bytes||hash!==record.report.sha256)throw Error('베이킹 GLB 파일 검증에 실패했습니다.');return content;
 }
