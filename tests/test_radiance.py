@@ -9,6 +9,20 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'studio'))
 from save_result import save_result
 from radiance import compact_geometry
 from save_failure import save_failure
+from checkpoint import BakeCheckpoint
+
+class BakeCheckpointTests(unittest.TestCase):
+    def test_changed_inputs_uvs_or_corrupt_pixels_are_never_reused(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);path=root/'surfaces_diffuse.png';path.write_bytes(b'pixels')
+            cache=BakeCheckpoint(root,'source-and-worker-hash')
+            cache.put('surfaces','uv-hash','diffuse',{'path':path,'range':8},{'name':path.name})
+            resumed=BakeCheckpoint(root,'source-and-worker-hash')
+            self.assertEqual(resumed.get('surfaces','uv-hash','diffuse')[0]['range'],8)
+            self.assertIsNone(resumed.get('surfaces','different-uvs','diffuse'))
+            self.assertIsNone(BakeCheckpoint(root,'different-source').get('surfaces','uv-hash','diffuse'))
+            path.write_bytes(b'partial write')
+            self.assertIsNone(resumed.get('surfaces','uv-hash','diffuse'))
 
 class RadianceGeometryTests(unittest.TestCase):
     def test_unused_normals_are_removed_without_changing_positions_or_uvs(self):

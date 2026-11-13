@@ -180,7 +180,7 @@ def main():
             raise ValueError('This worker supports Cycles scenes; no renderer substitution is performed.')
         scene.cycles.device = 'CPU'
         scene.render.threads_mode = 'FIXED'
-        scene.render.threads = max(1, min(4, int(os.getenv('BLENDER_THREADS', '2'))))
+        scene.render.threads = max(1, min(16, int(os.getenv('BLENDER_THREADS', '2'))))
         if args.quality == 'preview':
             scene.render.resolution_percentage = min(scene.render.resolution_percentage, max(1, int(800 / max(scene.render.resolution_x, scene.render.resolution_y) * 100)))
             scene.cycles.samples = min(scene.cycles.samples, 24)
@@ -210,6 +210,8 @@ def main():
             else:
                 from bake import bake_scene
             options={'reuse_root':args.reuse_radiance.resolve()} if args.reuse_radiance else {}
+            if args.mode=='radiance':
+                options['checkpoint_source']=report['sourceSignature']+report['scene']+report['blenderVersion']
             report['bake'] = bake_scene(scene, args.output.resolve(), args.quality,whole_space=args.kind=='layout',**options)
     report['mode'] = args.mode
     report['seconds'] = round(time.monotonic() - start, 2)

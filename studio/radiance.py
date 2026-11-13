@@ -330,7 +330,7 @@ def embed(path, material_maps, metadata, lut):
     path.write_bytes(struct.pack('<4sII',b'glTF',2,28+len(encoded)+len(blob))+struct.pack('<I4s',len(encoded),b'JSON')+encoded+struct.pack('<I4s',len(blob),b'BIN\0')+blob)
 
 
-def bake_scene(scene, output, quality, whole_space=False, resolution_override=None, samples_override=None,reuse_root=None):
+def bake_scene(scene, output, quality, whole_space=False, resolution_override=None, samples_override=None,reuse_root=None,checkpoint_source=None):
     import bpy
     import numpy as np
     from mathutils import Vector
@@ -386,6 +386,13 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             repaired.append(obj.name)
         bm.free()
     grid=[1,3] if scene.camera.data.type=='ORTHO' else [3,3]
+    checkpoint=None
+    if checkpoint_source:
+        from checkpoint import BakeCheckpoint
+        identity=hashlib.sha256(json.dumps([checkpoint_source,quality,whole_space,resolution_override,samples_override,domain,grid,repaired],sort_keys=True).encode())
+        for filename in ('radiance.py','bake.py','hybrid.py','render.py','compose.py','checkpoint.py'):
+            identity.update(Path(__file__).with_name(filename).read_bytes())
+        checkpoint=BakeCheckpoint(output,identity.hexdigest())
     reuse=read_reuse(reuse_root,domain,grid,set(repaired)) if reuse_root else None
     print('RADIANCE_NORMAL_REPAIRS',repaired,flush=True)
     lut = make_lut(scene, output)
@@ -481,6 +488,15 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             print('RADIANCE_SPLIT_UNCOVERED',name,missing,flush=True)
             continue
         cached=reuse(name,objects,output) if reuse else None
+        geometry=hashlib.sha256()
+        for obj in objects:
+            geometry.update(obj.name.encode())
+            geometry.update(np.array(obj.matrix_world,dtype='<f4').tobytes())
+            geometry.update(np.array([tuple(p.uv) for p in obj.data.uv_layers[UV_NAME].data],dtype='<f4').tobytes())
+        geometry=geometry.hexdigest()
+        resumed=checkpoint.get(name,geometry,'diffuse') if checkpoint else None
+        if resumed:
+            cached=({'diffuse':resumed[0],'views':[]},[resumed[1]])
         if cached and cached[0]['views']:
             replace_later(name,objects,cached[0]);atlases.extend(cached[1]);bpy.data.images.remove(target)
             print('RADIANCE_REUSE',name,flush=True)
@@ -517,7 +533,9 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             bpy.data.images.remove(clean)
             linear.unlink()
             atlases.append({'name':path.name,'width':encoded.shape[1],'height':encoded.shape[0],'kind':suffix,'objects':len(objects)})
-            return {'path':path,'range':scale}
+            result={'path':path,'range':scale}
+            if checkpoint:checkpoint.put(name,geometry,suffix,result,atlases[-1])
+            return result
         if cached:
             diffuse=cached[0]['diffuse'];atlases.extend(cached[1]);print('RADIANCE_REUSE_DIFFUSE',name,flush=True)
         else:
@@ -545,6 +563,11 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
         glossy = new_image(name+' glossy',size)
         for e in range(grid[1]):
             for a in range(grid[0]):
+                resumed=checkpoint.get(name,geometry,'view'+str(e*grid[0]+a)) if checkpoint else None
+                if resumed:
+                    views.append(resumed[0]);atlases.append(resumed[1])
+                    print('RADIANCE_VIEW_RESUMED',name,e*grid[0]+a,flush=True)
+                    continue
                 az = domain['azimuth'] if grid[0]==1 else domain['azimuthRange'][0]+a/2*(domain['azimuthRange'][1]-domain['azimuthRange'][0])
                 el = domain['elevationRange'][0]+e/2*(domain['elevationRange'][1]-domain['elevationRange'][0])
                 direction = Vector((math.sin(az)*math.cos(el),-math.cos(az)*math.cos(el),math.sin(el)))

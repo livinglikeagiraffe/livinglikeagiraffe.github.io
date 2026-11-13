@@ -65,8 +65,15 @@ assert floor.data.materials[0].node_tree.nodes.get('Principled BSDF').inputs['Ba
 bpy.context.window.scene=scene
 print('RADIANCE_COMPOSITION_PASS',flush=True)
 output=root/'.source-assets/radiance-smoke';output.mkdir(parents=True,exist_ok=True)
-report=bake_scene(scene,output,'preview',resolution_override=128,samples_override=16)
+identity=hashlib.sha256(binary).hexdigest()
+report=bake_scene(scene,output,'preview',resolution_override=128,samples_override=16,checkpoint_source=identity)
 assert report['radianceVersion']==1 and report['directionSamples']==3
 assert 'Cube' in report['normalRepairs']
+# A restarted worker must use checked pixels instead of recomputing them.
+timestamps={a['name']:(output/a['name']).stat().st_mtime_ns for a in report['atlases']}
+bpy.ops.wm.open_mainfile(filepath=str(blend),load_ui=False,use_scripts=False)
+resumed=bake_scene(bpy.context.scene,output,'preview',resolution_override=128,samples_override=16,checkpoint_source=identity)
+assert all((output/name).stat().st_mtime_ns==stamp for name,stamp in timestamps.items())
+assert resumed['sha256']==report['sha256']
 (output/'report.json').write_text(json.dumps(report,indent=2))
 print('RADIANCE_SMOKE_PASS',flush=True)
