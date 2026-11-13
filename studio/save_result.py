@@ -38,6 +38,7 @@ def save_result(root,result,request,source_ref,url):
         if (validation.get('schema')!=1 or validation.get('modelSha256')!=report['bake']['sha256'] or
                 {v.get('view') for v in validation.get('views',[])}!=expected or len(validation['views'])!=len(expected)):
             raise ValueError('Invalid web validation record')
+        if domain.get('exploration') and any(v['view']!='authored' and not isinstance(v.get('cameraAgreement',{}).get('passed'),bool) for v in validation['views']):raise ValueError('Missing runtime camera validation')
         names+=['validation.json']+[f'web-{name}.png' for name in sorted(expected)]
     for name in names:
         source=result/name
@@ -66,7 +67,7 @@ def save_result(root,result,request,source_ref,url):
         layout_path=root/'studio/layout.json'
         layout=json.loads(layout_path.read_text()) if layout_path.exists() else {}
         build=layout.get('build',{})
-        if (report.get('bake',{}).get('hybridVersion')==1 or radiance and validation.get('passed') is True and all(v.get('passed') is True for v in validation['views']) and not validation.get('errors')) and build.get('id')==report['layoutId'] and build.get('digest')==report['layoutDigest']:
+        if (report.get('bake',{}).get('hybridVersion')==1 or radiance and validation.get('passed') is True and all(v.get('passed') is True and v.get('cameraAgreement',{'passed':True}).get('passed') is True for v in validation['views']) and not validation.get('errors')) and build.get('id')==report['layoutId'] and build.get('digest')==report['layoutDigest']:
             public={'schema':1,'layoutId':report['layoutId'],'digest':report['layoutDigest'],'renderId':request,
                     'model':f'studio/renders/{request}/baked.glb','preview':f'studio/renders/{request}/render.png',
                     'sha256':report['bake']['sha256'],'bytes':report['bake']['bytes']}
