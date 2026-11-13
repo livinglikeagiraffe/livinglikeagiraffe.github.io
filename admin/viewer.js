@@ -13,6 +13,7 @@ import {normalizeLook,sceneProfile} from './appearance.js';
 import {previewVersion,isTagged,removeBackdrops} from './baked.js';
 import {hybridPlugin,installClay} from '../clay/materials.js';
 import {createLighting} from '../clay/lighting.js';
+import {RadianceViewer} from '../clay/radiance-viewer.js';
 
 let referenceProfile,clayProfile;
 const correction={uniforms:{tDiffuse:{value:null},warmth:{value:0},contrast:{value:1},saturation:{value:1}},vertexShader:'varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`uniform sampler2D tDiffuse; uniform float warmth,contrast,saturation; varying vec2 vUv;
@@ -34,7 +35,7 @@ export class StudioViewer {
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(host);
     this.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();host.dispatchEvent(new CustomEvent('viewererror',{detail:'3D 화면이 중단되었습니다. 페이지를 새로고침해 주세요.'}));});
   }
-  draw(){if(this.frame||!this.host.clientWidth||!this.host.clientHeight)return;this.frame=requestAnimationFrame(()=>{this.frame=0;if(this.hasBaked){this.renderer.render(this.scene,this.camera);return;}this.ao.ssaoMaterial.uniforms.cameraProjectionMatrix.value.copy(this.camera.projectionMatrix);this.ao.ssaoMaterial.uniforms.cameraInverseProjectionMatrix.value.copy(this.camera.projectionMatrixInverse);this.composer.render();});}
+  draw(){if(this.radianceViewer){this.radianceViewer.draw();return;}if(this.frame||!this.host.clientWidth||!this.host.clientHeight)return;this.frame=requestAnimationFrame(()=>{this.frame=0;if(this.hasBaked){this.renderer.render(this.scene,this.camera);return;}this.ao.ssaoMaterial.uniforms.cameraProjectionMatrix.value.copy(this.camera.projectionMatrix);this.ao.ssaoMaterial.uniforms.cameraInverseProjectionMatrix.value.copy(this.camera.projectionMatrixInverse);this.composer.render();});}
   resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h);this.composer.setSize(w,h);if(this.bounds)this.fit();}
   configureCamera(){
     const perspective=!this.isGrid&&this.look.camera==='authored'&&this.authoredCamera?.type==='PERSP';
@@ -44,6 +45,7 @@ export class StudioViewer {
     for(const m of [this.ao.ssaoMaterial,this.ao.depthRenderMaterial]){m.defines.PERSPECTIVE_CAMERA=perspective?1:0;m.needsUpdate=true;}
   }
   fit(){
+    if(this.radianceViewer){this.radianceViewer.reset();return;}
     if(!this.bounds)return;
     this.configureCamera();
     const center=this.bounds.getCenter(new THREE.Vector3()),size=this.bounds.getSize(new THREE.Vector3()),aspect=this.host.clientWidth/Math.max(1,this.host.clientHeight),authored=this.authoredCamera;
@@ -132,6 +134,7 @@ export class StudioViewer {
     this.ao.kernelRadius=span*.035;this.ao.minDistance=.0001;this.ao.maxDistance=Math.min(.04,span/this.camera.far*.32);
   }
   setLook(value,{fit=false}={}){
+    if(this.radianceViewer){this.look=normalizeLook(value);this.radianceViewer.draw();return this.look;}
     this.look=normalizeLook(this.asset?.hybrid?{exposure:Math.log2(.85),key:1,fill:1,texture:1,warmth:0,contrast:1,saturation:1,...value}:value);const l=this.look;this.renderer.toneMapping=({neutral:THREE.NeutralToneMapping,aces:THREE.ACESFilmicToneMapping,agx:THREE.AgXToneMapping})[l.tone];this.renderer.toneMappingExposure=2**l.exposure;
     this.scene.background=new THREE.Color(l.background);this.scene.environmentIntensity=l.ambient*.65;this.ambient.intensity=l.ambient;
     if(this.asset?.hybrid){this.scene.environmentIntensity=1;this.ambient.color.setRGB(...this.profile?.world?.color||[.08,.08,.08]);this.ambient.groundColor.copy(this.ambient.color);this.ambient.intensity=Math.PI*(this.profile?.world?.strength??.3);}else{this.ambient.color.set('#fff7e6');this.ambient.groundColor.set('#a3a49c');}
@@ -145,6 +148,20 @@ export class StudioViewer {
   applySource(profile){this.profile=sceneProfile(profile);this.authoredCamera=this.profile?.camera||this.asset.authoredCamera;this.buildRig();this.setLook(this.look,{fit:true});}
   async showVersion(version){
     version=previewVersion(version);
+    this.radianceViewer?.dispose();this.radianceViewer=null;this.renderer.domElement.hidden=false;
+    const binary=await version.files.find(f=>f.name===version.model)?.blob.arrayBuffer();
+    if(binary){
+      const view=new DataView(binary),doc=JSON.parse(new TextDecoder().decode(binary.slice(20,20+view.getUint32(12,true))));
+      if(doc.extras?.studioRadiance){
+        this.clear();this.isGrid=false;this.renderer.domElement.hidden=true;this.controls.enabled=false;
+        this.radianceViewer=new RadianceViewer(this.host);const gltf=await this.radianceViewer.load(binary);
+        const bounds=new THREE.Box3();gltf.scene.traverse(o=>{if(o.isMesh&&!o.userData.studioBackdrop){o.geometry.computeBoundingBox();bounds.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld));}});
+        this.asset={baked:true,radiance:true,bounds,size:bounds.getSize(new THREE.Vector3()),triangles:version.job?.report?.bake?.triangles||0};
+        this.profile=gltf.userData.studioRadiance.lighting;this.authoredCamera=this.profile.camera;this.hasBaked=true;
+        return this.asset;
+      }
+    }
+    this.controls.enabled=true;
     const ticket=this.ticket=Symbol(),a=await this.load(version);if(this.ticket!==ticket)return;
     this.clear();this.isGrid=false;this.asset=a;this.hasBaked=a.baked;this.profile=sceneProfile(version.job?.report?.webScene)||a.profile;this.authoredCamera=this.profile?.camera||a.authoredCamera;
     const center=a.bounds.getCenter(new THREE.Vector3());this.offset.set(-center.x,-a.bounds.min.y,-center.z);const instance=this.instance(a,normalizeLook(version.webLook));instance.position.copy(this.offset);this.root.add(instance);
@@ -154,10 +171,11 @@ export class StudioViewer {
     this.buildRig();this.setLook(version.webLook);this.resize();return a;
   }
   async showGrid(layout,resolve){
-    const ticket=this.ticket=Symbol(),loaded=[];for(const cell of layout.cells){const version=await resolve(cell.versionId);if(!version)throw Error('배치에 사용한 버전을 먼저 불러와 주세요.');loaded.push({cell,version,asset:await this.load(previewVersion(version))});}if(this.ticket!==ticket)return;
-    this.clear();this.isGrid=true;this.hasBaked=loaded.some(v=>v.asset.baked);this.ground=null;this.profile=null;const grid=layout.grid;
+    this.radianceViewer?.dispose();this.radianceViewer=null;this.renderer.domElement.hidden=false;this.controls.enabled=true;
+    const ticket=this.ticket=Symbol(),loaded=[];for(const cell of layout.cells){const version=await resolve(cell.versionId);if(!version)throw Error('배치에 사용한 버전을 먼저 불러와 주세요.');loaded.push({cell,version,asset:version.model?await this.load(version.bake?.report?.radianceVersion?version:previewVersion(version)):null});}if(this.ticket!==ticket)return;
+    this.clear();this.isGrid=true;this.hasBaked=loaded.some(v=>v.asset?.baked);this.ground=null;this.profile=null;const grid=layout.grid;
     for(let z=0;z<grid.rows;z++)for(let x=0;x<grid.columns;x++){const p=cellPosition(grid,x,z);this.platform(grid.width,grid.depth,p.x,p.z);}
-    for(const {cell,asset:a,version} of loaded){const instance=this.instance(a,normalizeLook(version.webLook)),center=a.bounds.getCenter(new THREE.Vector3());instance.position.set(-center.x,-a.bounds.min.y,-center.z);const module=new THREE.Group();module.add(instance);module.scale.setScalar(fitScale(a.size,grid,cell.rotation));module.rotation.y=cell.rotation*Math.PI/180;const p=cellPosition(grid,cell.x,cell.z);module.position.set(p.x,0,p.z);this.root.add(module);}
+    for(const {cell,asset:a,version} of loaded){if(!a)continue;const instance=this.instance(a,normalizeLook(version.webLook)),center=a.bounds.getCenter(new THREE.Vector3());instance.position.set(-center.x,-a.bounds.min.y,-center.z);const module=new THREE.Group();module.add(instance);module.scale.setScalar(fitScale(a.size,grid,cell.rotation));module.rotation.y=cell.rotation*Math.PI/180;const p=cellPosition(grid,cell.x,cell.z);module.position.set(p.x,0,p.z);this.root.add(module);}
     this.bounds=new THREE.Box3().setFromObject(this.root);this.buildRig();this.setLook({...normalizeLook(),camera:'fit'});this.resize();
   }
 }

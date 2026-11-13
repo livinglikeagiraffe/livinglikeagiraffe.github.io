@@ -48,7 +48,10 @@ async function selectVersion(version){
   }
   $('#scene-name').value=version.scene||'';$('#viewer-empty').hidden=true;
   if(!viewer)viewer=new StudioViewer($('#viewer-host'));
-  const asset=await viewer.showVersion(version);if(generation!==loadGeneration)return;
+  let asset;
+  if(version.model||version.bakedBlob){asset=await viewer.showVersion(version);}
+  else{viewer.radianceViewer?.dispose();viewer.radianceViewer=null;viewer.clear();viewer.asset=null;viewer.renderer.domElement.hidden=true;$('#viewer-empty').hidden=false;$('#viewer-empty').textContent='Blender 변환 대기';$('#model-info').textContent='';}
+  if(generation!==loadGeneration)return;
   updateLookControls();
   updateBakeControls();
   if(asset)$('#model-info').textContent=`${asset.size.x.toFixed(1)} × ${asset.size.z.toFixed(1)}m · ${Math.round(asset.triangles).toLocaleString()} triangles`;
@@ -97,7 +100,7 @@ function updateImage(){
 async function importFiles(files){
   if(!files.length)return;notice('파일을 읽고 있습니다.');
   const parsed=await unpack(files),selection=inferSelection(parsed);
-  await selectVersion({schema:1,id:crypto.randomUUID(),moduleId:crypto.randomUUID(),title:selection.model.split('/').pop().replace(/\.glb$/i,''),createdAt:new Date().toISOString(),files:parsed,...selection});
+  await selectVersion({schema:1,id:crypto.randomUUID(),moduleId:crypto.randomUUID(),title:(selection.model||selection.blend).split('/').pop().replace(/\.(glb|blend)$/i,''),createdAt:new Date().toISOString(),files:parsed,...selection});
   notice(`${parsed.length}개 파일 · 불러옴`);
 }
 $('#upload-input').onchange=e=>action(async()=>{await importFiles([...e.target.files]);e.target.value='';});
@@ -117,6 +120,10 @@ $('#save-version').onclick=()=>action(async()=>{
   const conn=github.connection()?.authenticated?github.connection():null;
   if(conn){if(!conn.private&&!publicConsent)throw Error('공개 저장소에 원본을 저장하려면 GitHub 연결 화면에서 공개 동의가 필요합니다.');version.remote=await github.saveRemote(version,message=>notice(message));}
   await storage.saveVersion(version);versions=await storage.get('versions');await selectVersion(version);notice(conn?'GitHub에 새 버전을 저장했습니다.':'이 브라우저에 새 버전을 저장했습니다. GitHub 연결 후 저장하면 저장소에도 기록됩니다.');
+  if(conn&&version.blend&&!keepRender&&$('#bake-with-render').checked){
+    const quality=$('#render-quality').value,job=await github.renderRemote(version,quality,scene,'radiance');
+    current.job={...job,status:'queued',quality};await storage.saveVersion(current);notice('저장됨 · 조명 계산과 6시점 검증 대기');pollRender();
+  }
 });
 $('#new-module').onclick=()=>{current=null;$('#module-title').value='이름 없는 공간';$('#module-target').value='';$('#upload-input').click();updateButtons();};
 
@@ -170,7 +177,7 @@ $('#render-button').onclick=()=>action(async()=>{
   if(!current.blend)throw Error('.blend 원본을 함께 넣어 주세요.');
   const conn=github.connection();if(!conn?.authenticated)throw Error('GitHub를 먼저 연결해 주세요.');
   if(!conn.private&&!publicConsent)throw Error('공개 저장소에 원본을 저장하려면 공개 동의가 필요합니다.');
-  const scene=$('#scene-name').value.trim(),quality=$('#render-quality').value,mode=$('#bake-with-render').checked?'hybrid':'render';
+  const scene=$('#scene-name').value.trim(),quality=$('#render-quality').value,mode=$('#bake-with-render').checked?'radiance':'render';
   if(!current.remote||current.remote.repo!==conn.repo||scene!==(current.scene||'')){
     const title=$('#module-title').value.trim();if(!title)throw Error('모듈 이름을 입력해 주세요.');
     const keepBake=scene===(current.scene||'');

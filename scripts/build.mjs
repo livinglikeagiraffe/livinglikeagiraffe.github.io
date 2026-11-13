@@ -41,7 +41,7 @@ async function directory(folder){
 for(const file of ['index.html','style.css','main.js','bootstrap.js','credits.html','ASSETS.md','node_modules/three/LICENSE'])await copy(file);
 await directory('v2');
 await directory('admin');
-for (const file of ['index.html','style.css','app.js','v06.json','assets/reference.png',
+for (const file of ['index.html','style.css','app.js','v06.json','radiance.html','radiance-app.js','lab.html','lab.js','assets/reference.png',
                     'assets/profile.json','assets/v06-lighting-comparison.jpg']) {
  await copy(path.join('clay',file));
 }
@@ -72,6 +72,10 @@ await copy('studio/compose.py');
 await copy('studio/hybrid.py');
 await copy('studio/web_bake.py');
 await copy('studio/save_result.py');
+await copy('studio/radiance.py');
+// Include a verified v06 fallback; ongoing uploads are read from the repository.
+try { await stat(path.join(root,'studio/radiance-v06/manifest.json')); await directory('studio/radiance-v06'); }
+catch(error) { if(error.code!=='ENOENT')throw error; }
 await mkdir(path.join(out,'admin/setup'),{recursive:true});
 await copyFile(path.join(root,'.github/workflows/render-module.yml'),path.join(out,'admin/setup/render-module.yml'));
 await directory('assets/mobile');await directory('assets/branding');await directory('assets/fonts');await directory('assets/green-grass');

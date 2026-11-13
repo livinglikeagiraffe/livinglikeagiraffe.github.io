@@ -85,6 +85,7 @@ def web_scene(scene):
                        'position': list(transform.translation), 'quaternion': [q.x, q.y, q.z, q.w],
                        'orthoScale': camera.data.ortho_scale, 'aspect': aspect,
                        'fov': 2 * math.atan(1 / projection[1][1]),
+                       'projection': [projection[row][column] for column in range(4) for row in range(4)],
                        'shift': [camera.data.shift_x, camera.data.shift_y]},
             'lights': lights, 'world': world,
             'view': {'transform': scene.view_settings.view_transform, 'look': scene.view_settings.look,
@@ -99,7 +100,7 @@ def main():
     parser.add_argument('--quality', choices=['preview', 'original'], default='preview')
     parser.add_argument('--scene', default='')
     parser.add_argument('--inspect-only', action='store_true')
-    parser.add_argument('--mode', choices=['render', 'bake', 'hybrid'], default='hybrid')
+    parser.add_argument('--mode', choices=['render', 'bake', 'hybrid', 'radiance'], default='hybrid')
     parser.add_argument('--kind', choices=['module','layout'], default='module')
     args = parser.parse_args(sys.argv[sys.argv.index('--') + 1:])
     args.output.mkdir(parents=True, exist_ok=True)
@@ -107,10 +108,10 @@ def main():
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     layout_report={}
     if args.kind=='layout':
-        if args.mode not in ('bake','hybrid'):raise ValueError('Whole-space jobs require baking')
+        if args.mode not in ('bake','hybrid','radiance'):raise ValueError('Whole-space jobs require baking')
         sys.path.insert(0,str(Path(__file__).resolve().parent))
         from compose import compose_scene
-        scene,manifest,layout_report=compose_scene(args.manifest.resolve())
+        scene,manifest,layout_report=compose_scene(args.manifest.resolve(),strict=args.mode=='radiance')
     else:
         manifest, blend = validate_manifest(args.manifest.resolve())
         bpy.ops.wm.open_mainfile(filepath=str(blend), load_ui=False, use_scripts=False)
@@ -182,9 +183,11 @@ def main():
         report['rendered'] = {'width': int(scene.render.resolution_x * scene.render.resolution_percentage / 100),
                               'height': int(scene.render.resolution_y * scene.render.resolution_percentage / 100),
                               'samples': scene.cycles.samples}
-        if args.mode in ('bake','hybrid'):
+        if args.mode in ('bake','hybrid','radiance'):
             sys.path.insert(0, str(Path(__file__).resolve().parent))
-            if args.mode=='hybrid':
+            if args.mode=='radiance':
+                from radiance import bake_scene
+            elif args.mode=='hybrid':
                 from hybrid import bake_scene
             else:
                 from bake import bake_scene
@@ -196,4 +199,12 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as error:
+        # A failed conversion must leave a readable diagnostic, never a success pointer.
+        if '--output' in sys.argv:
+            output = Path(sys.argv[sys.argv.index('--output')+1])
+            output.mkdir(parents=True,exist_ok=True)
+            (output/'failure.json').write_text(json.dumps({'schema':1,'status':'failed','message':str(error)},ensure_ascii=False,indent=2))
+        raise

@@ -32,7 +32,7 @@
 - 렌더 작업과 저장 작업의 권한을 분리했습니다. 렌더 결과는 `studio/renders/<request UUID>/`에 커밋하므로 임시 Actions artifact 만료 후에도 보관됩니다. 작업당 90분 제한이며 실패 시 Actions 로그를 표시합니다.
 - 업로드 제한: 파일당 48MiB, 압축 해제 합계 180MiB, 100개 파일. 경로 이탈·중복 경로·압축 해제 크기를 검사합니다. 저장소가 커지면 원본을 Releases나 전용 오브젝트 저장소로 옮기는 것이 좋습니다.
 
-GitHub 설정 및 제작자 사용 안내: `admin/setup.html`. 성공한 최신 배치는 `/clay/`에 자동 반영됩니다. 기존 홈페이지 `/`와 `/v2/`의 고정 예제는 유지됩니다.
+GitHub 설정 및 제작자 사용 안내: `admin/setup.html`. 검증을 통과한 최신 배치는 `/clay/radiance.html`에 자동 반영됩니다. 기존 홈페이지 `/`와 `/v2/`의 고정 예제는 유지됩니다.
 
 ## 실행과 배포
 
@@ -96,27 +96,41 @@ GitHub Pages: Settings → Pages → Source를 GitHub Actions로 설정하고, A
 
 `/admin/` → GitHub 연결 → ZIP 선택 → 배치에 추가 → 배치 저장·베이킹. 저장되지 않은 모듈도 배치 저장 시 원본 파일과 함께 업로드됩니다. 전체 씬 하나가 한 모듈이며 내부 방의 상대 위치를 유지합니다. v06은 `full/`의 Normal GLB와 .blend가 우선 선택됩니다.
 
-### 간접광 파이프라인
+### 원본 조명 재현 페이지
 
-- `studio/compose.py`: 배치 스냅샷·원본 해시 검증, 전체 씬 합성, 공통 바닥·조명 구성.
-- `studio/hybrid.py`: Cycles INDIRECT diffuse(색 제외), albedo, tangent normal, roughness를 각각 계산. 모든 아틀라스가 끝날 때까지 원본 재질을 유지합니다. UV 좌표뿐 아니라 실제 색상 텍스처의 삼각형별 기록 여부를 검사하며, 누락되면 묶음을 이분해 재시도합니다.
-- 간접광은 OIDN 후 선형 RGBM으로 저장합니다. OCIO 화면용 변환을 텍스처에 넣지 않습니다. GLB 재질 extras의 `studioLightMap`이 내장 PNG·UV·범위를 참조합니다. 웹 로더가 RGBM을 복원하고 pi를 곱해 조도 입력으로 사용합니다.
-- `clay/materials.js`: PBR 재질·직접광·표면 노멀을 유지하고 작은 절차적 클레이 요철을 추가합니다. 베이킹된 간접광과 환경의 확산광을 중복 계산하지 않습니다. 면광원과 반사·굴절은 웹에서 근사합니다.
-- 표준은 큰 면 2K·소품 묶음 1K·96샘플, 정밀은 2K·256샘플입니다. 한 물체 면적의 0.2% 이상이 기록되지 않으면 묶음을 다시 나눕니다. 간접광은 표준 512~1K, 정밀 1K~2K로 별도 계산합니다. PNG는 화질 변화 없이 압축합니다. 불투명 메시를 아틀라스별로 합쳐 그리기 호출 수를 줄입니다. 유리·금속·발광 재질은 별도로 유지합니다.
-- 기존 `studio/bake.py`의 Combined/unlit 결과도 이전 버전 검수용으로 계속 지원합니다.
+새 경로 `/clay/radiance.html`은 실제 메시 위에서 Blender의 계산 결과를 표시합니다. `/clay/lab.html`에서는 원본·좌·우·근접·낮은 시점·중간 시점을 나란히 비교합니다. 기존 `/`, `/v2/`, `/clay/`와 `studio/public-scene.json`은 유지합니다.
 
-### 버전과 공개
+- `studio/radiance.py`: 원본 Cycles 재질을 유지한 채 직접광·간접광·그림자·발광을 선형 확산광 텍스처에 기록하고, 반사·투과는 3×3 방향으로 별도 계산합니다. 문과 의자, 운동장도 같은 계산을 사용합니다. 화면 이미지나 카메라별 평면을 전환하는 방식이 아닙니다.
+- `clay/radiance.js`: 실제 표면의 UV와 카메라 방향으로 캐시를 보간합니다. 웹 조명·클레이 노이즈를 덧씌우지 않습니다. 원본의 OCIO view/look/exposure/gamma를 표본화한 LUT를 최종 화면에 한 번 적용합니다. RGBM은 디코딩 후 보간합니다.
+- `clay/radiance-viewer.js`: 원본 카메라를 기준으로 제한된 드래그 이동과 줌을 지원합니다. 확대하면서 카메라를 조금 낮춥니다. 360도 회전은 제공하지 않습니다. 뒤쪽 메시도 빛 계산에는 계속 참여합니다.
+- 표준은 확산광 1K(공통 바닥 2K), 방향별 반사 512px×9, 128샘플입니다. 정밀은 2K, 1K×9, 512샘플입니다. 원본의 세부 질감·그림자 해상도와 반사 특성에 따라 정밀 모드도 부족할 수 있습니다.
 
-Cycles 원본에서 `WebBake` 컬렉션에 고정 무광 표면을 표시하면, 저장한 전체 배치의 직접광·간접광·그림자를 그 표면과 공용 바닥의 텍스처에 기록합니다. 다른 오브젝트도 빛을 가리고 반사합니다. `RoomLights`는 모듈 인스턴스를 따라가고, 공용 광원은 배치 순서상 첫 `StudioLights` 세트를 한 번 사용합니다. 두 광원 컬렉션 중 하나만 있어도 미지정 광원은 방 광원으로 처리합니다. 어느 광원 컬렉션도 없는 원본에는 기존 크기 기반 분류를 적용합니다. v06 원본은 검증된 파일 해시로 같은 역할을 복원합니다. 워커 보고서의 `roles`와 `bake.webBake`에서 인식 결과를 확인할 수 있습니다.
+### 업로드와 배치 자동화
 
-GitHub Actions `render-module.yml`이 `mode=hybrid`, `kind=layout`으로 실행됩니다. `studio/layouts/<id>.json`은 고정 배치, `studio/renders/<request>/`는 결과입니다. `studio/save_result.py`는 결과 SHA-256을 검사하고 **현재 배치와 ID·digest가 일치하는 성공 결과만** `studio/public-scene.json`에 연결합니다. 오래된 작업이 늦게 끝나도 최신 배치를 덮어쓰지 않습니다. 저장 충돌 시 최신 브랜치에서 공개 조건을 다시 검사합니다.
+`.blend`만 업로드해도 변환할 수 있습니다. GLB는 편집 시 배치를 확인하는 데 사용하고 PNG는 제작자가 보낸 기준 이미지로 보관합니다. 최종 조명은 `.blend`에서 계산합니다. 자동 변환을 켜고 GitHub에 저장하면 `mode=radiance`로 요청합니다. 배치 저장은 각 원본을 합친 후 전체 조명을 다시 계산합니다.
 
-`/clay/`는 현재 저장소의 공개 포인터를 읽고 GLB 해시를 검증합니다. 새 배치가 계산 중이면 이전 완료 결과를 유지합니다. 원본 .blend는 저장소에 보관하고 Pages 산출물에는 넣지 않습니다. 소스 변경 시 Pages를 배포하며, 이후 배치 베이킹 결과는 별도 Pages 재배포 없이 반영됩니다. 저장소가 공개이므로 방문자가 토큰 없이 결과를 읽습니다.
+`RoomLights`는 각 모듈과 함께 이동합니다. `StudioLights`는 공통 조명 한 세트로 사용합니다. 컬렉션이 없으면 기존 크기 기반 분류를 사용하므로, 여러 모듈을 배치할 파일에는 두 컬렉션을 명시하는 것이 좋습니다. `WebBake` 지정은 이전 베이킹과 호환됩니다. 새 방식은 지정되지 않은 렌더 가능 표면도 모두 계산합니다. 단일 모듈은 원본 바닥 재질과 카메라를 보존하고, 여러 모듈은 공통 바닥·조명·카메라를 구성합니다. 여러 원본의 서로 다른 World를 동시에 그대로 유지할 수는 없으며 첫 모듈의 World와 색 관리를 사용합니다.
 
-### 검증과 한계
+계산 후 CI의 실제 Chromium/WebGL로 6개 시점을 렌더하고 같은 카메라의 Cycles PNG와 비교합니다. RGB MAE ≤ 6/255, p95 ≤ 24/255, 8×8 휘도 SSIM ≥ 0.94, 최악의 64×64 영역 MAE ≤ 18/255가 초기 품질 기준입니다. 이 값은 동일도 백분율이 아니며 작은 디테일의 완벽한 일치를 보증하지 않습니다. `validation.json`과 `web-*.png`, `reference-*.png`를 함께 보관합니다.
+
+`studio/save_result.py`는 결과 해시와 6시점 검증을 확인합니다. **현재 배치 ID·digest와 일치하고 검증을 통과한 결과만** 별도 `studio/radiance-scene.json`에 연결합니다. 미달 결과는 검토용으로 저장하고 공개 중인 결과를 유지합니다. 저장이 끝난 최신 결과는 새 페이지를 열거나 새로고침하면 반영됩니다. 기존 공개 포인터는 바뀌지 않습니다. 단일 버전 저장은 결과만 보관하며, 공개에는 배치 저장이 필요합니다.
+
+### 제작 파일 규칙과 지원 범위
+
+워커는 현재 Blender 3.6.23으로 고정되어 있습니다. 더 새로운 Blender로 저장한 파일은 조용히 변환하지 않고 호환성 오류를 반환합니다. 다른 버전을 지원하려면 해당 버전의 워커를 검증하고 등록해야 합니다.
+
+- Cycles, 활성 원근/직교 카메라, 불투명 배경, 외부 이미지 패킹, 외부 링크 로컬화가 필요합니다.
+- 일반 메시와 평가 가능한 Curve/Text/Surface, 원본 셰이더의 정적인 표면 질감을 처리합니다. 애니메이션은 저장된 현재 프레임으로 고정합니다.
+- Geometry Nodes/파티클/컬렉션 인스턴스는 실체화해야 합니다. 볼륨·홀드아웃·섀도 캐처·임의 합성 효과는 지원하지 않으며 `compatibility.json`에 원인을 기록합니다.
+- 유리·투명·날카로운 반사는 방향별 근사입니다. 원본과 차이가 커질 경우 자동 비교에서 보류하고, 재질 또는 캐시 전략을 추가해야 합니다. 모든 `.blend`를 완전히 재현하는 범용 Cycles 웹 플레이어는 아닙니다.
+- 배치 1~6개, 원본당 4,000메시, 전체 12,000메시·300만 삼각형, GLB 48MiB, 워커 360분 제한입니다. 실제 한도는 UV·재질·텍스처 메모리에 따라 더 작습니다. 모바일 성능은 별도 검증이 필요합니다.
+
+제작자가 베이킹을 해서 보낼 필요는 없습니다. 완성된 `.blend`, 사용한 Blender 버전, 씬·카메라·프레임, 패킹된 외부 에셋, 기준 PNG를 전달하면 됩니다. 배치·구조·조명·재질을 바꾸면 전체 계산을 다시 실행합니다.
+
+### 검증
 
 `npm test`, `PYTHONPYCACHEPREFIX=/tmp/giraffe-pycache python3 -m unittest discover -s tests -p 'test_*.py'`, `npm run build`.
 
-Blender 검증: `blender --background --factory-startup --disable-autoexec --python-exit-code 1 --python studio/render.py -- --manifest studio/layouts/<id>.json --output <directory> --kind layout --mode hybrid --quality preview`.
+Blender: `blender --background --factory-startup --disable-autoexec --python-exit-code 1 --python studio/render.py -- --manifest studio/layouts/<id>.json --output <directory> --kind layout --mode radiance --quality preview`.
 
-최대 6모듈, 원본당 4,000메시, 전체 12,000메시·300만 삼각형, GLB 48MiB, 90분. 실제 처리 가능 범위는 UV·재질 복잡도에 따라 달라집니다. Cycles의 임의 셰이더와 모든 조명 효과를 실시간 웹에 1:1 재현하지는 않습니다. 구조나 조명이 바뀌면 전체 간접광을 다시 계산해야 합니다.
+작은 전송 검증 씬: `tests/blender_radiance_smoke.py`. 웹 검증은 `/clay/lab.html`의 ‘6시점 검증’ 버튼과 CI의 `tests/validate-radiance.mjs`가 같은 `clay/validation.js`를 사용합니다. 이전 `hybrid.py`, `bake.py` 방식은 과거 결과와의 호환을 위해 남아 있습니다.

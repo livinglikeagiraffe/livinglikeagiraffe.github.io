@@ -23,8 +23,8 @@ on:
       mode:
         description: Render only or render plus baked GLB
         type: choice
-        options: [render, bake, hybrid]
-        default: hybrid
+        options: [render, bake, hybrid, radiance]
+        default: radiance
       kind:
         description: Single module or complete saved layout
         type: choice
@@ -42,7 +42,7 @@ concurrency:
 jobs:
   render:
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v6
         with:
@@ -95,12 +95,32 @@ jobs:
             "$RUNNER_TEMP/blender/blender" --background --factory-startup --disable-autoexec \
             --python-exit-code 1 --python worker/studio/render.py -- \
             --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE" --mode "${MODE:-render}" --kind "${KIND:-module}"
+      - name: Validate six real WebGL views against Cycles
+        if: inputs.mode == 'radiance'
+        env:
+          RESULT: ${{ runner.temp }}/render-output
+        run: |
+          cd worker
+          npm ci
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+          mkdir -p .source-assets
+          ln -s "$RESULT" .source-assets/ci-radiance
+          python3 -m http.server 8846 --bind 127.0.0.1 > "$RUNNER_TEMP/radiance-http.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          node tests/validate-radiance.mjs 'http://127.0.0.1:8846/clay/lab.html?result=../.source-assets/ci-radiance' "$RESULT"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: studio-render-${{ inputs.request_id }}
           path: |
             ${{ runner.temp }}/render-output/*.png
             ${{ runner.temp }}/render-output/report.json
+            ${{ runner.temp }}/render-output/views.json
+            ${{ runner.temp }}/render-output/compatibility.json
+            ${{ runner.temp }}/render-output/failure.json
+            ${{ runner.temp }}/render-output/validation.json
             ${{ runner.temp }}/render-output/baked.glb
           if-no-files-found: error
           retention-days: 3
@@ -138,6 +158,7 @@ jobs:
             python3 worker/studio/save_result.py
             git add -- "studio/renders/$REQUEST_ID" studio/render-index.json
             if [ -f studio/public-scene.json ]; then git add studio/public-scene.json; fi
+            if [ -f studio/radiance-scene.json ]; then git add studio/radiance-scene.json; fi
             if git diff --cached --quiet; then exit 0; fi
             git commit -m "studio: save render $REQUEST_ID"
             git push origin "HEAD:$BRANCH" && exit 0

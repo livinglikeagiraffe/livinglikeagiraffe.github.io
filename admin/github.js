@@ -47,7 +47,7 @@ export async function saveRemote(version,onProgress=()=>{}){
   if(!uuid.test(version.id)||!uuid.test(version.moduleId))throw Error('잘못된 모듈 식별자입니다.');
   if(!Array.isArray(version.files)||version.files.length>100||version.files.reduce((n,f)=>n+f.blob.size,0)>MAX_TOTAL)throw Error('업로드 크기 제한을 초과합니다.');
   const names=new Set();for(const file of version.files){safePath(file.name);if(names.has(file.name)||file.blob.size>MAX_FILE)throw Error('중복된 파일 또는 크기를 초과한 파일이 있습니다.');names.add(file.name);}
-  if(!names.has(version.model)||version.blend&&!names.has(version.blend))throw Error('선택한 모델 또는 원본 파일이 없습니다.');
+  if((version.model&&!names.has(version.model))||(version.blend&&!names.has(version.blend))||(!version.model&&!version.blend))throw Error('선택한 모델 또는 원본 파일이 없습니다.');
   const existing=await fileJSON(`studio/modules/${version.moduleId}/versions/${version.id}/manifest.json`);
   if(existing)throw Error('이 버전은 이미 GitHub에 저장되어 있습니다. 새 버전으로 저장해 주세요.');
   const root=`studio/modules/${version.moduleId}/versions/${version.id}`, entries=[],assets=[];
@@ -121,7 +121,7 @@ export async function renderRemote(version,quality,scene,mode='render',kind='mod
   const workflow=await request('/actions/workflows/render-module.yml',{optional:true});
   if(!workflow)throw Error('연결한 저장소에 render-module.yml 워크플로를 먼저 설치해야 합니다. 설정 안내를 확인해 주세요.');
   const id=crypto.randomUUID();
-  if(!['render','bake','hybrid'].includes(mode))throw Error('지원하지 않는 변환 방식입니다.');
+  if(!['render','bake','hybrid','radiance'].includes(mode))throw Error('지원하지 않는 변환 방식입니다.');
   if(!['module','layout'].includes(kind))throw Error('지원하지 않는 변환 대상입니다.');
   await request('/actions/workflows/render-module.yml/dispatches',{method:'POST',body:JSON.stringify({ref:session.branch,inputs:{manifest:version.remote.manifest,source_ref:version.remote.commit,request_id:id,quality,scene,mode,kind}})});
   return {id,repo:session.repo,mode,kind,startedAt:new Date().toISOString()};
@@ -134,8 +134,9 @@ export async function renderStatus(job){
   if(run.status!=='completed')return {status:run.status,url:run.html_url};
   if(run.conclusion!=='success')return {status:'failed',url:run.html_url,message:`렌더 작업이 ${run.conclusion} 상태로 종료되었습니다.`};
   const report=await fileJSON(`studio/renders/${job.id}/report.json`);
+  const validation=report?.bake?.radianceVersion?await fileJSON(`studio/renders/${job.id}/validation.json`):null;
   const bake=report?.bake?{id:job.id,repo:session.repo,quality:report.quality,scene:report.scene,report:report.bake,webScene:report.webScene}:null;
-  return {status:'complete',url:run.html_url,report,blob:await rawFile(`studio/renders/${job.id}/render.png`,session.branch),...(bake?{bake,bakedBlob:await bakedFile(bake,session.branch)}:{})};
+  return {status:'complete',url:run.html_url,report,validation,blob:await rawFile(`studio/renders/${job.id}/render.png`,session.branch),...(bake?{bake,bakedBlob:await bakedFile(bake,session.branch)}:{})};
 }
 
 export async function saveLayoutSnapshot(layout,quality='preview',{makeCurrent=true}={}){
@@ -169,7 +170,7 @@ export async function renderLayout(build){
   if(build.repo!==session?.repo)throw Error('배치를 저장한 GitHub 저장소에 연결해 주세요.');
   // Persisted layout pointers intentionally have no self-referential commit SHA.
   const sha=build.commit||(await request(`/git/ref/heads/${encodePath(session.branch)}`)).object.sha;
-  return renderRemote({remote:{repo:session.repo,manifest:build.manifest,commit:sha}},build.quality,'','hybrid','layout');
+  return renderRemote({remote:{repo:session.repo,manifest:build.manifest,commit:sha}},build.quality,'','radiance','layout');
 }
 export async function loadLayoutResult(build){
   if(!build||build.repo!==session?.repo)return null;
@@ -178,5 +179,5 @@ export async function loadLayoutResult(build){
   const report=await fileJSON(`studio/renders/${record.id}/report.json`);
   if(report?.layoutId!==build.id||report?.layoutDigest!==build.digest)throw Error('전체 베이킹 결과가 이 배치와 일치하지 않습니다.');
   const bake={...record,report:report.bake,webScene:report.webScene};
-  return {status:'complete',url:record.url,report,bake,bakedBlob:await bakedFile(bake,session.branch),blob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
+  return {status:'complete',url:record.url,report,validation:record.validation,bake,bakedBlob:await bakedFile(bake,session.branch),blob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
 }

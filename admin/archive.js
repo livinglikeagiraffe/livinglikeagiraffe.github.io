@@ -34,6 +34,6 @@ export async function unpack(input){
     const bytes=new Uint8Array(await file.arrayBuffer());
     for(let i=0;i<bytes.length;i+=65536){unzip.push(bytes.subarray(i,i+65536),i+65536>=bytes.length);if(failure)throw failure;}
   }
-  if(!files.some(f=>/\.glb$/i.test(f.name)))throw Error('미리보기에 사용할 GLB 파일을 함께 넣어 주세요.');
+  if(!files.some(f=>/\.(glb|blend)$/i.test(f.name)))throw Error('GLB 또는 .blend 원본을 넣어 주세요.');
   return files;
 }

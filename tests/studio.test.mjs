@@ -28,6 +28,11 @@ test('ZIP expansion is bounded even when compressed input is small',async()=>{
   const zip=zipSync({'model.glb':new Uint8Array(49*1024*1024)});
   await assert.rejects(()=>unpack([new File([zip],'oversized.zip')]),/48MiB/);
 });
+test('Blender-only uploads do not require a preview GLB',async()=>{
+ const files=await unpack([new File(['BLENDER-v306'],'source.blend')]);
+ assert.equal(files[0].name,'source.blend');
+ await assert.rejects(()=>unpack([new File(['text'],'notes.txt')]),/GLB 또는/);
+});
 
 import {LOOK_DEFAULTS,normalizeLook,sceneProfile} from '../admin/appearance.js';
 import {summary} from '../admin/storage.js';

@@ -42,7 +42,7 @@ def validate_snapshot(path):
     return snapshot,sources
 
 
-def compose_scene(path):
+def compose_scene(path, strict=False):
     import bpy
     from web_bake import read_roles
     from mathutils import Vector, Matrix
@@ -64,6 +64,10 @@ def compose_scene(path):
             if name not in available.scenes:raise ValueError('Source scene not found: '+name)
             loaded.scenes=[name]
         scene=loaded.scenes[0];bpy.context.window.scene=scene
+        if strict:
+            from radiance import preflight
+            audit=preflight(scene)
+            if audit['errors']:raise ValueError('\n'.join(audit['errors']))
         if scene.render.engine!='CYCLES':raise ValueError('Whole-space baking supports Cycles source scenes')
         if any(i.source=='FILE' and not i.packed_file for i in bpy.data.images):raise ValueError('Pack external images into every source .blend')
         allowed={entry['blend'].resolve() for entry in sources.values()}
@@ -73,14 +77,16 @@ def compose_scene(path):
         # Localize them before copying or baking, without changing the source file.
         roles, declared = read_roles(scene, source['manifest'])
         bpy.ops.object.make_local(type='ALL')
-        meshes=[o for o in scene.objects if o.type=='MESH' and not o.hide_render and o.visible_get()]
+        meshes=[o for o in scene.objects if o.type in ({'MESH','CURVE','FONT','SURFACE'} if strict else {'MESH'}) and not o.hide_render and o.visible_get()]
         if not meshes or len(meshes)>4000:raise ValueError('Source supports 1–4000 visible meshes')
-        if any(o.type in {'VOLUME','CURVE','FONT','META','SURFACE'} and not o.hide_render for o in scene.objects):raise ValueError('Convert non-mesh geometry before composition')
+        if any(o.type in ({'VOLUME','META'} if strict else {'VOLUME','CURVE','FONT','META','SURFACE'}) and not o.hide_render for o in scene.objects):raise ValueError('Convert unsupported geometry before composition')
         if any(o.instance_type!='NONE' or any(m.type in {'NODES','PARTICLE_SYSTEM'} for m in o.modifiers) for o in meshes):raise ValueError('Realize procedural instances before composition')
         deps=bpy.context.evaluated_depsgraph_get();frozen=[]
         for obj in meshes:
             evaluated=obj.evaluated_get(deps)
-            copy=obj.copy();copy.data=bpy.data.meshes.new_from_object(evaluated,preserve_all_data_layers=True,depsgraph=deps)
+            mesh=bpy.data.meshes.new_from_object(evaluated,preserve_all_data_layers=True,depsgraph=deps)
+            copy=obj.copy() if obj.type=='MESH' else bpy.data.objects.new(obj.name,mesh)
+            copy.data=mesh
             matrix=evaluated.matrix_world.copy();copy.parent=None;copy.constraints.clear();copy.animation_data_clear();copy.modifiers.clear();copy.matrix_world=matrix
             if obj in roles['WebBake']:
                 copy['studioWebBake'] = True
@@ -89,6 +95,8 @@ def compose_scene(path):
         others=[o for o in frozen if o!=backdrop];low,high=bounds(others or frozen);span=max(high.x-low.x,high.y-low.y,1)
         if backdrop.dimensions.z<span*.04 and backdrop.dimensions.x>span*3 and backdrop.dimensions.y>span*3:
             frozen.remove(backdrop)
+        else:
+            backdrop=None
         low,high=bounds(frozen)
         lights=[o for o in scene.objects if o.type=='LIGHT' and not o.hide_render]
         studio_lights=[o for o in lights if o.data.type in {'AREA','SUN'} and (o.data.type=='SUN' or o.data.size>span*.2)]
@@ -106,12 +114,17 @@ def compose_scene(path):
             rig_source = rig
         if first is None:
             first = rig
-        templates[version]={'meshes':frozen,'low':low,'high':high,'local':local,'scene':scene}
+        templates[version]={'meshes':frozen,'low':low,'high':high,'local':local,'scene':scene,'backdrop':backdrop}
     rig_source = rig_source or first
     source=first['scene']
     common.world=source.world.copy() if source.world else bpy.data.worlds.new('Shared world')
     for prop in ('view_transform','look','exposure','gamma'):
         setattr(common.view_settings,prop,getattr(source.view_settings,prop))
+    common.display_settings.display_device=source.display_settings.display_device
+    for prop in ('max_bounces','diffuse_bounces','glossy_bounces','transmission_bounces','transparent_max_bounces',
+                 'volume_bounces','caustics_reflective','caustics_refractive','sample_clamp_direct','sample_clamp_indirect',
+                 'blur_glossy','light_sampling_threshold'):
+        if hasattr(source.cycles,prop):setattr(common.cycles,prop,getattr(source.cycles,prop))
     g=snapshot['grid'];placements=[]
     for cell in snapshot['cells']:
         template=templates[cell['versionId']];low,high=template['low'],template['high'];size=high-low;center=(low+high)*.5
@@ -133,15 +146,20 @@ def compose_scene(path):
     module_meshes=[o for o in common.objects if o.type=='MESH'];low,high=bounds(module_meshes)
     width=g['columns']*g['width']+(g['columns']-1)*g['gap'];depth=g['rows']*g['depth']+(g['rows']-1)*g['gap'];span=max(width,depth,high.z,1)
     ratio=span/rig_source['span'];source_center=(rig_source['low']+rig_source['high'])*.5
-    if len(placements) == 1 and rig_source['authored']:
+    if len(placements) == 1:
         ratio = placements[0]['scale']
     for original in rig_source['lights']:
         light=original.copy();light.data=original.data.copy();matrix=original.matrix_world.copy();light.parent=None;light.constraints.clear();light.animation_data_clear()
-        matrix.translation=(matrix.translation-Vector((source_center.x,source_center.y,rig_source['low'].z)))*ratio
-        light.matrix_world=matrix
+        if len(placements)==1:
+            light.matrix_world=single_transform@matrix
+        else:
+            matrix.translation=(matrix.translation-Vector((source_center.x,source_center.y,rig_source['low'].z)))*ratio
+            light.matrix_world=matrix
         if light.data.type != 'SUN':
             light.data.energy *= ratio * ratio
-        if light.data.type == 'AREA':
+        if len(placements)==1:
+            pass  # The object transform already scales the emitter and its radius.
+        elif light.data.type == 'AREA':
             light.data.size *= ratio
             light.data.size_y *= ratio
         elif light.data.type in {'POINT', 'SPOT'}:
@@ -159,6 +177,10 @@ def compose_scene(path):
     mat=bpy.data.materials.new('Shared floor material');mat.use_nodes=True
     color=snapshot['environment']['floor'];srgb=[int(color[i:i+2],16)/255 for i in (1,3,5)];linear=[v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in srgb]
     shader=mat.node_tree.nodes.get('Principled BSDF');shader.inputs['Base Color'].default_value=(*linear,1);shader.inputs['Roughness'].default_value=.9;mesh.materials.append(mat)
+    if len(placements)==1 and templates[first['version']]['backdrop']:
+        # A single module retains the author's backdrop material and placement.
+        original=templates[first['version']]['backdrop']
+        floor.data=original.data.copy();floor.matrix_world=single_transform@original.matrix_world
     camera=bpy.data.objects.new('Whole space camera',bpy.data.cameras.new('Whole space camera'));common.collection.objects.link(camera);common.camera=camera;camera.data.type='ORTHO';camera.data.clip_end=span*20
     direction=Vector((1,-1,1))
     if source.camera:direction=source.camera.matrix_world.to_quaternion()@Vector((0,0,1))
@@ -166,7 +188,7 @@ def compose_scene(path):
     inverse=camera.rotation_euler.to_matrix().transposed()
     points=[inverse@Vector((x,y,z)) for x in (-width/2,width/2) for y in (-depth/2,depth/2) for z in (0,high.z)]
     camera.data.ortho_scale=max(max(p.x for p in points)-min(p.x for p in points),(max(p.y for p in points)-min(p.y for p in points))*4/3)*1.22
-    if len(placements) == 1 and role_reports[first['version']]['receivers'] and source.camera:
+    if len(placements) == 1 and source.camera:
         # Keep source PNG framing after grid recentering, rotation and uniform scaling.
         camera.data = source.camera.data.copy()
         camera.matrix_world = single_transform @ source.camera.matrix_world

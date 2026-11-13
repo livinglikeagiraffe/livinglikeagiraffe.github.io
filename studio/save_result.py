@@ -11,9 +11,28 @@ def save_result(root,result,request,source_ref,url):
     request=str(uuid.UUID(request));dest=root/'studio/renders'/request
     report=json.loads((result/'report.json').read_text())
     atlases=[a['name'] for a in report.get('bake',{}).get('atlases',[])]
-    pattern=r'(backdrop|(surfaces|module_[0-5]_[0-5])(_detail)?)(_p[01]){0,12}(_(albedo|normal|roughness|indirect))?\.png'
+    pattern=r'(backdrop|(surfaces|module_[0-5]_[0-5])(_detail)?)(_p[01]){0,12}(_(albedo|normal|roughness|indirect|diffuse|view[0-8]))?\.png'
     if any(not re.fullmatch(pattern,name) for name in atlases):raise ValueError('Invalid atlas path')
     names=['render.png','report.json']+(['baked.glb']+atlases if report.get('bake') else [])
+    radiance=report.get('bake',{}).get('radianceVersion')==1
+    validation=None
+    if radiance:
+        compatibility=json.loads((result/'compatibility.json').read_text())
+        if not compatibility.get('supported') or compatibility.get('errors'):
+            raise ValueError('Unsupported scene cannot publish a radiance result')
+        views=json.loads((result/'views.json').read_text())
+        if views.get('schema')!=1 or len(views.get('views',[]))!=6:
+            raise ValueError('Missing multi-view references')
+        references=[v['reference'] for v in views['views']]
+        if set(references)!={f'reference-{n}.png' for n in ('authored','left','right','near','low','heldout')}:
+            raise ValueError('Invalid reference paths')
+        names+=['views.json','compatibility.json','radiance-display.png']+references
+        validation=json.loads((result/'validation.json').read_text())
+        expected={'authored','left','right','near','low','heldout'}
+        if (validation.get('schema')!=1 or validation.get('modelSha256')!=report['bake']['sha256'] or
+                {v.get('view') for v in validation.get('views',[])}!=expected or len(validation['views'])!=6):
+            raise ValueError('Invalid web validation record')
+        names+=['validation.json']+[f'web-{name}.png' for name in sorted(expected)]
     for name in names:
         source=result/name
         if not source.is_file() or source.is_symlink() or source.stat().st_size>=48*1024**2:raise ValueError('Invalid result file')
@@ -25,6 +44,8 @@ def save_result(root,result,request,source_ref,url):
     index_path=root/'studio/render-index.json'
     index=json.loads(index_path.read_text()) if index_path.exists() else {'schema':1,'versions':{}}
     record={'id':request,'status':'complete','quality':report['quality'],'scene':report['scene'],'mode':report.get('mode','render'),'sourceCommit':source_ref,'url':url}
+    if radiance:
+        record['validation']=validation
     if report.get('layoutId'):
         uuid.UUID(report['layoutId'])
         if not re.fullmatch(r'[0-9a-f]{64}',report['layoutDigest']):raise ValueError('Invalid layout digest')
@@ -32,11 +53,13 @@ def save_result(root,result,request,source_ref,url):
         layout_path=root/'studio/layout.json'
         layout=json.loads(layout_path.read_text()) if layout_path.exists() else {}
         build=layout.get('build',{})
-        if report.get('bake',{}).get('hybridVersion')==1 and build.get('id')==report['layoutId'] and build.get('digest')==report['layoutDigest']:
+        if (report.get('bake',{}).get('hybridVersion')==1 or radiance and validation.get('passed') is True and all(v.get('passed') is True for v in validation['views']) and not validation.get('errors')) and build.get('id')==report['layoutId'] and build.get('digest')==report['layoutDigest']:
             public={'schema':1,'layoutId':report['layoutId'],'digest':report['layoutDigest'],'renderId':request,
                     'model':f'studio/renders/{request}/baked.glb','preview':f'studio/renders/{request}/render.png',
                     'sha256':report['bake']['sha256'],'bytes':report['bake']['bytes']}
-            (root/'studio/public-scene.json').write_text(json.dumps(public,indent=2))
+            if radiance:
+                public['views']=f'studio/renders/{request}/views.json'
+            (root/('studio/radiance-scene.json' if radiance else 'studio/public-scene.json')).write_text(json.dumps(public,indent=2))
     else:
         uuid.UUID(report['versionId']);index.setdefault('versions',{})[report['versionId']]=record
         if report.get('bake'):index.setdefault('bakes',{})[report['versionId']]=record
