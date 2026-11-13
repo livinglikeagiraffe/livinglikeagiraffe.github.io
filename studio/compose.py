@@ -165,7 +165,7 @@ def compose_scene(path, strict=False):
         elif light.data.type in {'POINT', 'SPOT'}:
             light.data.shadow_soft_size *= ratio
         common.collection.objects.link(light)
-    if not rig_source['lights'] and not rig_source['authored']:
+    if not strict and not rig_source['lights'] and not rig_source['authored']:
         for i,(position,energy,size) in enumerate([((.35,-.3,.9),7,.65),((-.5,.2,.65),4,.5)]):
             light=bpy.data.objects.new('Shared softbox '+str(i),bpy.data.lights.new('Shared softbox '+str(i),'AREA'))
             light.location=Vector(position)*span;light.rotation_euler=(-light.location).to_track_quat('-Z','Y').to_euler();light.data.energy=span*span*energy;light.data.size=span*size;common.collection.objects.link(light)
@@ -181,6 +181,8 @@ def compose_scene(path, strict=False):
         # A single module retains the author's backdrop material and placement.
         original=templates[first['version']]['backdrop']
         floor.data=original.data.copy();floor.matrix_world=single_transform@original.matrix_world
+    elif strict and len(placements)==1:
+        bpy.data.objects.remove(floor,do_unlink=True);floor=None
     camera=bpy.data.objects.new('Whole space camera',bpy.data.cameras.new('Whole space camera'));common.collection.objects.link(camera);common.camera=camera;camera.data.type='ORTHO';camera.data.clip_end=span*20
     direction=Vector((1,-1,1))
     if source.camera:direction=source.camera.matrix_world.to_quaternion()@Vector((0,0,1))
@@ -199,4 +201,4 @@ def compose_scene(path, strict=False):
         common.render.pixel_aspect_x = source.render.pixel_aspect_x
         common.render.pixel_aspect_y = source.render.pixel_aspect_y
     bpy.context.view_layer.update()
-    return common,{'schema':1,'id':snapshot['id'],'moduleId':'layout'}, {'layoutId':snapshot['id'],'layoutDigest':snapshot['digest'],'layout':{k:snapshot[k] for k in ('grid','cells','environment')},'placements':placements,'roles':role_reports,'studioLightSource':rig_source['version'],'sharedFloor':floor.name,'sharedLights':[o.name for o in common.objects if o.type=='LIGHT' and not o.get('studioModule')]}
+    return common,{'schema':1,'id':snapshot['id'],'moduleId':'layout'}, {'layoutId':snapshot['id'],'layoutDigest':snapshot['digest'],'layout':{k:snapshot[k] for k in ('grid','cells','environment')},'placements':placements,'roles':role_reports,'studioLightSource':rig_source['version'],'sharedFloor':floor.name if floor else None,'sharedLights':[o.name for o in common.objects if o.type=='LIGHT' and not o.get('studioModule')]}
