@@ -1,0 +1,1918 @@
+{
+  "schema": 1,
+  "domain": {
+    "azimuth": 0.5880026137412265,
+    "elevation": 0.6251684448108659,
+    "azimuthRange": [
+      0.41346968854179356,
+      0.7625355389406595
+    ],
+    "elevationRange": [
+      0.5902618597709792,
+      0.7647947849704122
+    ],
+    "tilt": 0.17453292519943295,
+    "pan": 0.22,
+    "zoomMax": 2.2,
+    "span": 72.62999999523163,
+    "distance": 193.14992904663086,
+    "target": [
+      33.12371826171875,
+      2.9621200561523438,
+      -22.314422607421875
+    ],
+    "up": [
+      -0.3246293067932129,
+      0.8108645677566528,
+      -0.4869440495967865
+    ],
+    "projection": "ORTHO",
+    "exploration": {
+      "version": 1,
+      "elevationLift": 0.13962634015954636,
+      "yaw": 0.17453292519943295
+    }
+  },
+  "views": [
+    {
+      "id": "authored",
+      "reference": "reference-authored.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          120.0,
+          116.0,
+          108.0
+        ],
+        "quaternion": [
+          -0.2943236529827118,
+          0.2757418155670166,
+          0.08911401033401489,
+          0.9107133150100708
+        ],
+        "orthoScale": 112.0,
+        "aspect": 1.25,
+        "fov": 3.096957207544956,
+        "projection": [
+          0.01785714365541935,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0223214291036129,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0,
+        0
+      ],
+      "zoom": 0,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 405,
+          "y": 465,
+          "width": 75,
+          "height": 35
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 443,
+          "y": 431,
+          "width": 75,
+          "height": 35
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 415,
+          "y": 465,
+          "width": 64,
+          "height": 31
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 453,
+          "y": 432,
+          "width": 65,
+          "height": 30
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 406,
+          "y": 474,
+          "width": 64,
+          "height": 30
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 444,
+          "y": 440,
+          "width": 64,
+          "height": 30
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 444,
+          "y": 432,
+          "width": 11,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 507,
+          "y": 456,
+          "width": 11,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 406,
+          "y": 465,
+          "width": 10,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 469,
+          "y": 490,
+          "width": 10,
+          "height": 14
+        }
+      ]
+    },
+    {
+      "id": "start",
+      "reference": "reference-start.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          110.42807006835938,
+          136.69699096679688,
+          93.64210510253906
+        ],
+        "quaternion": [
+          -0.3571348190307617,
+          0.2688538432121277,
+          0.10813172906637192,
+          0.8879638910293579
+        ],
+        "orthoScale": 112.0,
+        "aspect": 1.25,
+        "fov": 3.096957207544956,
+        "projection": [
+          0.01785714365541935,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0223214291036129,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0,
+        0
+      ],
+      "zoom": 0,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 405,
+          "y": 474,
+          "width": 75,
+          "height": 41
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 443,
+          "y": 434,
+          "width": 75,
+          "height": 41
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 453,
+          "y": 434,
+          "width": 65,
+          "height": 35
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 415,
+          "y": 474,
+          "width": 64,
+          "height": 35
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 444,
+          "y": 444,
+          "width": 64,
+          "height": 35
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 406,
+          "y": 484,
+          "width": 64,
+          "height": 34
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 444,
+          "y": 435,
+          "width": 11,
+          "height": 15
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 507,
+          "y": 464,
+          "width": 11,
+          "height": 15
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 406,
+          "y": 474,
+          "width": 10,
+          "height": 15
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 469,
+          "y": 503,
+          "width": 10,
+          "height": 15
+        }
+      ]
+    },
+    {
+      "id": "left",
+      "reference": "reference-left.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          77.34213256835938,
+          124.4403076171875,
+          117.62985229492188
+        ],
+        "quaternion": [
+          -0.33730027079582214,
+          0.19268983602523804,
+          0.07074242830276489,
+          0.9187462329864502
+        ],
+        "orthoScale": 78.87323760986328,
+        "aspect": 1.25,
+        "fov": 3.078221015071307,
+        "projection": [
+          0.025357143953442574,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.03169642761349678,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        -0.22,
+        0
+      ],
+      "zoom": 0.35,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 594,
+          "y": 490,
+          "width": 111,
+          "height": 45
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 634,
+          "y": 432,
+          "width": 111,
+          "height": 45
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 595,
+          "y": 505,
+          "width": 100,
+          "height": 35
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 605,
+          "y": 491,
+          "width": 100,
+          "height": 35
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 634,
+          "y": 447,
+          "width": 100,
+          "height": 35
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 644,
+          "y": 433,
+          "width": 100,
+          "height": 35
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 693,
+          "y": 519,
+          "width": 12,
+          "height": 21
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 634,
+          "y": 433,
+          "width": 12,
+          "height": 21
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 595,
+          "y": 491,
+          "width": 11,
+          "height": 21
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 733,
+          "y": 461,
+          "width": 11,
+          "height": 21
+        }
+      ]
+    },
+    {
+      "id": "right",
+      "reference": "reference-right.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          145.2959747314453,
+          124.4403076171875,
+          72.3272933959961
+        ],
+        "quaternion": [
+          -0.31989166140556335,
+          0.3493010699748993,
+          0.12823928892612457,
+          0.8713281750679016
+        ],
+        "orthoScale": 78.87323760986328,
+        "aspect": 1.25,
+        "fov": 3.078221015071307,
+        "projection": [
+          0.025357143953442574,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.03169642761349678,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0.22,
+        0
+      ],
+      "zoom": 0.35,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 212,
+          "y": 419,
+          "width": 98,
+          "height": 62
+        },
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 145,
+          "y": 465,
+          "width": 97,
+          "height": 62
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 162,
+          "y": 465,
+          "width": 79,
+          "height": 56
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 145,
+          "y": 477,
+          "width": 80,
+          "height": 55
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 213,
+          "y": 431,
+          "width": 80,
+          "height": 55
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 230,
+          "y": 420,
+          "width": 79,
+          "height": 55
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 146,
+          "y": 466,
+          "width": 18,
+          "height": 18
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 223,
+          "y": 514,
+          "width": 18,
+          "height": 18
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 213,
+          "y": 420,
+          "width": 18,
+          "height": 18
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 291,
+          "y": 468,
+          "width": 18,
+          "height": 18
+        },
+        {
+          "name": "Projector_Lens",
+          "x": 536,
+          "y": 382,
+          "width": 8,
+          "height": 8
+        }
+      ]
+    },
+    {
+      "id": "near",
+      "reference": "reference-near.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          115.01441192626953,
+          101.864990234375,
+          100.52162170410156
+        ],
+        "quaternion": [
+          -0.2783846855163574,
+          0.27725502848625183,
+          0.084288090467453,
+          0.9157112836837769
+        ],
+        "orthoScale": 50.90909194946289,
+        "aspect": 1.25,
+        "fov": 3.043457211689834,
+        "projection": [
+          0.03928571194410324,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0491071380674839,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0,
+        0
+      ],
+      "zoom": 1,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 298,
+          "y": 543,
+          "width": 163,
+          "height": 72
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 382,
+          "y": 472,
+          "width": 163,
+          "height": 72
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 299,
+          "y": 561,
+          "width": 141,
+          "height": 63
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 319,
+          "y": 544,
+          "width": 141,
+          "height": 63
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 383,
+          "y": 491,
+          "width": 141,
+          "height": 63
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 404,
+          "y": 474,
+          "width": 140,
+          "height": 63
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 299,
+          "y": 544,
+          "width": 23,
+          "height": 29
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 383,
+          "y": 474,
+          "width": 23,
+          "height": 29
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 438,
+          "y": 595,
+          "width": 22,
+          "height": 29
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 522,
+          "y": 525,
+          "width": 22,
+          "height": 29
+        },
+        {
+          "name": "Projector_Lens",
+          "x": 859,
+          "y": 377,
+          "width": 10,
+          "height": 11
+        }
+      ]
+    },
+    {
+      "id": "low",
+      "reference": "reference-low.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          126.48114776611328,
+          110.4984130859375,
+          83.72794342041016
+        ],
+        "quaternion": [
+          -0.29447832703590393,
+          0.3111979067325592,
+          0.1020745038986206,
+          0.8977857232093811
+        ],
+        "orthoScale": 58.94736862182617,
+        "aspect": 1.25,
+        "fov": 3.056822028608971,
+        "projection": [
+          0.03392856940627098,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0424107126891613,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0.1,
+        0.08
+      ],
+      "zoom": 0.75,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 260,
+          "y": 512,
+          "width": 137,
+          "height": 71
+        },
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 179,
+          "y": 573,
+          "width": 137,
+          "height": 70
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 180,
+          "y": 589,
+          "width": 115,
+          "height": 63
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 200,
+          "y": 574,
+          "width": 115,
+          "height": 63
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 261,
+          "y": 528,
+          "width": 115,
+          "height": 63
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 281,
+          "y": 513,
+          "width": 115,
+          "height": 63
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 180,
+          "y": 574,
+          "width": 22,
+          "height": 25
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 293,
+          "y": 627,
+          "width": 22,
+          "height": 25
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 261,
+          "y": 513,
+          "width": 22,
+          "height": 25
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 374,
+          "y": 566,
+          "width": 22,
+          "height": 25
+        },
+        {
+          "name": "Projector_Lens",
+          "x": 683,
+          "y": 444,
+          "width": 10,
+          "height": 9
+        }
+      ]
+    },
+    {
+      "id": "heldout",
+      "reference": "reference-heldout.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          104.93534851074219,
+          116.75732421875,
+          109.08023834228516
+        ],
+        "quaternion": [
+          -0.31504908204078674,
+          0.24867713451385498,
+          0.08591660112142563,
+          0.9118783473968506
+        ],
+        "orthoScale": 66.50831604003906,
+        "aspect": 1.25,
+        "fov": 3.066449460520654,
+        "projection": [
+          0.030071428045630455,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.037589285522699356,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        -0.07,
+        -0.06
+      ],
+      "zoom": 0.57,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 485,
+          "y": 417,
+          "width": 128,
+          "height": 58
+        },
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 427,
+          "y": 479,
+          "width": 127,
+          "height": 57
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 427,
+          "y": 495,
+          "width": 112,
+          "height": 49
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 486,
+          "y": 433,
+          "width": 112,
+          "height": 49
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 442,
+          "y": 479,
+          "width": 111,
+          "height": 49
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 501,
+          "y": 418,
+          "width": 111,
+          "height": 49
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 486,
+          "y": 418,
+          "width": 17,
+          "height": 24
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 427,
+          "y": 480,
+          "width": 17,
+          "height": 23
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 596,
+          "y": 458,
+          "width": 16,
+          "height": 24
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 537,
+          "y": 520,
+          "width": 16,
+          "height": 23
+        },
+        {
+          "name": "Projector_Lens",
+          "x": 842,
+          "y": 325,
+          "width": 8,
+          "height": 8
+        }
+      ]
+    },
+    {
+      "id": "far-nw",
+      "reference": "reference-far-nw.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          84.68634033203125,
+          136.69699096679688,
+          127.46255493164062
+        ],
+        "quaternion": [
+          -0.36520013213157654,
+          0.1904396414756775,
+          0.07659391313791275,
+          0.9080170392990112
+        ],
+        "orthoScale": 112.0,
+        "aspect": 1.25,
+        "fov": 3.096957207544956,
+        "projection": [
+          0.01785714365541935,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0223214291036129,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        -0.22,
+        -0.22
+      ],
+      "zoom": 0,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 540,
+          "y": 369,
+          "width": 79,
+          "height": 34
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 568,
+          "y": 325,
+          "width": 78,
+          "height": 34
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 541,
+          "y": 380,
+          "width": 71,
+          "height": 27
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 568,
+          "y": 336,
+          "width": 71,
+          "height": 27
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 548,
+          "y": 369,
+          "width": 70,
+          "height": 27
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 575,
+          "y": 326,
+          "width": 71,
+          "height": 26
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 568,
+          "y": 326,
+          "width": 9,
+          "height": 16
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 638,
+          "y": 347,
+          "width": 8,
+          "height": 16
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 541,
+          "y": 370,
+          "width": 8,
+          "height": 15
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 610,
+          "y": 391,
+          "width": 8,
+          "height": 15
+        }
+      ]
+    },
+    {
+      "id": "far-ne",
+      "reference": "reference-far-ne.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          151.547607421875,
+          136.69699096679688,
+          82.88836669921875
+        ],
+        "quaternion": [
+          -0.3463515341281891,
+          0.3452218770980835,
+          0.13884659111499786,
+          0.8611527681350708
+        ],
+        "orthoScale": 112.0,
+        "aspect": 1.25,
+        "fov": 3.096957207544956,
+        "projection": [
+          0.01785714365541935,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0223214291036129,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0.22,
+        -0.22
+      ],
+      "zoom": 0,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 273,
+          "y": 350,
+          "width": 69,
+          "height": 47
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 320,
+          "y": 315,
+          "width": 69,
+          "height": 47
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 285,
+          "y": 350,
+          "width": 56,
+          "height": 42
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 321,
+          "y": 324,
+          "width": 56,
+          "height": 42
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 332,
+          "y": 316,
+          "width": 57,
+          "height": 41
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 273,
+          "y": 359,
+          "width": 56,
+          "height": 41
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 273,
+          "y": 350,
+          "width": 13,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 321,
+          "y": 316,
+          "width": 13,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 376,
+          "y": 352,
+          "width": 13,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 328,
+          "y": 387,
+          "width": 13,
+          "height": 13
+        }
+      ]
+    },
+    {
+      "id": "far-sw",
+      "reference": "reference-far-sw.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          66.95967102050781,
+          136.69699096679688,
+          100.87255096435547
+        ],
+        "quaternion": [
+          -0.36520010232925415,
+          0.19043965637683868,
+          0.07659391313791275,
+          0.908017098903656
+        ],
+        "orthoScale": 112.0,
+        "aspect": 1.25,
+        "fov": 3.096957207544956,
+        "projection": [
+          0.01785714365541935,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0223214291036129,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        -0.22,
+        0.22
+      ],
+      "zoom": 0,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 589,
+          "y": 561,
+          "width": 79,
+          "height": 34
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 617,
+          "y": 518,
+          "width": 79,
+          "height": 34
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 624,
+          "y": 518,
+          "width": 71,
+          "height": 27
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 597,
+          "y": 562,
+          "width": 70,
+          "height": 27
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 590,
+          "y": 573,
+          "width": 71,
+          "height": 26
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 618,
+          "y": 529,
+          "width": 70,
+          "height": 26
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 617,
+          "y": 518,
+          "width": 9,
+          "height": 16
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 590,
+          "y": 562,
+          "width": 8,
+          "height": 16
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 659,
+          "y": 583,
+          "width": 8,
+          "height": 16
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 687,
+          "y": 539,
+          "width": 8,
+          "height": 16
+        }
+      ]
+    },
+    {
+      "id": "far-se",
+      "reference": "reference-far-se.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          133.82095336914062,
+          136.69699096679688,
+          56.298370361328125
+        ],
+        "quaternion": [
+          -0.3463515341281891,
+          0.3452219069004059,
+          0.13884660601615906,
+          0.8611527681350708
+        ],
+        "orthoScale": 112.0,
+        "aspect": 1.25,
+        "fov": 3.096957207544956,
+        "projection": [
+          0.01785714365541935,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0223214291036129,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0.22,
+        0.22
+      ],
+      "zoom": 0,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 271,
+          "y": 508,
+          "width": 69,
+          "height": 47
+        },
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 224,
+          "y": 542,
+          "width": 68,
+          "height": 47
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 283,
+          "y": 508,
+          "width": 57,
+          "height": 42
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 224,
+          "y": 551,
+          "width": 56,
+          "height": 42
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 236,
+          "y": 543,
+          "width": 56,
+          "height": 42
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 272,
+          "y": 517,
+          "width": 56,
+          "height": 41
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 224,
+          "y": 543,
+          "width": 13,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 279,
+          "y": 579,
+          "width": 13,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 272,
+          "y": 508,
+          "width": 13,
+          "height": 14
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 327,
+          "y": 545,
+          "width": 13,
+          "height": 13
+        }
+      ]
+    },
+    {
+      "id": "near-nw",
+      "reference": "reference-near-nw.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          88.00839233398438,
+          101.864990234375,
+          135.03396606445312
+        ],
+        "quaternion": [
+          -0.2846715450286865,
+          0.1963905245065689,
+          0.05970453470945358,
+          0.9363910555839539
+        ],
+        "orthoScale": 50.90909194946289,
+        "aspect": 1.25,
+        "fov": 3.043457211689834,
+        "projection": [
+          0.03928571194410324,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0491071380674839,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        -0.22,
+        -0.22
+      ],
+      "zoom": 1,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 595,
+          "y": 357,
+          "width": 172,
+          "height": 60
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 656,
+          "y": 280,
+          "width": 172,
+          "height": 59
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 596,
+          "y": 377,
+          "width": 155,
+          "height": 50
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 611,
+          "y": 359,
+          "width": 155,
+          "height": 49
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 657,
+          "y": 300,
+          "width": 155,
+          "height": 49
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 672,
+          "y": 281,
+          "width": 155,
+          "height": 49
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 657,
+          "y": 281,
+          "width": 17,
+          "height": 31
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 596,
+          "y": 359,
+          "width": 17,
+          "height": 30
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 749,
+          "y": 396,
+          "width": 17,
+          "height": 30
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 810,
+          "y": 319,
+          "width": 17,
+          "height": 30
+        }
+      ]
+    },
+    {
+      "id": "near-ne",
+      "reference": "reference-near-ne.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          157.25889587402344,
+          101.864990234375,
+          88.86695861816406
+        ],
+        "quaternion": [
+          -0.26997920870780945,
+          0.3560095429420471,
+          0.10823018848896027,
+          0.8880622982978821
+        ],
+        "orthoScale": 50.90909194946289,
+        "aspect": 1.25,
+        "fov": 3.043457211689834,
+        "projection": [
+          0.03928571194410324,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0491071380674839,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0.22,
+        -0.22
+      ],
+      "zoom": 1,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 111,
+          "y": 263,
+          "width": 151,
+          "height": 82
+        },
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 7,
+          "y": 324,
+          "width": 150,
+          "height": 82
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 33,
+          "y": 325,
+          "width": 123,
+          "height": 76
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 112,
+          "y": 279,
+          "width": 123,
+          "height": 76
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 138,
+          "y": 264,
+          "width": 123,
+          "height": 76
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 8,
+          "y": 340,
+          "width": 122,
+          "height": 76
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 128,
+          "y": 389,
+          "width": 28,
+          "height": 27
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 8,
+          "y": 325,
+          "width": 27,
+          "height": 27
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 113,
+          "y": 264,
+          "width": 27,
+          "height": 27
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 233,
+          "y": 328,
+          "width": 27,
+          "height": 27
+        },
+        {
+          "name": "Projector_Lens",
+          "x": 613,
+          "y": 213,
+          "width": 12,
+          "height": 11
+        }
+      ]
+    },
+    {
+      "id": "near-sw",
+      "reference": "reference-near-sw.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          70.28172302246094,
+          101.864990234375,
+          108.4439697265625
+        ],
+        "quaternion": [
+          -0.2846715450286865,
+          0.1963905245065689,
+          0.05970453470945358,
+          0.9363910555839539
+        ],
+        "orthoScale": 50.90909194946289,
+        "aspect": 1.25,
+        "fov": 3.043457211689834,
+        "projection": [
+          0.03928571194410324,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0491071380674839,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        -0.22,
+        0.22
+      ],
+      "zoom": 1,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 703,
+          "y": 698,
+          "width": 172,
+          "height": 59
+        },
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 764,
+          "y": 621,
+          "width": 172,
+          "height": 59
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 704,
+          "y": 718,
+          "width": 155,
+          "height": 49
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 719,
+          "y": 699,
+          "width": 155,
+          "height": 49
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 765,
+          "y": 641,
+          "width": 155,
+          "height": 49
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 780,
+          "y": 622,
+          "width": 155,
+          "height": 49
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 917,
+          "y": 659,
+          "width": 18,
+          "height": 31
+        },
+        {
+          "name": "Showcase_End_Glass",
+          "x": 704,
+          "y": 699,
+          "width": 17,
+          "height": 31
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 765,
+          "y": 622,
+          "width": 17,
+          "height": 31
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 857,
+          "y": 737,
+          "width": 17,
+          "height": 30
+        }
+      ]
+    },
+    {
+      "id": "near-se",
+      "reference": "reference-near-se.png",
+      "camera": {
+        "name": "Quarter_Camera",
+        "type": "ORTHO",
+        "position": [
+          139.5322265625,
+          101.864990234375,
+          62.27696228027344
+        ],
+        "quaternion": [
+          -0.26997920870780945,
+          0.35600951313972473,
+          0.10823018848896027,
+          0.8880622982978821
+        ],
+        "orthoScale": 50.90909194946289,
+        "aspect": 1.25,
+        "fov": 3.043457211689834,
+        "projection": [
+          0.03928571194410324,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0491071380674839,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -0.0020001998636871576,
+          0.0,
+          -0.0,
+          -0.0,
+          -1.0001999139785767,
+          1.0
+        ],
+        "shift": [
+          0.0,
+          0.0
+        ]
+      },
+      "width": 990,
+      "height": 792,
+      "pan": [
+        0.22,
+        0.22
+      ],
+      "zoom": 1,
+      "reflectionRegions": [
+        {
+          "name": "Showcase_Top_Glass.001",
+          "x": 3,
+          "y": 603,
+          "width": 151,
+          "height": 83
+        },
+        {
+          "name": "Showcase_Side_Glass.003",
+          "x": 30,
+          "y": 604,
+          "width": 123,
+          "height": 76
+        },
+        {
+          "name": "Showcase_Side_Glass.002",
+          "x": 5,
+          "y": 619,
+          "width": 122,
+          "height": 76
+        },
+        {
+          "name": "Showcase_Top_Glass",
+          "x": 0,
+          "y": 664,
+          "width": 49,
+          "height": 83
+        },
+        {
+          "name": "Showcase_Side_Glass.001",
+          "x": 0,
+          "y": 665,
+          "width": 48,
+          "height": 76
+        },
+        {
+          "name": "Showcase_Side_Glass",
+          "x": 0,
+          "y": 680,
+          "width": 22,
+          "height": 76
+        },
+        {
+          "name": "Showcase_End_Glass.003",
+          "x": 125,
+          "y": 668,
+          "width": 28,
+          "height": 27
+        },
+        {
+          "name": "Showcase_End_Glass.002",
+          "x": 5,
+          "y": 604,
+          "width": 27,
+          "height": 27
+        },
+        {
+          "name": "Showcase_End_Glass.001",
+          "x": 20,
+          "y": 730,
+          "width": 28,
+          "height": 26
+        },
+        {
+          "name": "Projector_Lens",
+          "x": 506,
+          "y": 554,
+          "width": 11,
+          "height": 10
+        }
+      ]
+    }
+  ]
+}

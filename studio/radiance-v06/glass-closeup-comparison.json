@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "beforeModel": "8e5459a1234ea33c12f382953bc4f199628a9c6363faddaee9d97271664465e9",
+  "afterModel": "8abac4d1b1e7be876a1e5ea2e00cff79eb73790d8e76c4d85744fec768370379",
+  "beforeRenderer": 1,
+  "afterRenderer": 2,
+  "metric": "Area-weighted MAE of projected reflection rectangles; rectangles include surroundings and may overlap",
+  "views": [
+    {
+      "view": "near",
+      "width": 1980,
+      "height": 1584,
+      "beforeMAE": 2.2800499918906283,
+      "afterMAE": 1.579701493350997,
+      "beforeWholeMAE": 1.7466664753596572,
+      "afterWholeMAE": 1.5302057825732067
+    },
+    {
+      "view": "near-se",
+      "width": 1980,
+      "height": 1584,
+      "beforeMAE": 2.2453344553950823,
+      "afterMAE": 1.5782331873467783,
+      "beforeWholeMAE": 1.4418714714484917,
+      "afterWholeMAE": 1.260622640546883
+    }
+  ]
+}

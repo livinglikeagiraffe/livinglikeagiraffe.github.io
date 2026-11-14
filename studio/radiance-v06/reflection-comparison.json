@@ -1,143 +1,143 @@
 {
   "schema": 1,
-  "previousModel": "2ce78c11be2353cf5105b3eb98eb49c710c6e367fcbbd06cc17209c0b4276f2c",
-  "rebakedModel": "8e5459a1234ea33c12f382953bc4f199628a9c6363faddaee9d97271664465e9",
+  "previousModel": "8e5459a1234ea33c12f382953bc4f199628a9c6363faddaee9d97271664465e9",
+  "rebakedModel": "8abac4d1b1e7be876a1e5ea2e00cff79eb73790d8e76c4d85744fec768370379",
   "reflectionMetric": "Area-weighted MAE of reflective object bounding rectangles; rectangles can overlap",
   "views": [
     {
       "view": "authored",
-      "previousMAE": 1.12134858687889,
-      "rebakedMAE": 1.1170701118933442,
-      "previousSSIM": 0.9800435673023351,
-      "rebakedSSIM": 0.9801692517954217,
-      "previousReflectionMAE": 4.0404055245371735,
-      "rebakedReflectionMAE": 3.8434714467626607
+      "previousMAE": 1.1170701118933442,
+      "rebakedMAE": 0.8765835969118797,
+      "previousSSIM": 0.9801692517954217,
+      "rebakedSSIM": 0.9912912850013196,
+      "previousReflectionMAE": 3.8434714467626607,
+      "rebakedReflectionMAE": 2.6840043099226167
     },
     {
       "view": "start",
-      "previousMAE": 1.0888727340747544,
-      "rebakedMAE": 1.0919523518008367,
-      "previousSSIM": 0.9771741605020458,
-      "rebakedSSIM": 0.9776922793721212,
-      "previousReflectionMAE": 4.644198332378587,
-      "rebakedReflectionMAE": 3.850317187533151
+      "previousMAE": 1.0919544774342753,
+      "rebakedMAE": 0.8313467163214638,
+      "previousSSIM": 0.9776921597804397,
+      "rebakedSSIM": 0.9908648379952517,
+      "previousReflectionMAE": 3.8503596206479536,
+      "rebakedReflectionMAE": 2.485456049901343
     },
     {
       "view": "left",
-      "previousMAE": 1.4385998027412168,
-      "rebakedMAE": 1.3890423596231678,
-      "previousSSIM": 0.9712126221358606,
-      "rebakedSSIM": 0.9720884396894884,
-      "previousReflectionMAE": 4.444649249345515,
-      "rebakedReflectionMAE": 3.6042902174493783
+      "previousMAE": 1.38904193449648,
+      "rebakedMAE": 1.0635517634255007,
+      "previousSSIM": 0.9720883937801607,
+      "rebakedSSIM": 0.9873600563777982,
+      "previousReflectionMAE": 3.6042902174493783,
+      "rebakedReflectionMAE": 2.4272853555591176
     },
     {
       "view": "right",
-      "previousMAE": 1.4075481243410537,
-      "rebakedMAE": 1.355716253443526,
-      "previousSSIM": 0.972723822006031,
-      "rebakedSSIM": 0.9735596522194113,
-      "previousReflectionMAE": 4.1267825096446265,
-      "rebakedReflectionMAE": 3.174215803217383
+      "previousMAE": 1.3557175288235894,
+      "rebakedMAE": 1.040249719416386,
+      "previousSSIM": 0.9735592765013872,
+      "rebakedSSIM": 0.9883511959573782,
+      "previousReflectionMAE": 3.174226549319234,
+      "rebakedReflectionMAE": 2.29705449348249
     },
     {
       "view": "near",
-      "previousMAE": 2.0274716865625955,
-      "rebakedMAE": 2.0165157466925145,
-      "previousSSIM": 0.9646992845903971,
-      "rebakedSSIM": 0.9653390848157669,
-      "previousReflectionMAE": 3.280247374083024,
-      "rebakedReflectionMAE": 2.815983090338031
+      "previousMAE": 2.0165157466925145,
+      "rebakedMAE": 1.6038223140495869,
+      "previousSSIM": 0.9653390848157669,
+      "rebakedSSIM": 0.9830984145000863,
+      "previousReflectionMAE": 2.815983090338031,
+      "rebakedReflectionMAE": 2.013033630117362
     },
     {
       "view": "low",
-      "previousMAE": 1.8366097847158454,
-      "rebakedMAE": 1.7782496684011835,
-      "previousSSIM": 0.9664641680352443,
-      "rebakedSSIM": 0.9671430008610055,
-      "previousReflectionMAE": 3.2516259117955206,
-      "rebakedReflectionMAE": 2.7990854040234323
+      "previousMAE": 1.7782496684011835,
+      "rebakedMAE": 1.3897055572560624,
+      "previousSSIM": 0.9671430008610055,
+      "rebakedSSIM": 0.9840587394843644,
+      "previousReflectionMAE": 2.7990854040234323,
+      "rebakedReflectionMAE": 1.9711915445997326
     },
     {
       "view": "heldout",
-      "previousMAE": 1.6842282250110534,
-      "rebakedMAE": 1.6822853960480224,
-      "previousSSIM": 0.9667603050970974,
-      "rebakedSSIM": 0.9674151736064007,
-      "previousReflectionMAE": 3.649480751075212,
-      "rebakedReflectionMAE": 3.194692122102171
+      "previousMAE": 1.6822879468081489,
+      "rebakedMAE": 1.3023603033704043,
+      "previousSSIM": 0.9674150303768986,
+      "rebakedSSIM": 0.9846559819063211,
+      "previousReflectionMAE": 3.194683380537781,
+      "rebakedReflectionMAE": 2.189709430399665
     },
     {
       "view": "far-nw",
-      "previousMAE": 1.1269687616909838,
-      "rebakedMAE": 1.1311834676733667,
-      "previousSSIM": 0.9772470174921815,
-      "rebakedSSIM": 0.9778008826351182,
-      "previousReflectionMAE": 5.076154992548435,
-      "rebakedReflectionMAE": 4.305538996522603
+      "previousMAE": 1.1311834676733667,
+      "rebakedMAE": 0.8724696459544944,
+      "previousSSIM": 0.9778008826351182,
+      "rebakedSSIM": 0.990901690748493,
+      "previousReflectionMAE": 4.305538996522603,
+      "rebakedReflectionMAE": 2.763835072031793
     },
     {
       "view": "far-ne",
-      "previousMAE": 1.0728871203618677,
-      "rebakedMAE": 1.0619881474679453,
-      "previousSSIM": 0.9771894902992961,
-      "rebakedSSIM": 0.97781501423625,
-      "previousReflectionMAE": 4.768795098157778,
-      "rebakedReflectionMAE": 3.565566170838876
+      "previousMAE": 1.0619881474679453,
+      "rebakedMAE": 0.8048838553889059,
+      "previousSSIM": 0.97781501423625,
+      "rebakedSSIM": 0.9911532426623805,
+      "previousReflectionMAE": 3.565566170838876,
+      "rebakedReflectionMAE": 2.445015519812956
     },
     {
       "view": "far-sw",
-      "previousMAE": 1.0955259667380879,
-      "rebakedMAE": 1.080800853654389,
-      "previousSSIM": 0.9770470069800888,
-      "rebakedSSIM": 0.9775815901050897,
-      "previousReflectionMAE": 5.0945188065505125,
-      "rebakedReflectionMAE": 4.249956379770184
+      "previousMAE": 1.0808046797945787,
+      "rebakedMAE": 0.8250986293915586,
+      "previousSSIM": 0.977581523940863,
+      "rebakedSSIM": 0.9908253515028892,
+      "previousReflectionMAE": 4.250006231461403,
+      "rebakedReflectionMAE": 2.7423166080909294
     },
     {
       "view": "far-se",
-      "previousMAE": 1.0643416488113457,
-      "rebakedMAE": 1.0420922184811074,
-      "previousSSIM": 0.9770942334008125,
-      "rebakedSSIM": 0.9776826480194071,
-      "previousReflectionMAE": 4.66737168640722,
-      "rebakedReflectionMAE": 3.64305857706873
+      "previousMAE": 1.0420922184811074,
+      "rebakedMAE": 0.7847838655919464,
+      "previousSSIM": 0.9776826480194071,
+      "rebakedSSIM": 0.9911917115819829,
+      "previousReflectionMAE": 3.64305857706873,
+      "rebakedReflectionMAE": 2.420614777213762
     },
     {
       "view": "near-nw",
-      "previousMAE": 1.7178821038669523,
-      "rebakedMAE": 1.6132677787980818,
-      "previousSSIM": 0.9715273989181745,
-      "rebakedSSIM": 0.9742050834443964,
-      "previousReflectionMAE": 5.783911295388869,
-      "rebakedReflectionMAE": 2.726793567031034
+      "previousMAE": 1.6132643777845799,
+      "rebakedMAE": 1.3431609869741183,
+      "previousSSIM": 0.9742051289566231,
+      "rebakedSSIM": 0.9859479211968257,
+      "previousReflectionMAE": 2.726850106797336,
+      "rebakedReflectionMAE": 1.9982409850483733
     },
     {
       "view": "near-ne",
-      "previousMAE": 1.741308284868891,
-      "rebakedMAE": 1.405355320885624,
-      "previousSSIM": 0.9729310532231635,
-      "rebakedSSIM": 0.9750165035203966,
-      "previousReflectionMAE": 4.382278364298556,
-      "rebakedReflectionMAE": 2.6506333912170437
+      "previousMAE": 1.4053489439853075,
+      "rebakedMAE": 1.0875641941298506,
+      "previousSSIM": 0.9750164922731229,
+      "rebakedSSIM": 0.989242948640539,
+      "previousReflectionMAE": 2.650653881025925,
+      "rebakedReflectionMAE": 1.9612384040487862
     },
     {
       "view": "near-sw",
-      "previousMAE": 2.2015912491922593,
-      "rebakedMAE": 2.068020270040472,
-      "previousSSIM": 0.9623070909742182,
-      "rebakedSSIM": 0.9650021412507819,
-      "previousReflectionMAE": 5.797902698334533,
-      "rebakedReflectionMAE": 2.837588545020645
+      "previousMAE": 2.068020270040472,
+      "rebakedMAE": 1.7075634289018127,
+      "previousSSIM": 0.9650021412507819,
+      "rebakedSSIM": 0.9799981318770192,
+      "previousReflectionMAE": 2.837588545020645,
+      "rebakedReflectionMAE": 2.055494526307814
     },
     {
       "view": "near-se",
-      "previousMAE": 1.925719314355678,
-      "rebakedMAE": 1.6775435329728259,
-      "previousSSIM": 0.9691944653463932,
-      "rebakedSSIM": 0.9710581173342224,
-      "previousReflectionMAE": 4.930289527097964,
-      "rebakedReflectionMAE": 2.6690074578696468
+      "previousMAE": 1.6775465088596402,
+      "rebakedMAE": 1.3254570111893345,
+      "previousSSIM": 0.9710580073788634,
+      "rebakedSSIM": 0.9863904323050339,
+      "previousReflectionMAE": 2.669015234584607,
+      "rebakedReflectionMAE": 2.0577498852934544
     }
   ]
 }

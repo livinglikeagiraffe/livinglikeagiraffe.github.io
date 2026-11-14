@@ -1,46 +1,46 @@
 {
   "schema": 1,
   "model": "studio/radiance-v06/baked.glb",
-  "sha256": "8e5459a1234ea33c12f382953bc4f199628a9c6363faddaee9d97271664465e9",
-  "bytes": 103389504,
+  "sha256": "8abac4d1b1e7be876a1e5ea2e00cff79eb73790d8e76c4d85744fec768370379",
+  "bytes": 111996844,
   "parts": [
     {
       "name": "baked-part-000.bin",
       "bytes": 16777216,
-      "sha256": "5e3d527f343b1f55072b054f0c0478deb810629647e80de6aa7e35171216029d"
+      "sha256": "58d222a7b538adc4b521106cf3831a152a46ccdbbdbea5def3f2a60b2762531c"
     },
     {
       "name": "baked-part-001.bin",
       "bytes": 16777216,
-      "sha256": "ee0b5520eb5fe6b9752584b2e1e0a672efb0c974e7aa50510c4fdfc3e256c1a8"
+      "sha256": "320276d6be1a9827c97507d7a0b50e5648469672cfa49b3e96b558587987b413"
     },
     {
       "name": "baked-part-002.bin",
       "bytes": 16777216,
-      "sha256": "616c8e87c4fb2fcd2bc056dc7d0c1533e395b512ea267b975dc59175370d6ac9"
+      "sha256": "653daf9e61af0a0e800c0c7cc6a5c59050003910fde9e496c8f11b951fd1b36a"
     },
     {
       "name": "baked-part-003.bin",
       "bytes": 16777216,
-      "sha256": "5cd34944ad0e91af68a5ce451f5fdc1360d6f3fea79b16ea362c22f341715f02"
+      "sha256": "afe864c6c610e0df3b102db8267e4fb3ba043123c9fb5c4763b84182456f12b4"
     },
     {
       "name": "baked-part-004.bin",
       "bytes": 16777216,
-      "sha256": "642f20773cb1c5fd0e14b008c37aad9ca111e598bc2e73d5d1e15fe7369a4434"
+      "sha256": "3904cdac24ba1416d3ea44bb1b086333c2e676c46a5799ace65f5e4ebcaa9100"
     },
     {
       "name": "baked-part-005.bin",
       "bytes": 16777216,
-      "sha256": "d03c2e5977161ea26fcb65f6484452573fb8285a962179db47ea7f237d0dccf8"
+      "sha256": "8b94d376af2ac3ccd2883e70487fbccd5d7355eca00248f0a7dbe2146097f8a6"
     },
     {
       "name": "baked-part-006.bin",
-      "bytes": 2726208,
-      "sha256": "db7f1bde851f19ea2c4a97df061aa03e4bc54d567bcd770424c35c69f9fd0ef4"
+      "bytes": 11333548,
+      "sha256": "80df9175877edfeede04dbc1662d0f6eaecd60aa273d1afc78cf6fc519fdd732"
     }
   ],
   "validation": "studio/radiance-v06/validation.json",
   "sourceVersion": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
-  "sourceRender": "7d2a0a87-eb29-4181-a2cf-9087fc0749a9"
+  "sourceRender": "b2a62aa9-9ccf-4c46-b95f-93334224ec08"
 }
