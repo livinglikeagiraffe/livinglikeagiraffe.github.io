@@ -20,11 +20,20 @@ VERSION = 1
 
 
 def reflection_sample_count(base, dense, override=None):
-    return override or max(base,512 if dense else base)
+    return override or max(base,1024 if dense else base)
 
 
-def reflection_reuse_allowed(bake, name, required):
-    return bake.get('reflectionSamples',{}).get(name,bake.get('samples',0))>=required
+def reflection_resolution(quality,dense,override=None):
+    return override or (1024 if dense or quality!='preview' else 512)
+
+
+def reflection_reuse_allowed(bake, name, required,required_resolution=0):
+    # A larger diffuse atlas is not evidence of a larger directional atlas.
+    legacy=max((max(a.get('width',0),a.get('height',0)) for a in bake.get('atlases',[])
+                if a.get('name','').startswith(name+'_view')),default=0)
+    resolution=bake.get('reflectionResolutions',{}).get(name,legacy)
+    return (bake.get('reflectionSamples',{}).get(name,bake.get('samples',0))>=required and
+            resolution>=required_resolution)
 
 
 def uncovered_surfaces(objects, image):
@@ -107,7 +116,7 @@ def read_reuse(root, domain, grid, repaired):
         return np.unique(rows[:,[3,4,0,1,2]],axis=0)
     geometry={name:canonical(np.concatenate(parts)) for name,parts in geometry.items()}
     materials={m['name']:m.get('extras',{}).get('studioRadiance') for m in doc['materials']}
-    def reuse(name,objects,output,desired,required_samples):
+    def reuse(name,objects,output,desired,required_samples,required_resolution):
         if any(obj.name in repaired-prior_repairs for obj in objects):return None
         info=materials.get('Radiance '+name)
         if not info:return None
@@ -131,7 +140,7 @@ def read_reuse(root, domain, grid, repaired):
             for a in range(desired[0]):
                 old_e=e/(desired[1]-1)*(old_grid[1]-1)
                 old_a=0 if desired[0]==1 else a/(desired[0]-1)*(old_grid[0]-1)
-                exact=reflection_reuse_allowed(report['bake'],name,required_samples) and same_domain and old_grid[0]==desired[0] and abs(old_e-round(old_e))<1e-8 and abs(old_a-round(old_a))<1e-8
+                exact=reflection_reuse_allowed(report['bake'],name,required_samples,required_resolution) and same_domain and old_grid[0]==desired[0] and abs(old_e-round(old_e))<1e-8 and abs(old_a-round(old_a))<1e-8
                 index=round(old_e)*old_grid[0]+round(old_a)
                 views.append(extract('view'+str(len(views)),info['views'][index],'view'+str(index)) if exact else None)
         return {'diffuse':diffuse,'views':views,'grid':desired},[diffuse['entry']]
@@ -471,7 +480,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
     scene.render.bake.margin_type = 'EXTEND'
     source_matrix = scene.camera.matrix_world.copy()
     source_type = scene.camera.data.type
-    maps, replacements, atlases, reflection_samples_used = {}, [], [], {}
+    maps, replacements, atlases, reflection_samples_used, reflection_resolutions = {}, [], [], {}, {}
     source_uvs={obj:obj.data.uv_layers.active.name if obj.data.uv_layers.active else '' for obj in meshes}
     def replace_later(name,objects,cache_maps):
         mat=bpy.data.materials.new('Radiance '+name);mat.use_nodes=True;mat.node_tree.nodes.clear()
@@ -485,6 +494,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
         dense=dense_reflections(objects)
         group_grid=[grid[0],5 if dense else 3]
         group_samples=reflection_sample_count(samples,dense,samples_override)
+        glossy_size=reflection_resolution(quality,dense,resolution_override)
         resolution = resolution_override or (1024 if '_detail' in name and quality=='preview' else 2048)
         if len(objects)>96 or (sum(len(o.data.polygons) for o in objects)>50000 and len(objects)>1):
             mid = len(objects)//2
@@ -554,7 +564,8 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             print('RADIANCE_SPLIT_UNCOVERED',name,missing,flush=True)
             continue
         reflection_samples_used[name]=group_samples
-        cached=reuse(name,objects,output,group_grid,group_samples) if reuse else None
+        reflection_resolutions[name]=glossy_size
+        cached=reuse(name,objects,output,group_grid,group_samples,glossy_size) if reuse else None
         geometry=hashlib.sha256()
         for obj in objects:
             geometry.update(obj.name.encode())
@@ -626,7 +637,7 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
             for guide in guides:bpy.data.images.remove(guide)
         bpy.data.images.remove(target)
         views = []
-        size = resolution_override or min(resolution,512 if quality=='preview' else 1024)
+        size = glossy_size
         glossy = new_image(name+' glossy',size)
         for e in range(group_grid[1]):
             for a in range(group_grid[0]):
@@ -683,9 +694,9 @@ def bake_scene(scene, output, quality, whole_space=False, resolution_override=No
     data = path.read_bytes()
     if len(data)>512*1024**2:
         raise ValueError('Uncompressed radiance GLB exceeds 512 MiB; split the scene or reduce atlas resolution.')
-    return {'schema':1,'radianceVersion':VERSION,'bakerVersion':12,'file':'baked.glb','bytes':len(data),'coverageThreshold':.002,
+    return {'schema':1,'radianceVersion':VERSION,'bakerVersion':13,'file':'baked.glb','bytes':len(data),'coverageThreshold':.002,
             'sha256':hashlib.sha256(data).hexdigest(),'samples':samples,'triangles':triangles,'atlases':atlases,
-            'reflectionSamples':reflection_samples_used,
+            'reflectionSamples':reflection_samples_used,'reflectionResolutions':reflection_resolutions,
             'compatibility':audit,'domain':domain,'directionSamples':grid[0]*grid[1],'normalRepairs':repaired,'seconds':round(time.monotonic()-start,2),
             'limitations':['Static current frame','Bounded directional approximation; sharp reflections/transmission require denser sampling',
                            'No volumes or arbitrary compositor effects','Camera must remain inside declared domain']}

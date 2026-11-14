@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {domainPose,cameraFromRecord,explorationProjection} from '../clay/radiance-viewer.js';
-import {validateRadiance} from '../clay/radiance.js';
+import {validateRadiance,radianceRenderSize} from '../clay/radiance.js';
 import {comparePixels} from '../clay/validation.js';
 
 const domain={azimuth:.7,elevation:.7,tilt:.17,pan:.22,zoomMax:2.2,span:40,distance:100,target:[1,0,2]};
@@ -41,4 +41,18 @@ test('zoom scales the lens but preserves the authored principal point',()=>{
  const result=explorationProjection({aspect:1.25,projection},1.25,2).elements;
  assert.equal(result[0],4);assert.equal(result[5],6);
  for(const i of [8,9,12,13])assert.equal(result[i],projection[i]);
+});
+
+// Keep the quality improvement bounded on HiDPI/mobile GPU allocations.
+test('radiance supersampling respects output shape, memory budget and device limits',()=>{
+ assert.deepEqual(radianceRenderSize(990,792,8192),{width:1980,height:1584});
+ const large=radianceRenderSize(2560,1440,8192);
+ assert.ok(large.width*large.height<=8*1024*1024);
+ assert.ok(large.width>=2560&&large.height>=1440);
+ const native=radianceRenderSize(3840,2160,8192);
+ assert.ok(native.width>=3840&&native.height>=2160);
+ const limited=radianceRenderSize(3000,1500,4096);
+ assert.ok(limited.width<=4096&&limited.height<=4096);
+ assert.ok(Math.abs(limited.width/limited.height-2)<.002);
+ for(const args of [[0,100,4096],[100,NaN,4096],[100,100,0]])assert.throws(()=>radianceRenderSize(...args));
 });

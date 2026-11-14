@@ -7,20 +7,32 @@ import unittest
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'studio'))
 from save_result import save_result
-from radiance import compact_geometry,reflection_sample_count,reflection_reuse_allowed
+from radiance import compact_geometry,reflection_sample_count,reflection_reuse_allowed,reflection_resolution
 from save_failure import save_failure
 from checkpoint import BakeCheckpoint
 
 class ReflectionQualityTests(unittest.TestCase):
     def test_sensitive_surfaces_get_more_samples_without_slowing_explicit_fixtures(self):
         self.assertEqual(reflection_sample_count(128,False),128)
-        self.assertEqual(reflection_sample_count(128,True),512)
+        self.assertEqual(reflection_sample_count(128,True),1024)
         self.assertEqual(reflection_sample_count(1024,True),1024)
         self.assertEqual(reflection_sample_count(16,True,16),16)
     def test_lower_quality_direction_cache_is_not_reused_for_refinement(self):
         self.assertFalse(reflection_reuse_allowed({'samples':128},'glass',512))
         self.assertTrue(reflection_reuse_allowed({'samples':128},'clay',128))
         self.assertTrue(reflection_reuse_allowed({'samples':128,'reflectionSamples':{'glass':512}},'glass',512))
+
+    def test_directional_resolution_is_verified_separately_from_diffuse(self):
+        self.assertEqual(reflection_resolution('preview',False),512)
+        self.assertEqual(reflection_resolution('preview',True),1024)
+        self.assertEqual(reflection_resolution('preview',True,128),128)
+        old={'samples':1024,'atlases':[{'name':'glass_diffuse.png','width':2048,'height':2048},
+                                      {'name':'glass_view0.png','width':512,'height':512}]}
+        self.assertFalse(reflection_reuse_allowed(old,'glass',1024,1024))
+        self.assertTrue(reflection_reuse_allowed(old,'glass',1024,512))
+        new={**old,'reflectionResolutions':{'glass':1024}}
+        self.assertTrue(reflection_reuse_allowed(new,'glass',1024,1024))
+        self.assertFalse(reflection_reuse_allowed(new,'glass',2048,1024))
 
 class BakeCheckpointTests(unittest.TestCase):
     def test_changed_inputs_uvs_or_corrupt_pixels_are_never_reused(self):
@@ -106,6 +118,12 @@ class RadiancePublicationTests(unittest.TestCase):
         self.validation['views'][-1]['cameraAgreement']={'passed':False};self.save()
         self.assertFalse((self.root/'studio/radiance-scene.json').exists())
         self.validation['views'][-1]['cameraAgreement']['passed']=True;self.save()
+        self.assertTrue((self.root/'studio/radiance-scene.json').exists())
+    def test_refined_glass_requires_current_renderer_validation(self):
+        self.report['bake']['bakerVersion']=13
+        (self.result/'report.json').write_text(json.dumps(self.report))
+        with self.assertRaisesRegex(ValueError,'supersampled renderer'):self.save()
+        self.validation['rendererVersion']=2;self.save()
         self.assertTrue((self.root/'studio/radiance-scene.json').exists())
     def test_new_contract_rejects_missing_corner_views(self):
         from camera_contract import EXPLORATION

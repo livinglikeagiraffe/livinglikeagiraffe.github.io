@@ -139,25 +139,47 @@ export function radiancePlugin(parser) {
   }};
 }
 
+// MSAA resolves polygon edges, but not the high-frequency radiance INSIDE a
+// glass triangle. Rasterize extra samples, then resolve linear HDR before the
+// source display transform. Limit extra allocation on large/HiDPI displays.
+export function radianceRenderSize(width,height,maxTextureSize){
+  if(![width,height,maxTextureSize].every(v=>Number.isFinite(v)&&v>0))throw Error('Invalid render dimensions');
+  const budgetScale=Math.max(1,Math.sqrt(8*1024*1024/(width*height)));
+  const scale=Math.min(2,budgetScale,maxTextureSize/Math.max(width,height));
+  return {width:Math.max(1,Math.floor(width*scale)),height:Math.max(1,Math.floor(height*scale))};
+}
+
+export const RADIANCE_RENDERER_VERSION=2;
+
 export class RadianceOutput {
   constructor(renderer,profile){
-    this.renderer=renderer;
+    this.renderer=renderer;this.version=RADIANCE_RENDERER_VERSION;
     if(!renderer.extensions.has('EXT_color_buffer_float')||renderer.capabilities.maxTextures<profile.grid[0]*profile.grid[1]+1||renderer.capabilities.maxTextureSize<4096)
       throw Error('이 기기는 원본 조명 정밀도를 지원하지 않습니다. 데스크톱 브라우저에서 열어 주세요.');
     this.target=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,samples:Math.min(4,renderer.capabilities.maxSamples)});
     this.scene=new THREE.Scene();this.camera=new THREE.Camera();
-    this.uniforms={frame:{value:this.target.texture},displayLut:{value:profile.displayMap},lutSize:{value:profile.display.size}};
+    this.uniforms={frame:{value:this.target.texture},outputSize:{value:new THREE.Vector2(1,1)},displayLut:{value:profile.displayMap},lutSize:{value:profile.display.size}};
     this.mesh=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({depthTest:false,depthWrite:false,toneMapped:false,uniforms:this.uniforms,
       vertexShader:'varying vec2 coord;void main(){coord=uv;gl_Position=vec4(position.xy,0.,1.);}',
-      fragmentShader:`varying vec2 coord;uniform sampler2D frame,displayLut;uniform float lutSize;
+      fragmentShader:`varying vec2 coord;uniform sampler2D frame,displayLut;uniform float lutSize;uniform vec2 outputSize;
         vec3 sampleSlice(vec3 p,float b){return texture2D(displayLut,vec2((b*lutSize+p.r+.5)/(lutSize*lutSize),1.-(p.g+.5)/lutSize)).rgb;}
-        void main(){vec3 linear=max(texture2D(frame,coord).rgb,0.);vec3 p=clamp(log2(1.+16.*linear)/16.,0.,1.)*(lutSize-1.);
+        vec3 resolveRadiance(){
+          vec3 value=vec3(0.);
+          for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){
+            float weight=(x==0?2.:1.)*(y==0?2.:1.)/16.;
+            value+=texture2D(frame,coord+vec2(float(x),float(y))*.5/outputSize).rgb*weight;
+          }
+          return value;
+        }
+        void main(){vec3 linear=max(resolveRadiance(),0.);vec3 p=clamp(log2(1.+16.*linear)/16.,0.,1.)*(lutSize-1.);
           gl_FragColor=vec4(mix(sampleSlice(p,floor(p.b)),sampleSlice(p,min(floor(p.b)+1.,lutSize-1.)),fract(p.b)),1.);}`
     }));this.scene.add(this.mesh);
   }
   render(scene,camera){
     const size=this.renderer.getDrawingBufferSize(new THREE.Vector2());
-    if(this.target.width!==size.x||this.target.height!==size.y)this.target.setSize(size.x,size.y);
+    const targetSize=radianceRenderSize(size.x,size.y,this.renderer.capabilities.maxTextureSize);
+    if(this.target.width!==targetSize.width||this.target.height!==targetSize.height)this.target.setSize(targetSize.width,targetSize.height);
+    this.uniforms.outputSize.value.copy(size);
     this.renderer.setRenderTarget(this.target);this.renderer.render(scene,camera);this.renderer.setRenderTarget(null);this.renderer.render(this.scene,this.camera);
   }
   dispose(){this.target.dispose();this.mesh.geometry.dispose();this.mesh.material.dispose();}

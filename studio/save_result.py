@@ -39,6 +39,8 @@ def save_result(root,result,request,source_ref,url):
                 {v.get('view') for v in validation.get('views',[])}!=expected or len(validation['views'])!=len(expected)):
             raise ValueError('Invalid web validation record')
         if domain.get('exploration') and any(v['view']!='authored' and not isinstance(v.get('cameraAgreement',{}).get('passed'),bool) for v in validation['views']):raise ValueError('Missing runtime camera validation')
+        if report['bake'].get('bakerVersion',0)>=13 and validation.get('rendererVersion',0)<2:
+            raise ValueError('Missing supersampled renderer validation')
         names+=['validation.json']+[f'web-{name}.png' for name in sorted(expected)]
     for name in names:
         source=result/name

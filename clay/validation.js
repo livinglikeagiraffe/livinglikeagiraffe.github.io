@@ -45,7 +45,7 @@ export async function validateViews(viewer,spec,base,onProgress=()=>{}){
       results.push(result);captures.push({id:view.id,png:canvas.toDataURL('image/png')});reference.close();onProgress(result);
       await new Promise(resolve=>requestAnimationFrame(resolve));
     }
-    return {report:{schema:1,method:'RGB MAE/p95 and 8x8 luminance SSIM; same cameras and pixel sizes',cameraMethod:'Runtime navigation position, orientation and projection compared with Blender',limits:QUALITY_LIMITS,
+    return {report:{schema:1,rendererVersion:viewer.output.version,method:'RGB MAE/p95 and 8x8 luminance SSIM; same cameras and pixel sizes',cameraMethod:'Runtime navigation position, orientation and projection compared with Blender',limits:QUALITY_LIMITS,
       passed:results.every(r=>r.passed),views:results},captures};
   }finally{viewer.renderer.setPixelRatio(originalRatio);viewer.resize();}
 }
