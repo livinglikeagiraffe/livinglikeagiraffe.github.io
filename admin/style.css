@@ -3,7 +3,7 @@
 :root {
   --background:#fff; --foreground:#18181b; --muted:#f4f4f5; --secondary:#fafafa;
   --muted-foreground:#62626c; --border:#dedee3; --ring:#71717a; --radius:.5rem;
-  font:14px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
   color:var(--foreground); background:var(--background);
 }
 * {box-sizing:border-box}
