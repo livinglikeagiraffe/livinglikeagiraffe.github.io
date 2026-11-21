@@ -3,6 +3,37 @@
   "versions": [
     {
       "schema": 1,
+      "id": "557f3857-0abf-4206-95c1-6803e07e214e",
+      "moduleId": "a5f967f6-aaaf-574e-b3ef-d26e76c05bde",
+      "title": "리라지 v06 · 원본 업로드 검증",
+      "createdAt": "2026-11-21T17:57:12.426Z",
+      "model": "riraji_normal.glb",
+      "blend": "riraji_full.blend",
+      "reference": "clay_normal_v06.png",
+      "scene": "01_Clay_Normal",
+      "webLook": {
+        "schema": 1,
+        "exposure": -0.15,
+        "key": 1,
+        "fill": 0.85,
+        "ambient": 0.18,
+        "softness": 18,
+        "contact": 1,
+        "roughness": 1,
+        "texture": 0.4,
+        "warmth": 0.1,
+        "contrast": 1.12,
+        "saturation": 1.1,
+        "background": "#aaa79f",
+        "tone": "aces",
+        "camera": "authored"
+      },
+      "job": null,
+      "bake": null,
+      "manifest": "studio/modules/a5f967f6-aaaf-574e-b3ef-d26e76c05bde/versions/557f3857-0abf-4206-95c1-6803e07e214e/manifest.json"
+    },
+    {
+      "schema": 1,
       "id": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
       "moduleId": "a5f967f6-aaaf-574e-b3ef-d26e76c05bde",
       "title": "리라지 v06",

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "id": "557f3857-0abf-4206-95c1-6803e07e214e",
+  "moduleId": "a5f967f6-aaaf-574e-b3ef-d26e76c05bde",
+  "title": "리라지 v06 · 원본 업로드 검증",
+  "createdAt": "2026-11-21T17:57:12.426Z",
+  "model": "riraji_normal.glb",
+  "blend": "riraji_full.blend",
+  "reference": "clay_normal_v06.png",
+  "scene": "01_Clay_Normal",
+  "webLook": {
+    "schema": 1,
+    "exposure": -0.15,
+    "key": 1,
+    "fill": 0.85,
+    "ambient": 0.18,
+    "softness": 18,
+    "contact": 1,
+    "roughness": 1,
+    "texture": 0.4,
+    "warmth": 0.1,
+    "contrast": 1.12,
+    "saturation": 1.1,
+    "background": "#aaa79f",
+    "tone": "aces",
+    "camera": "authored"
+  },
+  "job": null,
+  "bake": null,
+  "assets": [
+    {
+      "name": "riraji_full.blend",
+      "sha256": "5dd17152335c1adba5355e3c32d0cf9c616fbbc9fb4baf03111a2584948c1cfa",
+      "bytes": 32844660
+    },
+    {
+      "name": "riraji_normal.glb",
+      "sha256": "dddb88e38907948c093ced298229e6b1ddc90793a76791735baab632a9444488",
+      "bytes": 11630788
+    },
+    {
+      "name": "clay_normal_v06.png",
+      "sha256": "1444ae6ee07fccc3a1a61bcd2dda6fbfe77b364a7c1215657cac474863b181fb",
+      "bytes": 2045974
+    }
+  ]
+}
