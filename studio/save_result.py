@@ -57,6 +57,18 @@ def save_result(root,result,request,source_ref,url):
         if len(binary)!=report['bake']['bytes'] or hashlib.sha256(binary).hexdigest()!=report['bake']['sha256']:raise ValueError('GLB checksum mismatch')
     dest.mkdir(parents=True,exist_ok=True)
     for name in names:shutil.copyfile(result/name,dest/name)
+    if radiance and (result/'stream/stream.json').is_file():
+        stream=result/'stream'
+        spec=json.loads((stream/'stream.json').read_text())
+        if spec['model']!=report['bake']['sha256']:raise ValueError('Stream model mismatch')
+        target=dest/'stream';target.mkdir(exist_ok=True)
+        for block in [spec['core'],*spec['packs'].values()]:
+            digest=block['sha']
+            if not re.fullmatch(r'[0-9a-f]{64}',digest):raise ValueError('Invalid stream block')
+            src=stream/(digest+'.bin')
+            if src.is_symlink() or src.stat().st_size!=block['bytes'] or hashlib.sha256(src.read_bytes()).hexdigest()!=digest:raise ValueError('Stream checksum mismatch')
+            shutil.copyfile(src,target/src.name)
+        shutil.copyfile(stream/'stream.json',target/'stream.json')
     index_path=root/'studio/render-index.json'
     index=json.loads(index_path.read_text()) if index_path.exists() else {'schema':1,'versions':{}}
     record={'id':request,'status':'complete','quality':report['quality'],'scene':report['scene'],'mode':report.get('mode','render'),'sourceCommit':source_ref,'url':url}

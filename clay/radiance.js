@@ -74,7 +74,7 @@ export function radiancePlugin(parser) {
             gl_FragColor=vec4(light,1.);
           }`});
       material.name=originals[index].name;material.userData.studioRadiance=true;
-      material.userData.cacheTextures=textures;
+      material.userData.cacheTextures=textures;material.userData.sourceIndex=index;material.userData.grid=grid;
       converted.set(index,material);
     }
     gltf.scene.traverse(object=>{

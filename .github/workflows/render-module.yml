@@ -134,6 +134,7 @@ jobs:
             ${{ runner.temp }}/render-output/baked.glb
             ${{ runner.temp }}/render-output/baked-source.glb
             ${{ runner.temp }}/render-output/baked-part-*.bin
+            ${{ runner.temp }}/render-output/stream/
           if-no-files-found: error
           retention-days: 3
   save:

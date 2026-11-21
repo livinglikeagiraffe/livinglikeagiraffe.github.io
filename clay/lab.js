@@ -6,6 +6,7 @@ const params=new URLSearchParams(location.search),host=document.querySelector('#
 const source=params.get('result')||'../studio/radiance-v06';
 const base=new URL(source.replace(/\/$/,'')+'/',location.href);
 if(base.origin!==location.origin)throw Error('같은 사이트의 검증 결과만 열 수 있습니다.');
+if(!params.has('render')&&!params.has('result'))base.href='https://raw.githubusercontent.com/livinglikeagiraffe/livinglikeagiraffe.github.io/main/studio/radiance-v06/';
 if(params.has('render')){
   const id=params.get('render');if(!/^[0-9a-f-]{36}$/.test(id))throw Error('잘못된 렌더 ID입니다.');
   base.href=`https://raw.githubusercontent.com/livinglikeagiraffe/livinglikeagiraffe.github.io/main/studio/renders/${id}/`;

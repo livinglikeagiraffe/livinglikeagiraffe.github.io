@@ -38,13 +38,8 @@ async function directory(folder){
   else if(!entry.name.startsWith('.'))await copy(file);
  }
 }
-for(const file of ['index.html','style.css','main.js','bootstrap.js','credits.html','ASSETS.md','node_modules/three/LICENSE'])await copy(file);
-await directory('v2');
 await directory('admin');
-for (const file of ['index.html','style.css','app.js','v06.json','radiance.html','radiance-app.js','lab.html','lab.js','assets/reference.png',
-                    'assets/profile.json','assets/v06-lighting-comparison.jpg']) {
- await copy(path.join('clay',file));
-}
+for(const file of ['index.html','clay/radiance-app.js','clay/style.css','clay/lab.html','clay/lab.js','clay/example.json','clay/assets/profile.json','v2/assets/scene-profile.json','assets/branding/favicon.svg','node_modules/three/build/three.module.js','node_modules/three/LICENSE'])await copy(file);
 // Keep the admin module graph on one release when Pages/CDN caches old scripts.
 const adminFiles=[...copied].filter(file=>/^(admin|clay)\//.test(file)&&/\.(js|css|html)$/.test(file)).sort();
 const adminHash=createHash('sha256');
@@ -55,16 +50,6 @@ for(const file of adminFiles.filter(file=>/\.(js|html)$/.test(file))){
  await writeFile(target,source.replace(/(["'])(\.(?:\/|\.\/(?:clay|admin)\/)[^"'?]+\.(?:js|css))\1/g,(_,quote,url)=>`${quote}${url}?v=${adminRevision}${quote}`));
 }
 await copy('node_modules/fflate/LICENSE');
-// Ship the last verified public scene as an offline/CDN fallback, without the
-// upload archive or Blender originals. New results still load from the repository.
-const published=JSON.parse(await readFile(path.join(root,'studio/public-scene.json'),'utf8'));
-if(!/^studio\/renders\/[0-9a-f-]{36}\/baked\.glb$/.test(published.model))throw Error('Invalid public scene path');
-await copy('studio/public-scene.json');await copy(published.model);
-await writeFile(path.join(out,'clay/default.json'),JSON.stringify({...published,
- model:'../'+published.model,preview:'../'+published.preview}));
-const comparison=JSON.parse(await readFile(path.join(root,'clay/v06.json'),'utf8'));
-if(!/^studio\/renders\/[0-9a-f-]{36}\/baked\.glb$/.test(comparison.model))throw Error('Invalid v06 comparison path');
-await copy(comparison.model);
 // Trusted worker sources are downloadable for repository setup.
 await copy('studio/render.py');
 await copy('studio/bake.py');
@@ -76,23 +61,14 @@ await copy('studio/save_failure.py');
 await copy('studio/radiance.py');
 await copy('studio/camera_contract.py');
 await copy('studio/checkpoint.py');
-// Include a verified v06 fallback; ongoing uploads are read from the repository.
-try { await stat(path.join(root,'studio/radiance-v06/manifest.json')); await directory('studio/radiance-v06'); }
-catch(error) { if(error.code!=='ENOENT')throw error; }
+const manifestPath='studio/radiance-v06/manifest.json';
+await copy(manifestPath);
+const model=JSON.parse(await readFile(manifestPath));
+const chunks=await Promise.all(model.parts.map(p=>readFile(path.join('studio/radiance-v06',p.name))));
+const bytes=Buffer.concat(chunks);
+if(createHash('sha256').update(bytes).digest('hex')!==model.sha256)throw Error('Fallback model checksum mismatch');
+const {streamPackage}=await import('./stream-package.mjs');
+await streamPackage(bytes,path.join(out,'studio/radiance-v06/stream'));
 await mkdir(path.join(out,'admin/setup'),{recursive:true});
 await copyFile(path.join(root,'.github/workflows/render-module.yml'),path.join(out,'admin/setup/render-module.yml'));
-await directory('assets/mobile');await directory('assets/branding');await directory('assets/fonts');await directory('assets/green-grass');
-await directory('assets/props/wood');await copy('assets/tree/tree.gltf');
-const propsSource=await readFile(path.join(root,'props.js'),'utf8');
-for(const id of new Set([...propsSource.matchAll(/place\('([^']+)'/g)].map(match=>match[1])))await copy(`assets/props/${id}/model.gltf`);
-await copy('assets/giraffe/source/Reticulated_Giraffe_Rigged_Animated_v3.glb');
-await copy('assets/giraffe/bluemesh/giraffe.glb');
-for(const file of ['sports.jpg','sauna.jpg','team-profile.jpg','posts.json'])await copy(`assets/projects/${file}`);
-const posts=JSON.parse(await readFile(path.join(root,'assets/projects/posts.json'),'utf8'));
-for(const post of Object.values(posts))for(const media of post.media){await copy(media.src);if(media.poster)await copy(media.poster);if(media.preview)await copy(media.preview);if(media.display)await copy(media.display);}
 await writeFile(path.join(out,'.nojekyll'),'');
-const sizes=await Promise.all([...copied].map(async file=>({file:destination(file),bytes:(await stat(path.join(out,destination(file)))).size})));
-sizes.sort((a,b)=>b.bytes-a.bytes);
-console.log(`Built ${sizes.length} files, ${(sizes.reduce((n,f)=>n+f.bytes,0)/1048576).toFixed(1)} MiB in dist/`);
-console.log(`Largest file: ${sizes[0].file} (${(sizes[0].bytes/1048576).toFixed(2)} MiB)`);
-if(sizes.some(f=>f.bytes>25*1048576))console.warn('WARNING: One or more files exceed Cloudflare Pages’ 25 MiB limit.');

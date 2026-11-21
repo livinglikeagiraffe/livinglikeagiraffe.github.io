@@ -98,6 +98,6 @@ export class RadianceViewer {
     }
     this.draw();
   }
-  draw(){if(this.output)this.output.render(this.scene,this.camera);}
+  draw(){if(this.output&&(!this.readyToDraw||this.readyToDraw()))this.output.render(this.scene,this.camera);}
   dispose(){cancelAnimationFrame(this.frame);this.abort.abort();this.observer.disconnect();this.output?.dispose();const textures=new Set(),materials=new Set();this.root?.traverse(o=>{o.geometry?.dispose();for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])materials.add(m);});for(const m of materials){for(const t of m.userData.cacheTextures||[])textures.add(t);m.dispose();}for(const t of textures)t.dispose();this.profile?.displayMap.dispose();this.renderer.dispose();this.canvas.remove();}
 }

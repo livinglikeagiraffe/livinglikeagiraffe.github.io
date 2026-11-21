@@ -22,3 +22,5 @@ if(output.length>96*1024**2){
 }
 await writeFile(reportPath,JSON.stringify(report,null,2));
 console.log(JSON.stringify(optimization));
+const {streamPackage}=await import('./stream-package.mjs');
+await streamPackage(output,path.join(directory,'stream'));
