@@ -26,16 +26,21 @@ export function radiancePlugin(parser) {
     const spec=parser.json.extras?.studioRadiance;
     if(!spec)return;
     validateRadiance(spec);
-    const getTexture=async index=>{
+    const loadTexture=async index=>{
       if(!Number.isInteger(index)||index<0||index>=parser.json.textures.length)throw Error('잘못된 조명 텍스처입니다.');
       const t=(await parser.getDependency('texture',index)).clone();
       t.colorSpace=THREE.NoColorSpace;t.flipY=false;t.generateMipmaps=false;t.minFilter=t.magFilter=THREE.LinearFilter;t.needsUpdate=true;
       return t;
     };
+    const textureLoads=new Map();
+    function getTexture(index){
+      if(!textureLoads.has(index))textureLoads.set(index,loadTexture(index));
+      return textureLoads.get(index);
+    }
     const originals=await parser.getDependencies('material'),converted=new Map();
-    for(let index=0;index<originals.length;index++){
+    async function convertMaterial(index){
       const info=parser.json.materials[index]?.extras?.studioRadiance;
-      if(!info)continue;
+      if(!info)return;
       const grid=info.grid||spec.grid;
       if(!['1,3','1,5','3,3','3,5'].includes(grid.join(','))||grid[0]!==spec.grid[0]||grid[1]>spec.grid[1])throw Error('잘못된 재질 조명 격자입니다.');
       const columns=grid[0],rows=grid[1],viewCount=columns*rows;
@@ -45,7 +50,7 @@ export function radiancePlugin(parser) {
       const textures=await Promise.all(maps.map(m=>getTexture(m.texture)));
       const uniforms={diffuseCache:{value:textures[0]},diffuseRange:{value:info.diffuse.range},
         diffuseSize:{value:new THREE.Vector2(textures[0].image.width,textures[0].image.height)},
-        radianceDirection:{value:new THREE.Vector3()},radianceEye:{value:new THREE.Vector3()},radianceOrtho:{value:true},
+        orthoCell:{value:new THREE.Vector2()},radianceEye:{value:new THREE.Vector3()},radianceOrtho:{value:true},
         azimuthRange:{value:new THREE.Vector2(...spec.domain.azimuthRange)},elevationRange:{value:new THREE.Vector2(...spec.domain.elevationRange)}};
       for(let i=0;i<viewCount;i++){uniforms['cache'+i]={value:textures[i+1]};uniforms['range'+i]={value:info.views[i].range};uniforms['size'+i]={value:new THREE.Vector2(textures[i+1].image.width,textures[i+1].image.height)};}
       const material=new THREE.ShaderMaterial({uniforms,side:THREE.DoubleSide,toneMapped:false,
@@ -54,7 +59,7 @@ export function radiancePlugin(parser) {
         fragmentShader:`precision highp float;
           varying vec2 cacheUV; varying vec3 cachePosition;
           uniform sampler2D diffuseCache; uniform float diffuseRange;uniform vec2 diffuseSize;
-          uniform vec3 radianceDirection,radianceEye; uniform bool radianceOrtho;
+          uniform vec2 orthoCell; uniform vec3 radianceEye; uniform bool radianceOrtho;
           uniform vec2 azimuthRange,elevationRange;
           ${Array.from({length:viewCount},(_,i)=>`uniform sampler2D cache${i}; uniform float range${i}; uniform vec2 size${i};`).join('\n')}
           vec3 texel(sampler2D tex,vec2 p,float range){vec4 v=texture2D(tex,p);return v.rgb*v.a*range;}
@@ -62,13 +67,16 @@ export function radiancePlugin(parser) {
             vec2 p=clamp(cacheUV,vec2(0.),vec2(1.))*size-.5,f=fract(p),a=(floor(p)+.5)/size,b=a+1./size;
             return mix(mix(texel(tex,a,range),texel(tex,vec2(b.x,a.y),range),f.x),mix(texel(tex,vec2(a.x,b.y),range),texel(tex,b,range),f.x),f.y);
           }
-          void main(){
-            vec3 direction=radianceOrtho?radianceDirection:normalize(radianceEye-cachePosition);
+          vec2 perspectiveCell(){
+            vec3 direction=normalize(radianceEye-cachePosition);
             float az=atan(direction.x,direction.z);
             float center=(azimuthRange.x+azimuthRange.y)*.5;
             az=center+atan(sin(az-center),cos(az-center));
-            vec2 p=clamp(vec2(${columns===1?'0.':'(az-azimuthRange.x)/(azimuthRange.y-azimuthRange.x)'},
+            return clamp(vec2(${columns===1?'0.':'(az-azimuthRange.x)/(azimuthRange.y-azimuthRange.x)'},
                       (asin(clamp(direction.y,-1.,1.))-elevationRange.x)/(elevationRange.y-elevationRange.x)),0.,1.)*vec2(${(columns-1).toFixed(1)},${(rows-1).toFixed(1)});
+          }
+          void main(){
+            vec2 p=radianceOrtho?orthoCell:perspectiveCell();
             vec3 light=decode(diffuseCache,diffuseRange,diffuseSize);
             ${Array.from({length:viewCount},(_,i)=>`{float weight=max(0.,1.-abs(p.x-${(i%columns).toFixed(1)}))*max(0.,1.-abs(p.y-${Math.floor(i/columns).toFixed(1)}));if(weight>0.)light+=decode(cache${i},range${i},size${i})*weight;}`).join('\n')}
             gl_FragColor=vec4(light,1.);
@@ -77,6 +85,12 @@ export function radiancePlugin(parser) {
       material.userData.cacheTextures=textures;material.userData.sourceIndex=index;material.userData.grid=grid;
       converted.set(index,material);
     }
+    // Decode several materials while keeping concurrent bitmap allocations bounded.
+    let nextMaterial=0;
+    async function decodeMaterials(){
+      while(nextMaterial<originals.length)await convertMaterial(nextMaterial++);
+    }
+    await Promise.all(Array.from({length:3},decodeMaterials));
     gltf.scene.traverse(object=>{
       if(!object.isMesh)return;
       const convert=material=>{
@@ -99,7 +113,17 @@ export function radiancePlugin(parser) {
         const original=object.userData.radianceSourceMatrix;
         if(original){eye.applyMatrix4(original);direction.transformDirection(original);}
         material.uniforms.radianceEye.value.copy(eye);
-        material.uniforms.radianceDirection.value.copy(direction);
+        if(camera.isOrthographicCamera){
+          const {azimuthRange:a,elevationRange:e}=spec.domain;
+          const center=(a[0]+a[1])/2;
+          const angle=Math.atan2(direction.x,direction.z)-center;
+          const az=center+Math.atan2(Math.sin(angle),Math.cos(angle));
+          const el=Math.asin(THREE.MathUtils.clamp(direction.y,-1,1));
+          const [cols,rows]=material.userData.grid;
+          material.uniforms.orthoCell.value.set(
+            cols===1?0:THREE.MathUtils.clamp((az-a[0])/(a[1]-a[0]),0,1)*(cols-1),
+            THREE.MathUtils.clamp((el-e[0])/(e[1]-e[0]),0,1)*(rows-1));
+        }
         material.uniforms.radianceOrtho.value=Boolean(camera.isOrthographicCamera);
         material.uniformsNeedUpdate=true;
       };

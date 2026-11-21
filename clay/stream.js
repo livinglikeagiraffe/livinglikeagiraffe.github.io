@@ -35,19 +35,33 @@ export async function readBlock(base,block,onProgress){
 
 // The initial view is already visible. Finish decoding and uploading every
 // direction before handing camera control to the visitor.
-export async function prepareDirections(viewer,base,manifest,onProgress){
+export async function prepareDirections(viewer,base,manifest,onProgress,sceneReady=Promise.resolve()){
   const materials=new Map();
-  viewer.root.traverse(o=>{if(o.isMesh)materials.set(o.material.userData.sourceIndex,o.material);});
+  const materialsReady=sceneReady.then(()=>{
+    viewer.root.traverse(o=>{if(o.isMesh)materials.set(o.material.userData.sourceIndex,o.material);});
+  });
   const queue=Object.entries(manifest.packs);
   const received=new Map();
   function progress(id,bytes){
     received.set(id,bytes);
     onProgress([...received.values()].reduce((sum,n)=>sum+n,0));
   }
+  // Each decoder can have one download ahead of it. This keeps transfers
+  // moving during bitmap creation without buffering the entire model twice.
+  function nextBlock(){
+    const entry=queue.shift();
+    if(!entry)return null;
+    const [id,block]=entry;
+    return readBlock(base,block,n=>progress(id,n)).then(
+      bytes=>({id,bytes}),error=>({error}));
+  }
   async function worker(){
-    while(queue.length){
-      const [id,block]=queue.shift();
-      const bytes=await readBlock(base,block,n=>progress(id,n));
+    let pending=nextBlock();
+    while(pending){
+      const {id,bytes,error}=await pending;
+      if(error)throw error;
+      pending=nextBlock();
+      await materialsReady;
       const textures=new Map();
       let lastYield=performance.now();
       for(const slot of manifest.slots.filter(s=>s.group===id)){
@@ -71,6 +85,6 @@ export async function prepareDirections(viewer,base,manifest,onProgress){
       }
     }
   }
-  await Promise.all([worker(),worker()]);
+  await Promise.all([materialsReady,...Array.from({length:3},worker)]);
   viewer.draw();
 }

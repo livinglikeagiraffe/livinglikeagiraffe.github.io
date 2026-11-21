@@ -36,9 +36,13 @@ async function load(){
     if(manifest.model!==record.sha256)throw Error('공간 버전이 일치하지 않습니다.');
     viewer=new RadianceViewer(host);
     const total=Object.values(manifest.packs).reduce((sum,p)=>sum+p.bytes,manifest.core.bytes);
-    await viewer.load(await readBlock(streamBase,manifest.core,n=>progress(n,total)));
-    performance.mark('space-first-frame');
-    await prepareDirections(viewer,streamBase,manifest,n=>progress(manifest.core.bytes+n,total));
+    let coreBytes=0,directionBytes=0;
+    const sceneReady=readBlock(streamBase,manifest.core,n=>{
+      coreBytes=n;progress(coreBytes+directionBytes,total);
+    }).then(bytes=>viewer.load(bytes)).then(()=>performance.mark('space-first-frame'));
+    await prepareDirections(viewer,streamBase,manifest,n=>{
+      directionBytes=n;progress(coreBytes+directionBytes,total);
+    },sceneReady);
     ready();
     return;
   }
