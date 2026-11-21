@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import sharp from 'sharp';
 import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -8,7 +9,7 @@ import {createHash} from 'node:crypto';
 import {parseGLB} from '../scripts/optimize-glb.mjs';
 import {streamPackage} from '../scripts/stream-package.mjs';
 
-test('v06 stream reconstructs every directional texture byte for byte',async()=>{
+test('v06 preserves diffuse and glass bytes and bounds every ordinary reflection texel',async()=>{
   const base=new URL('../studio/radiance-v06/',import.meta.url);
   const manifest=JSON.parse(await readFile(new URL('manifest.json',base)));
   const input=Buffer.concat(await Promise.all(manifest.parts.map(p=>readFile(new URL(p.name,base)))));
@@ -34,9 +35,25 @@ test('v06 stream reconstructs every directional texture byte for byte',async()=>
       for(const [i,v] of source.views.entries()){
         const s=slots.get(m+'/'+i);
         const data=s?groups.get(s.group).subarray(s.offset,s.offset+s.length):texture(core,packed.views[i].texture);
-        assert.ok(texture(original,v.texture).equals(data),'texture '+m+'/'+i);
+        const reference=texture(original,v.texture);
+        if(reference.equals(data))continue;
+        assert.equal(source.grid[1],3,'sensitive reflections must be byte-identical');
+        const decode=image=>sharp(image).ensureAlpha().raw().toBuffer();
+        const [before,after]=await Promise.all([decode(reference),decode(data)]);
+        assert.equal(before.length,after.length);
+        let excess=0;
+        for(let pixel=0;pixel<before.length;pixel+=4){
+          for(let c=0;c<3;c++){
+            const light=before[pixel+c]*before[pixel+3]*v.range/65025;
+            const encoded=after[pixel+c]*after[pixel+3]*v.range/65025;
+            excess=Math.max(excess,Math.abs(light-encoded)-0.0006-0.01*light);
+          }
+        }
+        assert.ok(excess<1e-10,'linear radiance bound exceeded for '+m+'/'+i);
       }
     }
+    const total=Object.values(descriptor.packs).reduce((sum,b)=>sum+b.bytes,descriptor.core.bytes);
+    assert.ok(total<input.length*0.8,'compact v06 must reduce all data needed for interaction');
     assert.ok(descriptor.core.bytes<input.length/2);
   }finally{await rm(folder,{recursive:true,force:true});}
 });

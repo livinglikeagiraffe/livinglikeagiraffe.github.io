@@ -3,6 +3,8 @@ import {createHash} from 'node:crypto';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {parseGLB,packGLB} from './optimize-glb.mjs';
 
+import {compactReflection} from './compact-reflections.mjs';
+
 const hash=data=>createHash('sha256').update(data).digest('hex');
 export async function streamPackage(bytes,folder){
   const {json,bin}=parseGLB(bytes),profile=json.extras.studioRadiance;
@@ -26,6 +28,27 @@ export async function streamPackage(bytes,folder){
     const view=json.bufferViews[img.bufferView],data=bin.subarray(view.byteOffset||0,(view.byteOffset||0)+view.byteLength);
     images.set(i,{data,hash:hash(data),mime:img.mimeType});
   }
+  // Diffuse lighting, display LUT and dense reflection grids (including glass)
+  // keep their original encoded bytes, even if an image has multiple users.
+  const protectedImages=new Set([imageFor(profile.displayTexture)]);
+  const ranges=new Map();
+  for(const m of json.materials){
+    const r=m.extras?.studioRadiance;
+    if(!r)continue;
+    protectedImages.add(imageFor(r.diffuse.texture));
+    for(const v of r.views){
+      const id=imageFor(v.texture);
+      if((r.grid||profile.grid)[1]!==3)protectedImages.add(id);
+      ranges.set(id,Math.max(v.range,ranges.get(id)||0));
+    }
+  }
+  for(const [id,range] of ranges){
+    const img=images.get(id);
+    if(protectedImages.has(id)||img.mime!=='image/webp')continue;
+    img.data=await compactReflection(img.data,range);
+    img.hash=hash(img.data);
+  }
+  const imageData=new Map(json.images.map((im,i)=>[im.bufferView,images.get(i).data]));
   const requiredHash=new Map([...required].map(i=>[images.get(i).hash,i]));
   const slots=[],byHash=new Map();
   for(const p of pending){
@@ -55,7 +78,7 @@ export async function streamPackage(bytes,folder){
   for(const [i,v] of json.bufferViews.entries()){
     const ext=v.extensions?.EXT_meshopt_compression;
     if(ext){ext.byteOffset=append(bin.subarray(ext.byteOffset||0,(ext.byteOffset||0)+ext.byteLength));}
-    else if(!oldImages.has(i)||used.has(i)){v.byteOffset=append(bin.subarray(v.byteOffset||0,(v.byteOffset||0)+v.byteLength));}
+    else if(!oldImages.has(i)||used.has(i)){const data=imageData.get(i)||bin.subarray(v.byteOffset||0,(v.byteOffset||0)+v.byteLength);v.byteOffset=append(data);v.byteLength=data.length;}
     else {v.byteOffset=0;v.byteLength=4;}
   }
   json.buffers[0].byteLength=length;

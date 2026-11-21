@@ -37,9 +37,10 @@ async function load(){
     viewer=new RadianceViewer(host);
     const total=Object.values(manifest.packs).reduce((sum,p)=>sum+p.bytes,manifest.core.bytes);
     let coreBytes=0,directionBytes=0;
-    const sceneReady=readBlock(streamBase,manifest.core,n=>{
+    const core=await readBlock(streamBase,manifest.core,n=>{
       coreBytes=n;progress(coreBytes+directionBytes,total);
-    }).then(bytes=>viewer.load(bytes)).then(()=>performance.mark('space-first-frame'));
+    });
+    const sceneReady=viewer.load(core).then(()=>performance.mark('space-first-frame'));
     await prepareDirections(viewer,streamBase,manifest,n=>{
       directionBytes=n;progress(coreBytes+directionBytes,total);
     },sceneReady);
