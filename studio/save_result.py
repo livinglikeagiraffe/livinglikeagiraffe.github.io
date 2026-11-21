@@ -81,7 +81,9 @@ def save_result(root,result,request,source_ref,url):
         layout_path=root/'studio/layout.json'
         layout=json.loads(layout_path.read_text()) if layout_path.exists() else {}
         build=layout.get('build',{})
-        if (report.get('bake',{}).get('hybridVersion')==1 or radiance and validation.get('passed') is True and all(v.get('passed') is True and v.get('cameraAgreement',{'passed':True}).get('passed') is True for v in validation['views']) and not validation.get('errors')) and build.get('id')==report['layoutId'] and build.get('digest')==report['layoutDigest']:
+        pointer_path=root/'studio/radiance-scene.json'
+        pointer=json.loads(pointer_path.read_text()) if radiance and pointer_path.exists() else {}
+        if pointer.get('supersededLayout')!=report['layoutId'] and (report.get('bake',{}).get('hybridVersion')==1 or radiance and validation.get('passed') is True and all(v.get('passed') is True and v.get('cameraAgreement',{'passed':True}).get('passed') is True for v in validation['views']) and not validation.get('errors')) and build.get('id')==report['layoutId'] and build.get('digest')==report['layoutDigest']:
             public={'schema':1,'layoutId':report['layoutId'],'digest':report['layoutDigest'],'renderId':request,
                     'model':f'studio/renders/{request}/baked.glb','preview':f'studio/renders/{request}/render.png',
                     'sha256':report['bake']['sha256'],'bytes':report['bake']['bytes']}

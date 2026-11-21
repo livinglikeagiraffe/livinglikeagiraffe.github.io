@@ -116,7 +116,7 @@ async function attachBake(version,index,ref){
   if(!saved||saved.id===version.bake?.id&&version.bakedBlob)return version;
   const report=await fileJSON(`studio/renders/${saved.id}/report.json`,ref);
   if(!report?.bake)return version;
-  const bake={...saved,repo:session.repo,report:report.bake,webScene:report.webScene};
+  const bake={...saved,sourceVersion:report.versionId,repo:session.repo,report:report.bake,webScene:report.webScene};
   return {...version,bake,bakedBlob:await bakedFile(bake,ref),previewMode:version.previewMode||'baked'};
 }
 export async function renderRemote(version,quality,scene,mode='render',kind='module'){
@@ -187,4 +187,34 @@ export async function loadLayoutResult(build){
   if(report?.layoutId!==build.id||report?.layoutDigest!==build.digest)throw Error('전체 베이킹 결과가 이 배치와 일치하지 않습니다.');
   const bake={...record,report:report.bake,webScene:report.webScene};
   return {status:'complete',url:record.url,report,validation:record.validation,bake,bakedBlob:await bakedFile(bake,session.branch),blob:await rawFile(`studio/renders/${record.id}/render.png`,session.branch)};
+}
+
+export async function publicScene(ref){
+  return await fileJSON('studio/radiance-scene.json',ref) ||
+    await fileJSON('studio/radiance-v06/manifest.json',ref);
+}
+
+export async function publishVersion(version){
+  if(!session?.token||session.repo!=='livinglikeagiraffe/livinglikeagiraffe.github.io'||session.branch!=='main'||version.remote?.repo!==session.repo)throw Error('GitHub 버전과 쓰기 연결이 필요합니다.');
+  const renderId=version.bake?.id;
+  if(!/^[a-f0-9-]{36}$/.test(renderId))throw Error('베이킹이 필요합니다.');
+  await commit([],async parent=>{
+    const folder='studio/renders/'+renderId;
+    const [report,validation,fallback,layout]=await Promise.all([
+      fileJSON(folder+'/report.json',parent),fileJSON(folder+'/validation.json',parent),
+      fileJSON('studio/radiance-v06/manifest.json',parent),fileJSON('studio/layout.json',parent)
+    ]);
+    const bake=report?.bake;
+    if(report?.versionId!==version.id||bake?.radianceVersion!==1||
+      validation?.passed!==true||validation.errors?.length||!/^[a-f0-9]{64}$/.test(bake.sha256)||!Number.isSafeInteger(bake.bytes)||bake.bytes<=0||validation.modelSha256!==bake.sha256||
+      !validation.views?.length||!validation.views.every(v=>v.passed===true&&v.cameraAgreement?.passed!==false))
+      throw Error('해당 버전의 시점 검증이 필요합니다.');
+    const pointer=fallback?.sourceRender===renderId&&fallback.sha256===bake.sha256?
+      {...fallback,renderId}:{
+        schema:1,sourceVersion:version.id,renderId,model:folder+'/baked.glb',
+        sha256:bake.sha256,bytes:bake.bytes,...(bake.parts?{parts:bake.parts}:{})
+      };
+    if(layout?.build?.id)pointer.supersededLayout=layout.build.id;
+    return [{path:'studio/radiance-scene.json',mode:'100644',type:'blob',content:JSON.stringify(pointer,null,2)}];
+  },'studio: publish '+version.title);
 }
