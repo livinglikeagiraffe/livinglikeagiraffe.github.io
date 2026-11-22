@@ -41,13 +41,18 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: studio-render
+  group: studio-render-${{ inputs.request_id }}
   cancel-in-progress: false
 jobs:
   render:
+    name: Bake 1
+    env:
+      STAGE: '1'
+    outputs: &bake-outputs
+      paused: ${{ steps.bake.outputs.paused }}
     runs-on: ubuntu-22.04
     timeout-minutes: 360
-    steps:
+    steps: &bake-steps
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
@@ -88,7 +93,17 @@ jobs:
           PY
           mkdir -p "$RUNNER_TEMP/blender"
           tar -xJf "$RUNNER_TEMP/blender.tar.xz" -C "$RUNNER_TEMP/blender" --strip-components=1
+      - name: Locate previous checkpoint
+        if: env.STAGE != '1'
+        id: previous
+        run: echo "name=bake-${GITHUB_RUN_ID}-$((STAGE - 1))" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        if: env.STAGE != '1'
+        with:
+          name: ${{ steps.previous.outputs.name }}
+          path: ${{ runner.temp }}/render-output
       - name: Render uploaded scene
+        id: bake
         env:
           MANIFEST: ${{ inputs.manifest }}
           QUALITY: ${{ inputs.quality }}
@@ -100,12 +115,40 @@ jobs:
           mkdir -p "$RUNNER_TEMP/render-output" "$RUNNER_TEMP/blender-home"
           reuse=()
           if [ -n "$REUSE_RENDER" ]; then reuse=(--reuse-radiance "input/studio/renders/$REUSE_RENDER"); fi
-          env -i PATH="$PATH" HOME="$RUNNER_TEMP/blender-home" BLENDER_THREADS=4 \
+          output="$RUNNER_TEMP/render-output"
+          previous=$(sha256sum "$output/checkpoint.json" 2>/dev/null || true)
+          limit=()
+          if [ "$MODE" = radiance ]; then limit=(timeout --kill-after=30s 240m); fi
+          status=0
+          "${limit[@]}" env -i PATH="$PATH" HOME="$RUNNER_TEMP/blender-home" BLENDER_THREADS=4 \
             "$RUNNER_TEMP/blender/blender" --background --factory-startup --disable-autoexec \
             --python-exit-code 1 --python worker/studio/render.py -- \
-            --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE" --mode "${MODE:-render}" --kind "${KIND:-module}" "${reuse[@]}"
+            --manifest "input/$MANIFEST" --output "$RUNNER_TEMP/render-output" --quality "$QUALITY" --scene "$SCENE" --mode "${MODE:-render}" --kind "${KIND:-module}" "${reuse[@]}" || status=$?
+          if [[ "$status" =~ ^(124|137)$ ]] && [ "$MODE" = radiance ] && [ -s "$output/checkpoint.json" ]; then
+            current=$(sha256sum "$output/checkpoint.json")
+            if [ "$current" = "$previous" ] || [ "$STAGE" -ge 6 ]; then
+              echo "Checkpoint budget exhausted (stage $STAGE)" >&2
+              exit 1
+            fi
+            echo "paused=true" >> "$GITHUB_OUTPUT"
+          else
+            exit "$status"
+          fi
+      - name: Transfer completed texture maps
+        if: steps.bake.outputs.paused == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bake-${{ github.run_id }}-${{ env.STAGE }}
+          overwrite: true
+          retention-days: 3
+          compression-level: 0
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/render-output/checkpoint.json
+            ${{ runner.temp }}/render-output/*_diffuse.png
+            ${{ runner.temp }}/render-output/*_view*.png
       - name: Validate navigation range against Cycles
-        if: inputs.mode == 'radiance'
+        if: inputs.mode == 'radiance' && steps.bake.outputs.paused != 'true'
         env:
           RESULT: ${{ runner.temp }}/render-output
         run: |
@@ -121,9 +164,10 @@ jobs:
           trap 'kill "$server_pid"' EXIT
           node tests/validate-radiance.mjs 'http://127.0.0.1:8846/clay/lab.html?result=../.source-assets/ci-radiance' "$RESULT"
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() && (failure() || steps.bake.outputs.paused != 'true') }}
         with:
           name: studio-render-${{ inputs.request_id }}
+          overwrite: true
           path: |
             ${{ runner.temp }}/render-output/*.png
             ${{ runner.temp }}/render-output/report.json
@@ -137,9 +181,59 @@ jobs:
             ${{ runner.temp }}/render-output/stream/
           if-no-files-found: error
           retention-days: 3
-  save:
+  resume2:
+    name: Bake 2
     needs: render
-    if: always() && needs.render.result != 'cancelled'
+    if: needs.render.outputs.paused == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      STAGE: '2'
+    outputs: *bake-outputs
+    steps: *bake-steps
+  resume3:
+    name: Bake 3
+    needs: resume2
+    if: needs.resume2.outputs.paused == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      STAGE: '3'
+    outputs: *bake-outputs
+    steps: *bake-steps
+  resume4:
+    name: Bake 4
+    needs: resume3
+    if: needs.resume3.outputs.paused == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      STAGE: '4'
+    outputs: *bake-outputs
+    steps: *bake-steps
+  resume5:
+    name: Bake 5
+    needs: resume4
+    if: needs.resume4.outputs.paused == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      STAGE: '5'
+    outputs: *bake-outputs
+    steps: *bake-steps
+  resume6:
+    name: Bake 6
+    needs: resume5
+    if: needs.resume5.outputs.paused == 'true'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+    env:
+      STAGE: '6'
+    outputs: *bake-outputs
+    steps: *bake-steps
+  save:
+    needs: [render, resume2, resume3, resume4, resume5, resume6]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -164,7 +258,7 @@ jobs:
           SOURCE_REF: ${{ inputs.source_ref }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           BRANCH: ${{ github.event.repository.default_branch }}
-          RENDER_RESULT: ${{ needs.render.result }}
+          RENDER_RESULT: ${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
