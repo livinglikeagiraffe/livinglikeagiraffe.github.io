@@ -51,7 +51,7 @@ blend=files/'source.blend'
 bpy.ops.wm.save_as_mainfile(filepath=str(blend),compress=True,copy=True)
 binary=blend.read_bytes();manifest={'schema':1,'id':version,'moduleId':module,'blend':'source.blend','assets':[{'name':'source.blend','bytes':len(binary),'sha256':hashlib.sha256(binary).hexdigest()}]}
 manifest_path.write_text(json.dumps(manifest))
-recipe={'grid':{'columns':1,'rows':1,'width':2,'depth':2,'gap':0},'cells':[{'x':0,'z':0,'rotation':90,'versionId':version}],'environment':{'floor':'#ffffff','lighting':'shared-softbox'}}
+recipe={'grid':{'columns':1,'rows':1,'width':2,'depth':2,'gap':0},'cells':[{'x':0,'z':0,'rotation':90,'versionId':version,'offsetX':.3,'offsetZ':-.1}],'environment':{'floor':'#ffffff','lighting':'shared-softbox'}}
 key=json.dumps(recipe,separators=(',',':'));snapshot={'schema':1,'id':layout,'key':key,'digest':hashlib.sha256(key.encode()).hexdigest(),'quality':'preview',**recipe,'sources':{version:{'manifest':str(manifest_path.relative_to(fixture)),'scene':scene.name}}}
 snapshot_path=fixture/f'studio/layouts/{layout}.json';snapshot_path.parent.mkdir(parents=True,exist_ok=True);snapshot_path.write_text(json.dumps(snapshot))
 source_light=scene.objects['Light'];original_camera=camera.matrix_world.copy();original_light=source_light.matrix_world.copy();original_energy=source_light.data.energy
@@ -59,7 +59,7 @@ corners=[cube.matrix_world@Vector(p) for p in cube.bound_box]
 low=Vector(tuple(min(p[k] for p in corners) for k in range(3)));high=Vector(tuple(max(p[k] for p in corners) for k in range(3)))
 center=(low+high)*.5;scale=min(1,1.92/(high.x-low.x),1.92/(high.y-low.y))
 composed,_,metadata=compose_scene(snapshot_path,strict=True)
-transform=Matrix.Rotation(math.pi/2,4,'Z')@Matrix.Scale(scale,4)@Matrix.Translation((-center.x,-center.y,-low.z))
+transform=Matrix.Translation((.3,.1,0))@Matrix.Rotation(math.pi/2,4,'Z')@Matrix.Scale(scale,4)@Matrix.Translation((-center.x,-center.y,-low.z))
 assert (composed.camera.location-(transform@original_camera).translation).length<1e-4
 shared=composed.objects[metadata['sharedLights'][0]]
 assert (shared.location-(transform@original_light).translation).length<1e-4

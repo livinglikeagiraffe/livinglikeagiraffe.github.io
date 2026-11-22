@@ -19,3 +19,14 @@ test('whole-space preview uses the baked combined asset and its own authored cam
   const version=layoutVersion({id:'a'},{bake:{id:'result'},bakedBlob:blob,report});
   assert.equal(version.files[0].blob,blob);assert.equal(version.job.report,report);assert.equal(version.webLook.camera,'authored');
 });
+
+test('position edits survive snapshots and old centered layouts keep their identity',()=>{
+  const layout=fixture(),before=layoutKey(layout);
+  Object.assign(layout.cells[0],{offsetX:0,offsetZ:0});
+  assert.equal(layoutKey(layout),before);
+  Object.assign(layout.cells[0],{offsetX:.1,offsetZ:-1});
+  assert.deepEqual(JSON.parse(layoutKey(layout)).cells[0],layout.cells[0]);
+  assert.equal(isLayoutCurrent(layout,{key:before}),false);
+  layout.cells[0].offsetX=layout.grid.width;
+  assert.throws(()=>layoutKey(layout));
+});

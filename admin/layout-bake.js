@@ -7,7 +7,7 @@ export function environment(value={}){
 }
 export function layoutKey(layout){
   const clean=validateLayout(layout,layout.cells.map(c=>({id:c.versionId})));
-  return JSON.stringify({grid:clean.grid,cells:clean.cells.map(({x,z,versionId,rotation})=>({x,z,versionId,rotation})).sort((a,b)=>a.z-b.z||a.x-b.x),environment:environment(layout.environment)});
+  return JSON.stringify({grid:clean.grid,cells:clean.cells.map(({x,z,versionId,rotation,offsetX,offsetZ})=>({x,z,versionId,rotation,...(offsetX?{offsetX}:{}),...(offsetZ?{offsetZ}:{})})).sort((a,b)=>a.z-b.z||a.x-b.x),environment:environment(layout.environment)});
 }
 export function isLayoutCurrent(layout,build){return Boolean(build?.key&&build.key===layoutKey(layout));}
 export async function digestKey(key){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key))),n=>n.toString(16).padStart(2,'0')).join('');}

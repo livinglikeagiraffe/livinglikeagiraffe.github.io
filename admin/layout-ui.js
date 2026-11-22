@@ -3,8 +3,8 @@ import * as storage from './storage.js';
 import {environment,isLayoutCurrent,layoutVersion} from './layout-bake.js';
 const $=s=>document.querySelector(s);
 export class LayoutBakeUI{
-  constructor({getLayout,setLayout,resolve,action}){
-    Object.assign(this,{getLayout,setLayout,resolve,action});this.mode='edit';this.urls=[];
+  constructor({getLayout,setLayout,resolve,action,onViewChange}){
+    Object.assign(this,{getLayout,setLayout,resolve,action,onViewChange});this.mode='edit';this.urls=[];
     $('[data-layout-view="edit"]').onclick=()=>action(()=>this.switch('edit'));
     $('[data-layout-view="baked"]').onclick=()=>action(()=>this.switch('baked'));
     $('[data-layout-view="render"]').onclick=()=>action(()=>this.switch('render'));
@@ -28,7 +28,7 @@ export class LayoutBakeUI{
     let message='';
     if(build&&!valid)message='변경됨 · 저장 필요';
     else if(this.job?.status==='failed')message=this.job.message||'실패 · 로그 확인';
-    else if(this.job&&!['complete','failed'].includes(this.job.status))message='간접광 베이킹 중…';
+    else if(this.job&&!['complete','failed'].includes(this.job.status))message=this.job.stageLabel||'간접광 베이킹 중…';
     else if(ready && this.result.report.bake?.radianceVersion)message=this.result.validation?.passed?'완료 · 이동 범위 검증 통과':'품질 검증 미달 · 공개 보류';
     else if(ready && this.result.report.bake?.webBake?.surfaces)message=`완료 · WebBake 표면 ${this.result.report.bake.webBake.surfaces}개`;
     else if(ready)message=this.result.report.bake?.hybridVersion?'완료 · 간접광 적용':'완료 · 고정 조명';
@@ -45,7 +45,7 @@ export class LayoutBakeUI{
     this.result=cached;this.job=job;
     try{const remote=await github.loadLayoutResult(build);if(this.getLayout().build?.id!==build.id)return;if(remote){this.result=remote;this.job={id:remote.bake.id,status:'complete',url:remote.url};await storage.put(`layout-result:${build.id}`,remote);}}
     catch(e){this.error=`결과 확인: ${e.message}`;}
-    if(this.result&&this.valid())this.mode='baked';
+    if(this.result&&this.valid())this.mode='edit';
     this.controls();if(this.job&&!['complete','failed'].includes(this.job.status))this.poll();
   }
   async show(viewer){
@@ -58,7 +58,7 @@ export class LayoutBakeUI{
       if(this.urlId!==this.result.bake.id){for(const u of this.urls)URL.revokeObjectURL(u);this.urls=[URL.createObjectURL(this.result.bakedBlob),URL.createObjectURL(this.result.blob)];this.urlId=this.result.bake.id;}
       $('#layout-result-download').href=this.urls[0];$('#layout-render').src=this.urls[1];
     }
-    this.controls();
+    this.controls();this.onViewChange();
   }
   async switch(mode){if(mode!=='edit'&&(!this.valid()||!this.result))return;this.mode=mode;if(this.viewer)await this.show(this.viewer);}
   async save(){
@@ -78,7 +78,7 @@ export class LayoutBakeUI{
     try{
       const result=await github.renderStatus(job);
       if(result.status==='complete'&&(result.report?.layoutId!==build.id||result.report?.layoutDigest!==build.digest))throw Error('베이킹 결과가 요청한 배치와 일치하지 않습니다.');
-      const record={...job,status:result.status,url:result.url,message:result.message};await storage.put(`layout-job:${build.id}`,record);
+      const record={...job,status:result.status,url:result.url,message:result.message,runId:result.runId,stageLabel:result.stageLabel,stageChecked:result.stageChecked};await storage.put(`layout-job:${build.id}`,record);
       if(result.status==='complete')await storage.put(`layout-result:${build.id}`,result);
       if(this.getLayout().build?.id!==build.id)return;
       this.job=record;this.error='';

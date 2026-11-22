@@ -28,6 +28,10 @@ def validate_snapshot(path):
     if snapshot['quality'] not in ('preview','original'):raise ValueError('Invalid quality')
     for cell in cells:
         if type(cell['x']) is not int or type(cell['z']) is not int or not 0<=cell['x']<g['columns'] or not 0<=cell['z']<g['rows'] or cell['rotation'] not in (0,90,180,270):raise ValueError('Invalid cell')
+        for key,span in [('offsetX',g['width']),('offsetZ',g['depth'])]:
+            offset=cell.get(key,0)
+            if type(offset) not in (float,int) or not math.isfinite(offset) or abs(offset)>span/2:
+                raise ValueError('Module center outside its grid cell')
         key=(cell['x'],cell['z'])
         if key in occupied:raise ValueError('Overlapping cells')
         occupied.add(key)
@@ -130,8 +134,8 @@ def compose_scene(path, strict=False):
         template=templates[cell['versionId']];low,high=template['low'],template['high'];size=high-low;center=(low+high)*.5
         swap=cell['rotation']%180!=0
         scale=min(1,g['width']*.96/max(size.y if swap else size.x,.001),g['depth']*.96/max(size.x if swap else size.y,.001))
-        x=(cell['x']-(g['columns']-1)/2)*(g['width']+g['gap'])
-        y=-(cell['z']-(g['rows']-1)/2)*(g['depth']+g['gap'])
+        x=(cell['x']-(g['columns']-1)/2)*(g['width']+g['gap'])+cell.get('offsetX',0)
+        y=-(cell['z']-(g['rows']-1)/2)*(g['depth']+g['gap'])-cell.get('offsetZ',0)
         matrix=Matrix.Translation((x,y,0))@Matrix.Rotation(math.radians(cell['rotation']),4,'Z')@Matrix.Scale(scale,4)@Matrix.Translation((-center.x,-center.y,-low.z))
         if len(snapshot['cells']) == 1:
             single_transform = matrix.copy()

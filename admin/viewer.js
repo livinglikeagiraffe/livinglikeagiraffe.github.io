@@ -88,6 +88,7 @@ export class StudioViewer {
     this.cache.set(key,asset);return asset;
   }
   clear(){
+    this.highlightCell(null);
     this.materials.clear();for(const o of [...this.root.children]){this.root.remove(o);o.traverse(n=>{if(o.userData.decoration)n.geometry?.dispose();if(n.material)for(const m of Array.isArray(n.material)?n.material:[n.material])m.dispose();});}
   }
   instance(asset,look){
@@ -171,12 +172,50 @@ export class StudioViewer {
     this.ground=null;if(!a.backdrop){this.ground=new THREE.Mesh(new THREE.PlaneGeometry(2000,2000),new THREE.MeshStandardMaterial({roughness:.9}));this.ground.rotation.x=-Math.PI/2;this.ground.position.y=-.035;this.ground.receiveShadow=true;this.ground.userData.decoration=true;this.root.add(this.ground);}
     this.buildRig();this.setLook(version.webLook);this.resize();return a;
   }
+  placeModule(node,grid){
+    const {cell,size}=node.userData;
+    const base=cellPosition(grid,cell.x,cell.z);
+    node.position.set(base.x+(cell.offsetX||0),0,base.z+(cell.offsetZ||0));
+    node.rotation.y=cell.rotation*Math.PI/180;
+    node.scale.setScalar(fitScale(size,grid,cell.rotation));
+    node.updateMatrixWorld(true);
+    this.draw();
+  }
+  updateCell(cell,grid){
+    const node=this.root.children.find(child=>child.userData.cell===cell);
+    if(node)this.placeModule(node,grid);
+  }
+  highlightCell(cell){
+    if(this.selectionBox){
+      this.scene.remove(this.selectionBox);
+      this.selectionBox.dispose();
+      this.selectionBox=null;
+    }
+    const node=cell&&this.root.children.find(child=>child.userData.cell===cell);
+    if(node){
+      this.selectionBox=new THREE.BoxHelper(node,0x287359);
+      this.scene.add(this.selectionBox);
+    }
+    this.draw();
+  }
+  pickCell(event){
+    const rect=this.renderer.domElement.getBoundingClientRect();
+    const point=new THREE.Vector2((event.clientX-rect.left)*2/rect.width-1,1-(event.clientY-rect.top)*2/rect.height);
+    const ray=new THREE.Raycaster();
+    ray.setFromCamera(point,this.camera);
+    for(const hit of ray.intersectObjects(this.root.children.filter(o=>o.userData.cell),true)){
+      let node=hit.object;
+      while(node.visible&&!node.userData.cell&&node.parent)node=node.parent;
+      if(node.visible&&node.userData.cell)return node.userData.cell;
+    }
+    return null;
+  }
   async showGrid(layout,resolve){
     this.radianceViewer?.dispose();this.radianceViewer=null;this.renderer.domElement.hidden=false;this.controls.enabled=true;
     const ticket=this.ticket=Symbol(),loaded=[];for(const cell of layout.cells){const version=await resolve(cell.versionId);if(!version)throw Error('배치에 사용한 버전을 먼저 불러와 주세요.');loaded.push({cell,version,asset:version.model?await this.load(version.bake?.report?.radianceVersion?version:previewVersion(version)):null});}if(this.ticket!==ticket)return;
     this.clear();this.isGrid=true;this.hasBaked=loaded.some(v=>v.asset?.baked);this.ground=null;this.profile=null;const grid=layout.grid;
     for(let z=0;z<grid.rows;z++)for(let x=0;x<grid.columns;x++){const p=cellPosition(grid,x,z);this.platform(grid.width,grid.depth,p.x,p.z);}
-    for(const {cell,asset:a,version} of loaded){if(!a)continue;const instance=this.instance(a,normalizeLook(version.webLook)),center=a.bounds.getCenter(new THREE.Vector3());instance.position.set(-center.x,-a.bounds.min.y,-center.z);const module=new THREE.Group();module.add(instance);module.scale.setScalar(fitScale(a.size,grid,cell.rotation));module.rotation.y=cell.rotation*Math.PI/180;const p=cellPosition(grid,cell.x,cell.z);module.position.set(p.x,0,p.z);this.root.add(module);}
+    for(const {cell,asset:a,version} of loaded){if(!a)continue;const instance=this.instance(a,normalizeLook(version.webLook)),center=a.bounds.getCenter(new THREE.Vector3());instance.position.set(-center.x,-a.bounds.min.y,-center.z);const module=new THREE.Group();module.add(instance);module.userData={cell,size:a.size};this.root.add(module);this.placeModule(module,grid);}
     this.bounds=new THREE.Box3().setFromObject(this.root);this.buildRig();this.setLook({...normalizeLook(),camera:'fit'});this.resize();
   }
 }

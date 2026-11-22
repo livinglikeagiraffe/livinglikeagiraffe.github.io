@@ -132,10 +132,24 @@ export async function renderRemote(version,quality,scene,mode='render',kind='mod
 }
 export async function renderStatus(job){
   if(job.repo!==session?.repo)throw Error('렌더 작업을 실행한 저장소를 연결해 주세요.');
-  const runs=await request('/actions/workflows/render-module.yml/runs?event=workflow_dispatch&per_page=50');
-  const run=runs.workflow_runs.find(r=>r.display_title?.includes(job.id));
+  const run=job.runId?await request('/actions/runs/'+job.runId):
+    (await request('/actions/workflows/render-module.yml/runs?event=workflow_dispatch&per_page=50')).workflow_runs.find(r=>r.display_title?.includes(job.id));
   if(!run)return {status:'queued'};
-  if(run.status!=='completed')return {status:run.status,url:run.html_url};
+  if(run.status!=='completed'){
+    const state={status:run.status,url:run.html_url,runId:run.id,stageLabel:job.stageLabel,stageChecked:job.stageChecked};
+    if(run.status==='in_progress'&&Date.now()-(job.stageChecked||0)>60000){
+      const result=await request('/actions/runs/'+run.id+'/jobs?filter=latest&per_page=12').catch(()=>null);
+      const active=result?.jobs?.find(item=>item.status==='in_progress');
+      const stage=active?.name.match(/^Bake (\d+)$/)?.[1];
+      const step=active?.steps?.find(item=>item.status==='in_progress')?.name;
+      state.stageLabel=active?.name==='save'?'결과 저장 중':
+        step==='Validate navigation range against Cycles'?'시점 검증 중':
+        step==='Transfer completed texture maps'?'체크포인트 저장 중':
+        stage&&job.mode==='radiance'?`베이킹 · 워커 ${stage}`:undefined;
+      state.stageChecked=Date.now();
+    }
+    return state;
+  }
   if(run.conclusion!=='success'){
     const failure=await fileJSON(`studio/renders/${job.id}/failure.json`);
     return {status:'failed',url:run.html_url,message:failure?.message||`렌더 작업이 ${run.conclusion} 상태로 종료되었습니다.`};

@@ -15,6 +15,10 @@ export function validateLayout(layout, versions) {
     if(occupied.has(key)) throw Error('같은 칸에 모듈을 두 번 배치할 수 없습니다.');
     if(!known.has(cell.versionId)) throw Error('배치에 사용한 버전을 찾을 수 없습니다.');
     if(![0,90,180,270].includes(cell.rotation)) throw Error('회전은 90도 단위입니다.');
+    for (const [axis,span] of [['offsetX',grid.width],['offsetZ',grid.depth]]) {
+      const offset=cell[axis]===undefined?0:cell[axis];
+      if (!Number.isFinite(offset)||Math.abs(offset)>span/2) throw Error('모듈 중심은 선택한 칸 안에 있어야 합니다.');
+    }
     occupied.add(key);
   }
   return {schema:1,grid,cells:layout.cells.map(c=>({...c})),...(layout.environment?{environment:layout.environment}:{}),...(layout.build?{build:layout.build}:{})};

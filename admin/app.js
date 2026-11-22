@@ -11,7 +11,7 @@ const $=s=>document.querySelector(s);
 let versions=[],current=null,layout={schema:1,grid:{...DEFAULT_GRID},cells:[]},view='review',imageMode='reference',selectedCell=null,viewer,gridViewer,noticeTimer,imageURL,bakeURL,renderTimer,publicConsent=false,busy=false,loadGeneration=0;
 let publishedVersion=null,publishedRender=null,publishCandidate=null;
 const resolving=new Map();
-const layoutBake=new LayoutBakeUI({getLayout:()=>layout,setLayout:value=>{layout=validateLayout(value,versions);updateMap();},resolve,action});
+const layoutBake=new LayoutBakeUI({getLayout:()=>layout,setLayout:value=>{layout=validateLayout(value,versions);updateMap();},resolve,action,onViewChange:updateMap});
 async function resolve(id){
   const cached=await storage.get(`version:${id}`);if(cached){
     try{const refreshed=await github.refreshRender(cached);if(refreshed!==cached)await storage.saveVersion(refreshed);return refreshed;}catch{return cached;}
@@ -41,14 +41,21 @@ function updateButtons(){
 function listVersions(){
   const list=$('#version-list');list.replaceChildren();
   if(!versions.length){const p=document.createElement('p');p.className='muted';p.textContent='저장된 버전 없음';list.append(p);}
+  const query=$('#version-search').value.trim().toLocaleLowerCase();
   const target=$('#module-target'),selected=target.value;target.replaceChildren();option(target,'새 모듈','');const seen=new Set();
-  for(const v of versions){
-    const button=document.createElement('button');button.className=`version-item${current?.id===v.id?' active':''}`;const strong=document.createElement('strong');strong.textContent=v.title;if(publishedVersion===v.id){const badge=document.createElement('span');badge.className='badge';badge.textContent='공개';strong.append(badge);}const small=document.createElement('small');small.textContent=`${new Date(v.createdAt).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})} · ${v.remote?'GitHub':'브라우저'}${v.job?.status==='complete'?' · 렌더 완료':''}`;button.append(strong,small);button.onclick=()=>action(async()=>{notice('버전 불러오는 중…');const loaded=await resolve(v.id);if(!loaded)throw Error('이 버전의 파일을 찾을 수 없습니다.');await selectVersion(loaded);$('#notice').hidden=true;});list.append(button);
+  let matches=0;
+  for(const v of [...versions].sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt))){
     if(!seen.has(v.moduleId)){option(target,v.title,v.moduleId);seen.add(v.moduleId);}
-  }
+    if(!v.title.toLocaleLowerCase().includes(query))continue;
+    matches++;
+    const button=document.createElement('button');button.className=`version-item${current?.id===v.id?' active':''}`;const strong=document.createElement('strong');strong.textContent=v.title;if(publishedVersion===v.id){const badge=document.createElement('span');badge.className='badge';badge.textContent='공개';strong.append(badge);}const small=document.createElement('small');small.textContent=`${new Date(v.createdAt).toLocaleString('ko-KR',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}${v.remote?'':' · 로컬'}`;button.append(strong,small);button.onclick=()=>action(async()=>{notice('버전 불러오는 중…');const loaded=await resolve(v.id);if(!loaded)throw Error('이 버전의 파일을 찾을 수 없습니다.');await selectVersion(loaded);if(view==='grid')await switchView('review');$('#notice').hidden=true;});list.append(button);
+    }
+  if(query&&!matches)list.textContent='검색 결과 없음';
   target.value=selected;
 }
+$('#version-search').oninput=listVersions;
 async function selectVersion(version){
+  $('#review-panel').classList.add('has-version');
   const generation=++loadGeneration;current=version;
   $('#module-title').value=version.title;$('#module-target').value=versions.some(v=>v.moduleId===version.moduleId)?version.moduleId:'';
   for(const [id,filter,empty,chosen] of [['model-select',/\.glb$/i,'GLB 선택',version.model],['image-select',/\.(png|jpe?g|webp)$/i,'참고 이미지 없음',version.reference],['blend-select',/\.blend$/i,'.blend 원본 없음',version.blend]]){
@@ -136,17 +143,80 @@ $('#save-version').onclick=()=>action(async()=>{
 });
 $('#new-module').onclick=()=>$('#upload-input').click();
 
+const directionDelta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
+function activeCell(){return layout.cells.find(c=>c.x===selectedCell?.x&&c.z===selectedCell?.z);}
+function selectCell(x,z){
+  selectedCell={x,z};
+  updateMap();
+}
+function moveCell(key){
+  const cell=activeCell();
+  if(!cell||busy||layoutBake.mode!=='edit')return;
+  const [dx,dz]=directionDelta[key],step=$('#move-step').value;
+  if(step==='cell'){
+    const x=cell.x+dx,z=cell.z+dz;
+    if(x<0||x>=layout.grid.columns||z<0||z>=layout.grid.rows)return notice('격자 끝');
+    if(layout.cells.some(other=>other.x===x&&other.z===z))return notice('이미 사용 중인 칸');
+    Object.assign(cell,{x,z});
+  }else{
+    const x=Math.round(((cell.offsetX||0)+dx*Number(step))*10)/10;
+    const z=Math.round(((cell.offsetZ||0)+dz*Number(step))*10)/10;
+    if(Math.abs(x)>layout.grid.width/2||Math.abs(z)>layout.grid.depth/2)return notice('칸 경계 · 이동 단위를 한 칸으로 변경하세요');
+    Object.assign(cell,{offsetX:x,offsetZ:z});
+  }
+  layoutBake.invalidate();
+  gridViewer.updateCell(cell,layout.grid);
+  selectCell(cell.x,cell.z);
+}
+for(const button of document.querySelectorAll('[data-move]'))button.onclick=()=>moveCell(button.dataset.move);
+document.addEventListener('keydown',event=>{
+  if(view==='grid'&&!document.querySelector('dialog[open]')&&(event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='s'){
+    event.preventDefault();if(!busy)$('#save-grid').click();
+  }
+});
+$('#grid-panel').addEventListener('keydown',event=>{
+  if(!directionDelta[event.key]||busy||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey||layoutBake.mode!=='edit'||!activeCell())return;
+  if(!event.target.closest('#grid-stage,#cell-map,.direction-pad'))return;
+  event.preventDefault();moveCell(event.key);
+});
+let press;
+$('#grid-stage').addEventListener('pointerdown',e=>{press=e.isPrimary?{x:e.clientX,y:e.clientY,id:e.pointerId}:null;});
+$('#grid-stage').addEventListener('pointerup',e=>{
+  if(!press||press.id!==e.pointerId||busy||layoutBake.mode!=='edit')return;
+  const distance=Math.hypot(e.clientX-press.x,e.clientY-press.y);press=null;
+  if(distance>5)return;
+  const cell=gridViewer?.isGrid&&gridViewer.pickCell(e);
+  if(cell){selectCell(cell.x,cell.z);gridViewer.renderer.domElement.focus({preventScroll:true});}
+});
 async function showGrid(){
   if(!gridViewer)gridViewer=new StudioViewer($('#grid-stage'));
-  await layoutBake.show(gridViewer);updateMap();
+  if(!selectedCell&&layout.cells.length===1)selectedCell={x:layout.cells[0].x,z:layout.cells[0].z};
+  await layoutBake.show(gridViewer);
 }
 async function switchView(next){view=next;$('#review-panel').hidden=next!=='review';$('#grid-panel').hidden=next!=='grid';document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===next));if(next==='grid')await showGrid();else viewer?.resize();}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>action(()=>switchView(b.dataset.view)));
-function updateMap(){const map=$('#cell-map');map.replaceChildren();map.style.gridTemplateColumns=`repeat(${layout.grid.columns},1fr)`;
+function updateMap(){
+  const map=$('#cell-map'),restoreFocus=map.contains(document.activeElement);
+  map.replaceChildren();
+  map.style.gridTemplateColumns=`repeat(${layout.grid.columns},minmax(0,1fr))`;
   for(let z=0;z<layout.grid.rows;z++)for(let x=0;x<layout.grid.columns;x++){
-    const cell=layout.cells.find(c=>c.x===x&&c.z===z),button=document.createElement('button');button.className=`${cell?'filled ':''}${selectedCell?.x===x&&selectedCell?.z===z?'selected':''}`;button.textContent=cell?'◈':`${x+1}·${z+1}`;button.setAttribute('aria-label',`${x+1}열 ${z+1}행${cell?' 모듈 있음':' 빈 칸'}`);button.onclick=()=>{selectedCell={x,z};updateMap();};map.append(button);
+    const cell=layout.cells.find(c=>c.x===x&&c.z===z),button=document.createElement('button');
+    const selected=selectedCell?.x===x&&selectedCell?.z===z;
+    const title=cell?versions.find(v=>v.id===cell.versionId)?.title||'모듈':'빈 칸';
+    button.className=`${cell?'filled ':''}${selected?'selected':''}`;
+    button.textContent=cell?title:`${x+1}·${z+1}`;
+    button.setAttribute('aria-label',`${x+1}열 ${z+1}행 · ${title}`);
+    button.setAttribute('aria-pressed',String(selected));
+    button.onclick=()=>selectCell(x,z);
+    map.append(button);
+    if(selected&&restoreFocus)button.focus({preventScroll:true});
   }
-  $('#placed-count').textContent=layout.cells.length;$('#selected-cell-label').textContent=selectedCell?`${selectedCell.x+1}열 ${selectedCell.z+1}행`:'';
+  const cell=activeCell(),editable=Boolean(cell)&&layoutBake.mode==='edit';
+  for(const button of document.querySelectorAll('[data-move],#rotate-cell,#remove-cell'))button.disabled=!editable;
+  $('#move-step').disabled=!editable;
+  $('#placed-count').textContent=layout.cells.length;
+  $('#selected-cell-label').textContent=cell?`${cell.x+1}열 ${cell.z+1}행 · X ${cell.offsetX||0} m · Z ${cell.offsetZ||0} m · ${cell.rotation}°`:'이동할 모듈 선택';
+  if(view==='grid'&&gridViewer?.isGrid)gridViewer.highlightCell(editable?cell:null);
   for(const [name,value] of Object.entries(layout.grid))$('#grid-settings').elements[name].value=value;
 }
 $('#add-module').onclick=()=>action(async()=>{
@@ -155,18 +225,34 @@ $('#add-module').onclick=()=>action(async()=>{
   const cell=selectedCell&&!layout.cells.some(c=>c.x===selectedCell.x&&c.z===selectedCell.z)?selectedCell:nextCell(layout);if(!cell)throw Error('격자가 가득 찼습니다. 칸 수를 늘려 주세요.');
   layout.cells.push({...cell,versionId:current.id,rotation:0});selectedCell=cell;layoutBake.invalidate();await switchView('grid');notice('모듈 추가됨');
 });
-$('#rotate-cell').onclick=()=>action(async()=>{const cell=layout.cells.find(c=>c.x===selectedCell?.x&&c.z===selectedCell?.z);if(!cell)throw Error('모듈이 있는 칸을 선택해 주세요.');cell.rotation=(cell.rotation+90)%360;layoutBake.invalidate();await showGrid();});
+$('#rotate-cell').onclick=()=>action(async()=>{const cell=layout.cells.find(c=>c.x===selectedCell?.x&&c.z===selectedCell?.z);if(!cell)throw Error('모듈이 있는 칸을 선택해 주세요.');cell.rotation=(cell.rotation+90)%360;layoutBake.invalidate();gridViewer.updateCell(cell,layout.grid);updateMap();});
 $('#remove-cell').onclick=()=>action(async()=>{layout.cells=layout.cells.filter(c=>c.x!==selectedCell?.x||c.z!==selectedCell?.z);layoutBake.invalidate();await showGrid();});
 $('#grid-settings').onsubmit=e=>{e.preventDefault();action(async()=>{const values=Object.fromEntries([...new FormData(e.target)].map(([k,v])=>[k,Number(v)]));const next={...layout,grid:validateGrid(values)};validateLayout(next,versions);layout=next;selectedCell=null;layoutBake.invalidate();await showGrid();});};
 $('#save-grid').onclick=()=>action(async()=>{
   validateLayout(layout,versions);
   if(github.connection()?.authenticated){
-    for(const id of new Set(layout.cells.map(c=>c.versionId))){const version=await resolve(id);if(version.remote?.repo!==github.connection().repo){if(!github.connection().private&&!publicConsent)throw Error('GitHub 연결에서 원본 공개에 동의해 주세요.');version.remote=await github.saveRemote(version,m=>notice(m));await storage.saveVersion(version);if(current?.id===id)current=version;}}
-    if(layoutBake.enabled){if(!github.connection().private&&!publicConsent)throw Error('GitHub 연결 화면에서 공개 저장에 동의해 주세요.');await layoutBake.save();notice('배치를 저장하고 전체 공간 베이킹을 요청했습니다.');return;}
-    for(const cell of layout.cells){const version=await resolve(cell.versionId);if(version.remote?.repo!==github.connection().repo)throw Error('배치한 모든 버전을 연결한 GitHub 저장소에 먼저 저장해 주세요.');}
+    let hasSources=true;
+    for(const id of new Set(layout.cells.map(c=>c.versionId))){
+      const version=await resolve(id);
+      hasSources=hasSources&&Boolean(version.blend);
+      if(version.remote?.repo!==github.connection().repo){
+        if(!github.connection().private&&!publicConsent)throw Error('GitHub 연결에서 원본 공개에 동의해 주세요.');
+        version.remote=await github.saveRemote(version,m=>notice(m));
+        await storage.saveVersion(version);
+        if(current?.id===id)current=version;
+      }
+    }
+    if(layoutBake.enabled&&hasSources&&layout.cells.length){
+      if(!github.connection().private&&!publicConsent)throw Error('GitHub 연결 화면에서 공개 저장에 동의해 주세요.');
+      await layoutBake.save();notice('배치 저장됨 · 베이킹 요청됨');return;
+    }
+    if(!layoutBake.valid())delete layout.build;
     await github.saveLayout(layout);
+    await storage.put('layout',layout);
+    notice(layoutBake.enabled&&!hasSources?'배치 저장됨 · 베이킹에는 .blend 필요':'배치 저장됨');
+    return;
   }
-  await storage.put('layout',layout);notice(github.connection()?.authenticated?'GitHub에 격자 배치를 저장했습니다.':'이 브라우저에 배치를 저장했습니다. 전체 베이킹은 GitHub 연결 후 배치 저장으로 실행합니다.');
+  await storage.put('layout',layout);notice('이 브라우저에 배치 저장됨');
 });
 
 async function refreshPublic(){
@@ -225,7 +311,7 @@ async function pollRender(){
     const result=await github.renderStatus(job);if(current?.id!==id)return;current.job={...job,...result};delete current.job.blob;delete current.job.bakedBlob;delete current.job.bake;if(result.blob)current.renderBlob=result.blob;
     if(result.bakedBlob){current.bake=result.bake;current.bakedBlob=result.bakedBlob;current.previewMode='baked';}
     if(result.report?.webScene){viewer.applySource(result.report.webScene);updateLookControls();}
-    $('#render-status').textContent=({queued:'대기 중',in_progress:job.mode!=='render'?'렌더 · 조명 베이킹 중…':'Blender 렌더 중…',complete:result.validation?.passed===false?'품질 검증 미달':result.bake?'완료 · 조명 적용':'렌더 완료',failed:result.message})[result.status]||'준비 중…';
+    $('#render-status').textContent=({queued:'대기 중',in_progress:result.stageLabel||(job.mode!=='render'?'렌더 · 조명 베이킹 중…':'Blender 렌더 중…'),complete:result.validation?.passed===false?'품질 검증 미달':result.bake?'완료 · 조명 적용':'렌더 완료',failed:result.message})[result.status]||'준비 중…';
     await storage.saveVersion(current);updateImage();updateButtons();if(!['complete','failed'].includes(result.status))renderTimer=setTimeout(pollRender,10000);else{versions=await storage.get('versions');listVersions();if(result.status==='complete'){if(result.bakedBlob)await selectVersion(current);imageMode='render';document.querySelectorAll('[data-image]').forEach(b=>b.classList.toggle('active',b.dataset.image==='render'));updateImage();}}
   }catch(e){$('#render-status').textContent=`상태 확인 중단: ${e.message} GitHub를 다시 연결하면 이어서 확인합니다.`;updateButtons();}
 }
