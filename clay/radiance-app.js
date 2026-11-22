@@ -22,10 +22,27 @@ function ready(){
   status.hidden=true;
 }
 let viewer;
+async function publishedScene(){
+  if(!local){
+    // Raw branch URLs can still point at the previous scene after a rollback.
+    const pointer=new URL('https://api.github.com/repos/livinglikeagiraffe/livinglikeagiraffe.github.io/contents/studio/radiance-scene.json');
+    pointer.searchParams.set('ref','main');
+    pointer.searchParams.set('at',String(Date.now()));
+    try{
+      const response=await fetch(pointer,{cache:'no-store',headers:{Accept:'application/vnd.github.raw+json'},signal:AbortSignal.timeout(4000)});
+      if(response.ok)return await response.json();
+    }catch{/* The public scene remains available when the API is unreachable. */}
+  }
+  try{
+    const response=await fetch(new URL('studio/radiance-scene.json',base),{cache:'no-store'});
+    if(response.ok)return await response.json();
+  }catch{/* Use the bundled scene offline when its assets are cached. */}
+  const fallback=await fetch(new URL('../studio/radiance-v06/manifest.json',import.meta.url),{cache:'no-store'});
+  if(!fallback.ok)throw Error('검증된 공간이 아직 없습니다.');
+  return fallback.json();
+}
 async function load(){
-  let record;
-  try{const r=await fetch(new URL('studio/radiance-scene.json',base),{cache:'no-store'});if(!r.ok)throw Error();record=await r.json();}
-  catch{const r=await fetch(new URL('../studio/radiance-v06/manifest.json',import.meta.url),{cache:'no-store'});if(!r.ok)throw Error('검증된 공간이 아직 없습니다.');record=await r.json();}
+  const record=await publishedScene();
   if(!/^studio\/(renders\/[0-9a-f-]{36}|radiance-v06)\/baked\.glb$/.test(record.model)||!/^[0-9a-f]{64}$/.test(record.sha256)||!(record.bytes>0&&record.bytes<=(record.parts?256:96)*1024**2))throw Error('잘못된 공간 정보입니다.');
   const modelBase=record.model.startsWith('studio/radiance-v06')?new URL('../',import.meta.url):base;
   const modelURL=new URL(record.model,modelBase);modelURL.searchParams.set('v',record.sha256);
