@@ -1,48 +1,46 @@
 {
   "schema": 1,
-  "model": "studio/radiance-v06/baked.glb",
-  "sha256": "8abac4d1b1e7be876a1e5ea2e00cff79eb73790d8e76c4d85744fec768370379",
-  "bytes": 111996844,
+  "sourceVersion": "557f3857-0abf-4206-95c1-6803e07e214e",
+  "renderId": "6bbae55b-2c17-47e8-96f0-ad7e18eca1ee",
+  "model": "studio/renders/6bbae55b-2c17-47e8-96f0-ad7e18eca1ee/baked.glb",
+  "sha256": "c090bc8cc75d785a8b28485361589594317556bba864f1eb67482ac493cebb15",
+  "bytes": 111973228,
   "parts": [
     {
       "name": "baked-part-000.bin",
       "bytes": 16777216,
-      "sha256": "58d222a7b538adc4b521106cf3831a152a46ccdbbdbea5def3f2a60b2762531c"
+      "sha256": "88346f26c2bf0192c68ee24cfdbe8e172dc4e273057894ecbc44a4e11e764e40"
     },
     {
       "name": "baked-part-001.bin",
       "bytes": 16777216,
-      "sha256": "320276d6be1a9827c97507d7a0b50e5648469672cfa49b3e96b558587987b413"
+      "sha256": "4ee78fc703e3cd592879d2fb3c6bfdd1751210aaf2369a7bd2c48f9f489c0c37"
     },
     {
       "name": "baked-part-002.bin",
       "bytes": 16777216,
-      "sha256": "653daf9e61af0a0e800c0c7cc6a5c59050003910fde9e496c8f11b951fd1b36a"
+      "sha256": "f7cfc34d22468ab52f8b3b28d94e070081fb3e8f9e24a499682f89efe3540911"
     },
     {
       "name": "baked-part-003.bin",
       "bytes": 16777216,
-      "sha256": "afe864c6c610e0df3b102db8267e4fb3ba043123c9fb5c4763b84182456f12b4"
+      "sha256": "9af4fd2ac57a4002bab3eadaed7f62c1e344dc398246b4fb82d74660e98451f2"
     },
     {
       "name": "baked-part-004.bin",
       "bytes": 16777216,
-      "sha256": "3904cdac24ba1416d3ea44bb1b086333c2e676c46a5799ace65f5e4ebcaa9100"
+      "sha256": "46704265e5cd6124de096a4900cf87ff44013ba57df315d2afd5e69402314c54"
     },
     {
       "name": "baked-part-005.bin",
       "bytes": 16777216,
-      "sha256": "8b94d376af2ac3ccd2883e70487fbccd5d7355eca00248f0a7dbe2146097f8a6"
+      "sha256": "7c55efd13280c831a00d8cc91b8fe4cd53e37cdc5c9d97c20ae3f9e63c896250"
     },
     {
       "name": "baked-part-006.bin",
-      "bytes": 11333548,
-      "sha256": "80df9175877edfeede04dbc1662d0f6eaecd60aa273d1afc78cf6fc519fdd732"
+      "bytes": 11309932,
+      "sha256": "b3605a191fa2d69bec8c3107f7319da70120c64c412886542e39970cb6ab138a"
     }
   ],
-  "validation": "studio/radiance-v06/validation.json",
-  "sourceVersion": "7e655b0f-2336-51a0-bb0e-06beb6576f8a",
-  "sourceRender": "b2a62aa9-9ccf-4c46-b95f-93334224ec08",
-  "renderId": "b2a62aa9-9ccf-4c46-b95f-93334224ec08",
   "supersededLayout": "b304115d-5402-42f4-aaae-c75f5874939d"
 }
