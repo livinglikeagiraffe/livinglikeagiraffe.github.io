@@ -26,7 +26,7 @@ export class LayoutBakeUI{
     if(ready)$('#layout-compare').href='../clay/lab.html?render='+encodeURIComponent(this.result.bake.id);
     $('#layout-log').hidden=!this.job?.url;if(this.job?.url)$('#layout-log').href=this.job.url;
     let message='';
-    if(build&&!valid)message='변경됨 · 저장 필요';
+    if(build&&!valid)message='배치 변경 · 베이킹 필요';
     else if(this.job?.status==='failed')message=this.job.message||'실패 · 로그 확인';
     else if(this.job&&!['complete','failed'].includes(this.job.status))message=this.job.stageLabel||'간접광 베이킹 중…';
     else if(ready && this.result.report.bake?.radianceVersion)message=this.result.validation?.passed?'완료 · 이동 범위 검증 통과':'품질 검증 미달 · 공개 보류';

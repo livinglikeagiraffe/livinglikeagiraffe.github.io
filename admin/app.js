@@ -26,6 +26,11 @@ function notice(message,error=false){clearTimeout(noticeTimer);$('#notice').hidd
 async function action(fn){if(busy)return;busy=true;updateButtons();try{await fn();}catch(e){console.error(e);notice(e.message,true);}finally{busy=false;updateButtons();}}
 function option(select,label,value){const o=document.createElement('option');o.textContent=label;o.value=value;select.append(o);}
 function updateButtons(){
+  const canSync=Boolean(github.connection()?.authenticated);
+  $('#save-grid').textContent=canSync?'배치 저장':'브라우저에 저장';
+  $('#save-grid').disabled=busy;
+  $('#auto-layout-bake').disabled=!canSync;
+  $('#layout-quality').disabled=!canSync;
   const published=!!current?.bake?.id&&publishedVersion===current.id&&publishedRender===current.bake.id;
   const eligible=!!current?.remote&&current.bake?.report?.radianceVersion===1&&current.remote.repo==='livinglikeagiraffe/livinglikeagiraffe.github.io'&&current.bake.validation?.passed!==false&&(!current.bake.sourceVersion||current.bake.sourceVersion===current.id);
   const publish=$('#publish-version');

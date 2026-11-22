@@ -36,7 +36,7 @@ export class StudioViewer {
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(host);
     this.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();host.dispatchEvent(new CustomEvent('viewererror',{detail:'3D 화면이 중단되었습니다. 페이지를 새로고침해 주세요.'}));});
   }
-  draw(){if(this.radianceViewer){this.radianceViewer.draw();return;}if(this.frame||!this.host.clientWidth||!this.host.clientHeight)return;this.frame=requestAnimationFrame(()=>{this.frame=0;if(this.hasBaked){this.renderer.render(this.scene,this.camera);return;}this.ao.ssaoMaterial.uniforms.cameraProjectionMatrix.value.copy(this.camera.projectionMatrix);this.ao.ssaoMaterial.uniforms.cameraInverseProjectionMatrix.value.copy(this.camera.projectionMatrixInverse);this.composer.render();});}
+  draw(){if(this.radianceViewer){this.radianceViewer.draw();return;}if(this.frame||!this.host.clientWidth||!this.host.clientHeight)return;this.frame=requestAnimationFrame(()=>{this.frame=0;if(this.isGrid||this.hasBaked){this.renderer.render(this.scene,this.camera);return;}this.ao.ssaoMaterial.uniforms.cameraProjectionMatrix.value.copy(this.camera.projectionMatrix);this.ao.ssaoMaterial.uniforms.cameraInverseProjectionMatrix.value.copy(this.camera.projectionMatrixInverse);this.composer.render();});}
   resize(){const w=this.host.clientWidth,h=this.host.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h);this.composer.setSize(w,h);if(this.bounds)this.fit();}
   configureCamera(){
     const perspective=!this.isGrid&&this.look.camera==='authored'&&this.authoredCamera?.type==='PERSP';
@@ -213,9 +213,9 @@ export class StudioViewer {
   async showGrid(layout,resolve){
     this.radianceViewer?.dispose();this.radianceViewer=null;this.renderer.domElement.hidden=false;this.controls.enabled=true;
     const ticket=this.ticket=Symbol(),loaded=[];for(const cell of layout.cells){const version=await resolve(cell.versionId);if(!version)throw Error('배치에 사용한 버전을 먼저 불러와 주세요.');loaded.push({cell,version,asset:version.model?await this.load(version.bake?.report?.radianceVersion?version:previewVersion(version)):null});}if(this.ticket!==ticket)return;
-    this.clear();this.isGrid=true;this.hasBaked=loaded.some(v=>v.asset?.baked);this.ground=null;this.profile=null;const grid=layout.grid;
+    this.clear();this.isGrid=true;this.asset=null;this.hasBaked=loaded.some(v=>v.asset?.baked);this.ground=null;this.profile=null;const grid=layout.grid;
     for(let z=0;z<grid.rows;z++)for(let x=0;x<grid.columns;x++){const p=cellPosition(grid,x,z);this.platform(grid.width,grid.depth,p.x,p.z);}
     for(const {cell,asset:a,version} of loaded){if(!a)continue;const instance=this.instance(a,normalizeLook(version.webLook)),center=a.bounds.getCenter(new THREE.Vector3());instance.position.set(-center.x,-a.bounds.min.y,-center.z);const module=new THREE.Group();module.add(instance);module.userData={cell,size:a.size};this.root.add(module);this.placeModule(module,grid);}
-    this.bounds=new THREE.Box3().setFromObject(this.root);this.buildRig();this.setLook({...normalizeLook(),camera:'fit'});this.resize();
+    this.bounds=new THREE.Box3().setFromObject(this.root);this.buildRig();this.setLook({ambient:1,contact:0,exposure:.25,background:'#e8e7e3',tone:'neutral',camera:'fit'});this.resize();
   }
 }
