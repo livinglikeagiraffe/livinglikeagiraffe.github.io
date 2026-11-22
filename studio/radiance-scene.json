@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "sourceVersion": "557f3857-0abf-4206-95c1-6803e07e214e",
+  "renderId": "6bbae55b-2c17-47e8-96f0-ad7e18eca1ee",
+  "model": "studio/renders/6bbae55b-2c17-47e8-96f0-ad7e18eca1ee/baked.glb",
+  "sha256": "c090bc8cc75d785a8b28485361589594317556bba864f1eb67482ac493cebb15",
+  "bytes": 111973228,
+  "parts": [
+    {
+      "name": "baked-part-000.bin",
+      "bytes": 16777216,
+      "sha256": "88346f26c2bf0192c68ee24cfdbe8e172dc4e273057894ecbc44a4e11e764e40"
+    },
+    {
+      "name": "baked-part-001.bin",
+      "bytes": 16777216,
+      "sha256": "4ee78fc703e3cd592879d2fb3c6bfdd1751210aaf2369a7bd2c48f9f489c0c37"
+    },
+    {
+      "name": "baked-part-002.bin",
+      "bytes": 16777216,
+      "sha256": "f7cfc34d22468ab52f8b3b28d94e070081fb3e8f9e24a499682f89efe3540911"
+    },
+    {
+      "name": "baked-part-003.bin",
+      "bytes": 16777216,
+      "sha256": "9af4fd2ac57a4002bab3eadaed7f62c1e344dc398246b4fb82d74660e98451f2"
+    },
+    {
+      "name": "baked-part-004.bin",
+      "bytes": 16777216,
+      "sha256": "46704265e5cd6124de096a4900cf87ff44013ba57df315d2afd5e69402314c54"
+    },
+    {
+      "name": "baked-part-005.bin",
+      "bytes": 16777216,
+      "sha256": "7c55efd13280c831a00d8cc91b8fe4cd53e37cdc5c9d97c20ae3f9e63c896250"
+    },
+    {
+      "name": "baked-part-006.bin",
+      "bytes": 11309932,
+      "sha256": "b3605a191fa2d69bec8c3107f7319da70120c64c412886542e39970cb6ab138a"
+    }
+  ],
+  "supersededLayout": "b304115d-5402-42f4-aaae-c75f5874939d"
+}
