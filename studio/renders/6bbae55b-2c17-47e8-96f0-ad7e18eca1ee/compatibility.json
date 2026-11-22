@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "errors": [],
+  "warnings": [
+    "Directional approximation of transmission/opacity: Display glass"
+  ],
+  "supported": true,
+  "frame": 1,
+  "contract": "static Cycles surfaces; bounded camera; directional reflection/transmission approximation"
+}
